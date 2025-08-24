@@ -2,10 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Objective from '@/models/Objective';
 import { auth } from '@/lib/auth';
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
+import { problem } from '@/lib/http';
 
 export async function PATCH(
   req: Request,

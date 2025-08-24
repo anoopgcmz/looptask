@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Objective from '@/models/Objective';
 import { auth } from '@/lib/auth';
+import { problem } from '@/lib/http';
 
 const upsertSchema = z.object({
   id: z.string().optional(),
@@ -14,10 +15,6 @@ const upsertSchema = z.object({
   linkedTaskIds: z.array(z.string()).optional(),
   status: z.enum(['OPEN', 'DONE']).optional(),
 });
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
 
 export async function POST(req: Request) {
   const session = await auth();

@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import { auth } from '@/lib/auth';
+import { problem } from '@/lib/http';
 
 const querySchema = z.object({
   q: z.string().optional(),
@@ -23,10 +24,6 @@ const querySchema = z.object({
   visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
   sort: z.enum(['relevance', 'updatedAt', 'dueAt']).optional(),
 });
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
 
 export async function GET(req: Request) {
   const session = await auth();

@@ -5,15 +5,12 @@ import dbConnect from '@/lib/db';
 import Objective from '@/models/Objective';
 import Task from '@/models/Task';
 import { auth } from '@/lib/auth';
+import { problem } from '@/lib/http';
 
 const querySchema = z.object({
   date: z.string(),
   teamId: z.string(),
 });
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
 
 export async function GET(req: Request) {
   const session = await auth();

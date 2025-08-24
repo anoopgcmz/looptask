@@ -7,6 +7,7 @@ import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
 import { scheduleTaskJobs } from '@/lib/agenda';
+import { problem } from '@/lib/http';
 
 const stepSchema = z.object({
   ownerId: z.string(),
@@ -29,10 +30,6 @@ const createTaskSchema = z.object({
   dueAt: z.coerce.date().optional(),
   steps: z.array(stepSchema).optional(),
 });
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
 
 function computeParticipants(data: { creatorId: string; ownerId: string; helpers?: string[]; mentions?: string[]; steps?: { ownerId: string }[] }) {
   const ids = new Set<string>();
