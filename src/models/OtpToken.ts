@@ -1,18 +1,26 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import { Schema, model, models, type Document } from 'mongoose';
 
 export interface IOtpToken extends Document {
-  userId: Types.ObjectId;
-  token: string;
+  email: string;
+  codeHash: string;
+  attempts: number;
+  ip: string;
+  createdAt: Date;
   expiresAt: Date;
 }
 
 const otpTokenSchema = new Schema<IOtpToken>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    token: { type: String, required: true },
+    email: { type: String, required: true, lowercase: true, index: true },
+    codeHash: { type: String, required: true },
+    attempts: { type: Number, default: 0 },
+    ip: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },
   },
-  { timestamps: true }
+  { timestamps: false }
 );
+
+otpTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default models.OtpToken || model<IOtpToken>('OtpToken', otpTokenSchema);
