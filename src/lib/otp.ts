@@ -9,7 +9,7 @@ const MAX_REQUESTS_PER_HOUR = 5;
 const MAX_ATTEMPTS = 5;
 
 export function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
 }
 
 export function hashOtp(code: string): string {
