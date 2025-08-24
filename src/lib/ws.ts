@@ -19,3 +19,18 @@ export function emitTaskTransition(task: any) {
     }
   });
 }
+
+export function emitCommentCreated(comment: any) {
+  const message = JSON.stringify({
+    event: 'comment.created',
+    taskId: comment.taskId?.toString(),
+    comment,
+  });
+  clients.forEach((ws) => {
+    try {
+      ws.send(message);
+    } catch {
+      clients.delete(ws);
+    }
+  });
+}
