@@ -115,3 +115,54 @@ describe('task flow with steps', () => {
     expect(t.currentStepIndex).toBe(2);
   });
 });
+
+describe('simple task status transitions', () => {
+  beforeEach(() => {
+    tasks.clear();
+  });
+
+  it('transitions from OPEN to DONE', async () => {
+    const u1 = new Types.ObjectId();
+    const taskId = new Types.ObjectId();
+    tasks.set(taskId.toString(), {
+      _id: taskId,
+      title: 'Test',
+      creatorId: u1,
+      ownerId: u1,
+      status: 'OPEN',
+      steps: [],
+      currentStepIndex: 0,
+    });
+
+    currentUserId = u1.toString();
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'START' }),
+      }),
+      { params: { id: taskId.toString() } }
+    );
+    let t = tasks.get(taskId.toString());
+    expect(t.status).toBe('IN_PROGRESS');
+
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'SEND_FOR_REVIEW' }),
+      }),
+      { params: { id: taskId.toString() } }
+    );
+    t = tasks.get(taskId.toString());
+    expect(t.status).toBe('IN_REVIEW');
+
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'DONE' }),
+      }),
+      { params: { id: taskId.toString() } }
+    );
+    t = tasks.get(taskId.toString());
+    expect(t.status).toBe('DONE');
+  });
+});
