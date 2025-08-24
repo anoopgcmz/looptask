@@ -1,80 +1,36 @@
-# Looptask
-
-A modern, full-stack task management app built for collaboration and productivity. Powered by Next.js 14+ (App Router) and TypeScript, Looptask leverages cutting-edge tech for performance, scalability, and developer experience.
-
-## Features
-
-- **Next.js 14+ (App Router)** — Lightning fast, server components, and seamless routing.
-- **TypeScript** — Static typing for safety and refactoring.
-- **Tailwind CSS** + [shadcn/ui](https://ui.shadcn.com/) + [lucide-react](https://lucide.dev/) — Beautiful, customizable UI components.
-- **MongoDB Atlas** — Cloud-hosted database, modeled with Mongoose ODM.
-- **Auth.js (NextAuth)** — Passwordless authentication with **email + OTP** (no passwords).
-- **Zod** — Schema-based validation for robust input handling.
-- **Agenda** — Mongo-backed job scheduler for reminders and daily snapshots.
-- **WebSockets (Next.js server)** — Real-time updates for tasks and comments.
-- **Resend** — Transactional emails (gracefully no-op if key missing).
-- **React Query** — Smart client caching for optimal data fetching.
-- **Vitest** + **Playwright** — Comprehensive unit and end-to-end testing.
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
-1. **Clone the repo:**
-   ```bash
-   git clone https://github.com/anoopgcmz/looptask.git
-   cd looptask
-   ```
+First, run the development server:
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-3. **Configure environment:**
-   - Copy `.env.example` to `.env.local` and fill in your MongoDB Atlas, Resend, and NextAuth credentials.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-4. **Run development server:**
-   ```bash
-   npm run dev
-   ```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-5. **Run tests:**
-   ```bash
-   npm run test          # Vitest unit tests
-   npm run test:e2e      # Playwright end-to-end tests
-   ```
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Usage
+## Learn More
 
-- Register/sign in with your email (no passwords!).
-- Collaborate on tasks, leave comments, and get real-time updates.
-- Schedule reminders and receive daily snapshots.
-- All sensitive operations are validated with Zod and protected via Auth.js.
+To learn more about Next.js, take a look at the following resources:
 
-## Tech Stack
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-| Category        | Stack/Library                |
-|-----------------|-----------------------------|
-| Frontend        | Next.js 14+, TypeScript, Tailwind, shadcn/ui, lucide-react |
-| Backend         | Next.js API, MongoDB Atlas (Mongoose), Agenda, WebSockets  |
-| Auth            | Auth.js (NextAuth) — Email + OTP                          |
-| Validation      | Zod                                    |
-| Email           | Resend                                  |
-| Data Fetching   | React Query                             |
-| Testing         | Vitest, Playwright                      |
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Project Structure
+## Deploy on Vercel
 
-- `/app` — Next.js App Router pages/components.
-- `/lib` — Shared utilities, validation schemas.
-- `/models` — Mongoose models.
-- `/jobs` — Agenda job definitions.
-- `/components` — Reusable React components.
-- `/tests` — Vitest and Playwright tests.
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-## Contributing
-
-Pull requests and issues are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-MIT © [anoopgcmz](https://github.com/anoopgcmz)
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
