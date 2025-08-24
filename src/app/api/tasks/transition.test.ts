@@ -44,6 +44,11 @@ let currentUserId = '';
 vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => ({ userId: currentUserId })) }));
 
 vi.mock('@/lib/ws', () => ({ emitTaskTransition: vi.fn() }));
+vi.mock('@/lib/notify', () => ({
+  notifyStatusChange: vi.fn(),
+  notifyFlowAdvanced: vi.fn(),
+  notifyTaskClosed: vi.fn(),
+}));
 
 const { Types } = mongoose;
 

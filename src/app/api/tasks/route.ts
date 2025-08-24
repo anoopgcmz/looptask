@@ -5,6 +5,7 @@ import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
+import { notifyAssignment, notifyMention } from '@/lib/notify';
 
 const stepSchema = z.object({
   ownerId: z.string(),
@@ -114,6 +115,19 @@ export async function POST(req: Request) {
     payload: {},
   });
   await scheduleDueJobs(task);
+  const assignmentIds = [
+    task.ownerId,
+    ...(task.helpers || []),
+  ].filter((id) => id.toString() !== creatorId);
+  if (assignmentIds.length) {
+    await notifyAssignment(assignmentIds as Types.ObjectId[], task);
+  }
+  const mentionIds = (task.mentions || []).filter(
+    (id) => id.toString() !== creatorId
+  );
+  if (mentionIds.length) {
+    await notifyMention(mentionIds as Types.ObjectId[], task._id);
+  }
   return NextResponse.json(task, { status: 201 });
 }
 

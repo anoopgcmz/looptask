@@ -6,6 +6,11 @@ import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { emitTaskTransition } from '@/lib/ws';
+import {
+  notifyStatusChange,
+  notifyFlowAdvanced,
+  notifyTaskClosed,
+} from '@/lib/notify';
 
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
@@ -78,6 +83,19 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       updated = t;
     });
     if (!updated) return problem(500, 'Error', 'Transition failed');
+    const recipients = (updated.participantIds || []).filter(
+      (id: Types.ObjectId) => id.toString() !== actorId
+    );
+    if (updated.status === 'DONE') {
+      if (recipients.length) {
+        await notifyTaskClosed(recipients as Types.ObjectId[], updated);
+      }
+    } else {
+      const ownerId = updated.ownerId;
+      if (ownerId && ownerId.toString() !== actorId) {
+        await notifyFlowAdvanced([ownerId] as Types.ObjectId[], updated);
+      }
+    }
     emitTaskTransition(updated);
     return NextResponse.json(updated);
   } else {
@@ -111,6 +129,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       type: 'TRANSITIONED',
       payload: { action: body.action },
     });
+    const recipients = (task.participantIds || []).filter(
+      (id) => id.toString() !== actorId
+    );
+    if (recipients.length) {
+      if (newStatus === 'DONE') {
+        await notifyTaskClosed(recipients as Types.ObjectId[], task);
+      } else {
+        await notifyStatusChange(recipients as Types.ObjectId[], task);
+      }
+    }
     emitTaskTransition(task);
     return NextResponse.json(task);
   }
