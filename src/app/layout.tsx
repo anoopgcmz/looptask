@@ -27,9 +27,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <nav className="p-2 border-b flex gap-4">
+        <nav className="p-2 border-b flex gap-4 items-center">
           <a href="/">Home</a>
           <a href="/notifications">🔔</a>
+          <form action="/search/tasks" method="GET" className="ml-auto">
+            <input
+              type="text"
+              name="q"
+              placeholder="Search tasks..."
+              className="border rounded px-2 py-1 text-sm"
+            />
+          </form>
         </nav>
         {children}
       </body>
