@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 export default function useTaskChannel(
   taskId: string,
-  onMessage: (task: any) => void
+  onMessage: (data: any) => void
 ) {
   useEffect(() => {
     if (!taskId) return;
@@ -11,8 +11,8 @@ export default function useTaskChannel(
     ws.addEventListener('message', (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.event === 'task.transitioned' && data.taskId === taskId) {
-          onMessage(data.task);
+        if (data.taskId === taskId) {
+          onMessage(data);
         }
       } catch {
         // ignore
