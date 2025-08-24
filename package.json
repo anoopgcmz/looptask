@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker": "tsx scripts/worker.ts"
   },
   "dependencies": {
     "react": "19.1.0",
@@ -15,7 +16,8 @@
     "mongoose": "^8.0.0",
     "next-auth": "^5.0.0",
     "resend": "^2.0.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "agenda": "^6.0.0"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -27,6 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
     "@eslint/eslintrc": "^3",
-    "vitest": "^2.0.0"
+    "vitest": "^2.0.0",
+    "tsx": "^4.7.0"
   }
 }

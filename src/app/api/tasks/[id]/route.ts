@@ -6,6 +6,7 @@ import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { canReadTask, canWriteTask } from '@/lib/access';
+import { scheduleTaskJobs } from '@/lib/agenda';
 
 const patchSchema = z.object({
   title: z.string().optional(),
@@ -45,16 +46,6 @@ function computeParticipants(task: any) {
   task.participantIds = Array.from(ids).map((id) => new Types.ObjectId(id));
 }
 
-async function scheduleDueJobs(task: any) {
-  if (task.dueAt) {
-    console.log(`Scheduling task ${task._id} due job at ${task.dueAt}`);
-  }
-  task.steps?.forEach((step: any, i: number) => {
-    if (step.dueAt) {
-      console.log(`Scheduling step ${i} of task ${task._id} due job at ${step.dueAt}`);
-    }
-  });
-}
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -108,7 +99,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     type: 'UPDATED',
     payload: body,
   });
-  await scheduleDueJobs(task);
+  await scheduleTaskJobs(task);
   return NextResponse.json(task);
 }
 

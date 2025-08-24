@@ -6,6 +6,7 @@ import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
+import { scheduleTaskJobs } from '@/lib/agenda';
 
 const stepSchema = z.object({
   ownerId: z.string(),
@@ -43,16 +44,6 @@ function computeParticipants(data: { creatorId: string; ownerId: string; helpers
   return Array.from(ids).map((id) => new Types.ObjectId(id));
 }
 
-async function scheduleDueJobs(task: any) {
-  if (task.dueAt) {
-    console.log(`Scheduling task ${task._id} due job at ${task.dueAt}`);
-  }
-  task.steps?.forEach((step: any, i: number) => {
-    if (step.dueAt) {
-      console.log(`Scheduling step ${i} of task ${task._id} due job at ${step.dueAt}`);
-    }
-  });
-}
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -114,7 +105,7 @@ export async function POST(req: Request) {
     type: 'CREATED',
     payload: {},
   });
-  await scheduleDueJobs(task);
+  await scheduleTaskJobs(task);
   const assignmentIds = [
     task.ownerId,
     ...(task.helpers || []),
