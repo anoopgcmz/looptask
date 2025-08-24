@@ -1,0 +1,34 @@
+import type { Types } from 'mongoose';
+import type { ITask } from '@/models/Task';
+
+type UserLike = {
+  _id: Types.ObjectId | string;
+  teamId?: Types.ObjectId | string;
+};
+
+export function canReadTask(user: UserLike, task: ITask): boolean {
+  const userId = user?._id?.toString();
+  if (!userId) return false;
+
+  if (task.creatorId.toString() === userId) return true;
+  if (task.ownerId.toString() === userId) return true;
+  if (task.helpers?.some((h) => h.toString() === userId)) return true;
+  if (task.mentions?.some((m) => m.toString() === userId)) return true;
+
+  if (
+    task.visibility === 'TEAM' &&
+    task.teamId &&
+    user.teamId &&
+    task.teamId.toString() === user.teamId.toString()
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+export function canWriteTask(user: UserLike, task: ITask): boolean {
+  const userId = user?._id?.toString();
+  if (!userId) return false;
+  return task.creatorId.toString() === userId || task.ownerId.toString() === userId;
+}
