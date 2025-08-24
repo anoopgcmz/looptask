@@ -24,6 +24,7 @@ export interface ITask extends Document {
   creatorId: Types.ObjectId;
   ownerId: Types.ObjectId;
   helpers: Types.ObjectId[];
+  mentions: Types.ObjectId[];
   teamId?: Types.ObjectId;
   status: TaskStatus;
   priority: TaskPriority;
@@ -55,6 +56,7 @@ const taskSchema = new Schema<ITask>(
     creatorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     helpers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    mentions: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
     status: {
       type: String,
@@ -83,7 +85,7 @@ taskSchema.pre('save', function (next) {
   ids.add(this.creatorId.toString());
   ids.add(this.ownerId.toString());
   this.helpers?.forEach((h) => ids.add(h.toString()));
-  this.steps?.forEach((s) => ids.add(s.ownerId.toString()));
+  this.mentions?.forEach((m) => ids.add(m.toString()));
   this.participantIds = Array.from(ids).map((id) => new Types.ObjectId(id));
   next();
 });
