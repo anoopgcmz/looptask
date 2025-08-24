@@ -8,9 +8,9 @@ import Comment from '@/models/Comment';
 import Task from '@/models/Task';
 import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import Notification from '@/models/Notification';
 import { parseMentions } from '@/lib/mentions';
 import { emitCommentCreated } from '@/lib/ws';
+import { notifyMention } from '@/lib/notify';
 
 const postSchema = z.object({
   taskId: z.string(),
@@ -60,15 +60,15 @@ export async function POST(req: Request) {
       { _id: body.taskId },
       { $addToSet: { participantIds: { $each: mentionIds } } }
     );
-    const notifications = mentionIds
-      .filter((id) => id.toString() !== session.userId)
-      .map((id) => ({
-        userId: id,
-        type: 'COMMENT_MENTION',
-        entityRef: { taskId: comment.taskId, commentId: comment._id },
-      }));
-    if (notifications.length) {
-      await Notification.insertMany(notifications);
+    const notifyIds = mentionIds.filter(
+      (id) => id.toString() !== session.userId
+    );
+    if (notifyIds.length) {
+      await notifyMention(
+        notifyIds as Types.ObjectId[],
+        comment.taskId,
+        comment._id
+      );
     }
   }
   await ActivityLog.create({
