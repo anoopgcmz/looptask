@@ -11,14 +11,11 @@ import {
   notifyFlowAdvanced,
   notifyTaskClosed,
 } from '@/lib/notify';
+import { problem } from '@/lib/http';
 
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
 });
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();

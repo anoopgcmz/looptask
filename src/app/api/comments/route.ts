@@ -11,6 +11,7 @@ import ActivityLog from '@/models/ActivityLog';
 import { parseMentions } from '@/lib/mentions';
 import { emitCommentCreated } from '@/lib/ws';
 import { notifyMention } from '@/lib/notify';
+import { problem } from '@/lib/http';
 
 const postSchema = z.object({
   taskId: z.string(),
@@ -22,10 +23,6 @@ const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
 
 export async function POST(req: Request) {
   const session = await auth();

@@ -7,6 +7,7 @@ import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { scheduleTaskJobs } from '@/lib/agenda';
+import { problem } from '@/lib/http';
 
 const patchSchema = z.object({
   title: z.string().optional(),
@@ -31,10 +32,6 @@ const patchSchema = z.object({
   ).optional(),
   currentStepIndex: z.number().int().optional(),
 });
-
-function problem(status: number, title: string, detail: string) {
-  return NextResponse.json({ type: 'about:blank', title, status, detail }, { status });
-}
 
 function computeParticipants(task: any) {
   const ids = new Set<string>();
