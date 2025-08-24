@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { hashOtp, verifyOtp, createOtpToken, verifyAndConsumeOtp } from './otp';
+import crypto from 'crypto';
+import {
+  generateOtp,
+  hashOtp,
+  verifyOtp,
+  createOtpToken,
+  verifyAndConsumeOtp,
+} from './otp';
 
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
@@ -41,6 +48,14 @@ describe('otp helpers', () => {
   beforeEach(() => {
     tokens.length = 0;
     rates.clear();
+  });
+
+  it('generates a 6-digit code using crypto.randomInt', () => {
+    const spy = vi.spyOn(crypto, 'randomInt').mockReturnValue(42);
+    const otp = generateOtp();
+    expect(spy).toHaveBeenCalledWith(0, 1_000_000);
+    expect(otp).toBe('000042');
+    spy.mockRestore();
   });
 
   it('hashes and verifies codes', () => {
