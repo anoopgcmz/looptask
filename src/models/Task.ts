@@ -1,39 +1,49 @@
 import { Schema, model, models, type Document, type Types } from 'mongoose';
 
-interface IParticipant {
-  userId: Types.ObjectId;
-  role: string;
-}
+export type TaskStatus =
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'IN_REVIEW'
+  | 'REVISIONS'
+  | 'FLOW_IN_PROGRESS'
+  | 'DONE';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+export type TaskVisibility = 'PRIVATE' | 'TEAM';
 
-interface IStep {
-  title: string;
+export interface IStep {
+  ownerId: Types.ObjectId;
   description?: string;
-  completed: boolean;
+  dueAt?: Date;
+  status: 'OPEN' | 'DONE';
+  completedAt?: Date;
 }
 
 export interface ITask extends Document {
   title: string;
   description?: string;
   creatorId: Types.ObjectId;
-  participants: IParticipant[];
-  participantIds: Types.ObjectId[];
+  ownerId: Types.ObjectId;
+  helpers: Types.ObjectId[];
+  teamId?: Types.ObjectId;
+  status: TaskStatus;
+  priority: TaskPriority;
+  tags: string[];
+  visibility: TaskVisibility;
+  dueAt?: Date;
   steps: IStep[];
   currentStepIndex: number;
+  participantIds: Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
 }
-
-const participantSchema = new Schema<IParticipant>(
-  {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    role: { type: String, default: 'member' },
-  },
-  { _id: false }
-);
 
 const stepSchema = new Schema<IStep>(
   {
-    title: { type: String, required: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     description: String,
-    completed: { type: Boolean, default: false },
+    dueAt: Date,
+    status: { type: String, enum: ['OPEN', 'DONE'], default: 'OPEN' },
+    completedAt: Date,
   },
   { _id: false }
 );
@@ -43,16 +53,38 @@ const taskSchema = new Schema<ITask>(
     title: { type: String, required: true },
     description: String,
     creatorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    participants: [participantSchema],
-    participantIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    helpers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
+    status: {
+      type: String,
+      enum: ['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'REVISIONS', 'FLOW_IN_PROGRESS', 'DONE'],
+      default: 'OPEN',
+    },
+    priority: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
+    tags: [{ type: String }],
+    visibility: { type: String, enum: ['PRIVATE', 'TEAM'], default: 'PRIVATE' },
+    dueAt: Date,
     steps: [stepSchema],
     currentStepIndex: { type: Number, default: 0 },
+    participantIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );
 
+taskSchema.index({ ownerId: 1, status: 1, dueAt: 1 });
+taskSchema.index({ creatorId: 1, status: 1 });
+taskSchema.index({ teamId: 1, visibility: 1 });
+taskSchema.index({ updatedAt: -1 });
+taskSchema.index({ title: 'text', description: 'text' });
+
 taskSchema.pre('save', function (next) {
-  this.participantIds = this.participants.map((p) => p.userId);
+  const ids = new Set<string>();
+  ids.add(this.creatorId.toString());
+  ids.add(this.ownerId.toString());
+  this.helpers?.forEach((h) => ids.add(h.toString()));
+  this.steps?.forEach((s) => ids.add(s.ownerId.toString()));
+  this.participantIds = Array.from(ids).map((id) => new Types.ObjectId(id));
   next();
 });
 
