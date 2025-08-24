@@ -7,7 +7,10 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "worker": "tsx scripts/worker.ts"
+    "worker": "tsx scripts/worker.ts",
+    "seed": "tsx scripts/seed.ts",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "react": "19.1.0",
@@ -30,6 +33,7 @@
     "eslint-config-next": "15.5.0",
     "@eslint/eslintrc": "^3",
     "vitest": "^2.0.0",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "@playwright/test": "^1.45.0"
   }
 }
