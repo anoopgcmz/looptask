@@ -19,7 +19,8 @@ const bodySchema = z.object({
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.userId) return problem(401, 'Unauthorized', 'You must be signed in.');
+  if (!session?.userId || !session.organizationId)
+    return problem(401, 'Unauthorized', 'You must be signed in.');
 
   let body: z.infer<typeof bodySchema>;
   try {
@@ -30,7 +31,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   await dbConnect();
   const task = await Task.findById(params.id);
-  if (!task) return problem(404, 'Not Found', 'Task not found');
+  if (!task || task.organizationId.toString() !== session.organizationId)
+    return problem(404, 'Not Found', 'Task not found');
 
   const actorId = session.userId;
   const isCreator = task.creatorId.toString() === actorId;

@@ -25,6 +25,7 @@ export interface ITask extends Document {
   ownerId: Types.ObjectId;
   helpers: Types.ObjectId[];
   mentions: Types.ObjectId[];
+  organizationId: Types.ObjectId;
   teamId?: Types.ObjectId;
   status: TaskStatus;
   priority: TaskPriority;
@@ -57,6 +58,7 @@ const taskSchema = new Schema<ITask>(
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     helpers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     mentions: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
     status: {
       type: String,
@@ -77,6 +79,7 @@ const taskSchema = new Schema<ITask>(
 taskSchema.index({ ownerId: 1, status: 1, dueAt: 1 });
 taskSchema.index({ creatorId: 1, status: 1 });
 taskSchema.index({ teamId: 1, visibility: 1 });
+taskSchema.index({ organizationId: 1 });
 taskSchema.index({ updatedAt: -1 });
 taskSchema.index({ title: 'text', description: 'text' });
 
