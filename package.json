@@ -20,7 +20,7 @@
     "next-auth": "^5.0.0",
     "resend": "^2.0.0",
     "zod": "^3.23.8",
-    "agenda": "^6.0.0"
+    "agenda": "^5.0.0"
   },
   "devDependencies": {
     "typescript": "^5",
