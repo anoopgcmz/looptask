@@ -15,10 +15,40 @@ async function run() {
 
   const org = await Organization.create({ name: 'Acme' });
   const team = await Team.create({ name: 'Accounts' });
-  const [acc, sr, chief] = await User.create([
-    { name: 'Acc', email: 'acc@ex.com', organizationId: org._id, teamId: team._id },
-    { name: 'Sr', email: 'sr@ex.com', organizationId: org._id, teamId: team._id },
-    { name: 'Chief', email: 'chief@ex.com', organizationId: org._id, teamId: team._id }
+  const [acc, sr, chief, _admin] = await User.create([
+    {
+      name: 'Acc',
+      email: 'acc@ex.com',
+      username: 'acc',
+      password: 'accpass',
+      organizationId: org._id,
+      teamId: team._id,
+    },
+    {
+      name: 'Sr',
+      email: 'sr@ex.com',
+      username: 'sr',
+      password: 'srpass',
+      organizationId: org._id,
+      teamId: team._id,
+    },
+    {
+      name: 'Chief',
+      email: 'chief@ex.com',
+      username: 'chief',
+      password: 'chiefpass',
+      organizationId: org._id,
+      teamId: team._id,
+    },
+    {
+      name: 'Admin',
+      email: 'admin@ex.com',
+      username: 'admin',
+      password: 'adminpass',
+      organizationId: org._id,
+      teamId: team._id,
+      isAdmin: true,
+    },
   ]);
 
   const simpleDue = new Date(Date.now() + 2 * 60 * 60 * 1000);

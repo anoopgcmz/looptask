@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { createHash } from 'crypto';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 
@@ -8,6 +9,7 @@ interface AuthUser {
   email: string;
   organizationId?: string;
   teamId?: string;
+  isAdmin?: boolean;
 }
 
 interface ExtendedToken {
@@ -15,6 +17,7 @@ interface ExtendedToken {
   email?: string;
   organizationId?: string;
   teamId?: string;
+  isAdmin?: boolean;
   [key: string]: unknown;
 }
 
@@ -23,6 +26,7 @@ interface ExtendedSession {
   email?: string;
   organizationId?: string;
   teamId?: string;
+  isAdmin?: boolean;
   [key: string]: unknown;
 }
 
@@ -30,21 +34,24 @@ export const authOptions = {
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
-      name: 'OTP',
+      name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'text' },
-        otpVerified: { label: 'OTP Verified', type: 'boolean' },
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       authorize: async (credentials): Promise<AuthUser | null> => {
-        if (!credentials?.otpVerified || !credentials.email) return null;
+        if (!credentials?.username || !credentials.password) return null;
         await dbConnect();
-        const user = await User.findOne({ email: credentials.email });
+        const user = await User.findOne({ username: credentials.username });
         if (!user) return null;
+        const hashed = createHash('sha256').update(credentials.password).digest('hex');
+        if (user.password !== hashed) return null;
         return {
           id: user._id.toString(),
           email: user.email,
           organizationId: user.organizationId?.toString(),
           teamId: user.teamId?.toString(),
+          isAdmin: user.isAdmin,
         };
       },
     }),
@@ -56,6 +63,7 @@ export const authOptions = {
         token.email = user.email;
         token.organizationId = user.organizationId;
         token.teamId = user.teamId;
+        token.isAdmin = user.isAdmin;
       }
       return token;
     },
@@ -64,6 +72,7 @@ export const authOptions = {
       session.email = token.email;
       session.organizationId = token.organizationId;
       session.teamId = token.teamId;
+      session.isAdmin = token.isAdmin;
       return session;
     },
   },

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { verifyAndConsumeOtp } from '@/lib/otp';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
@@ -39,7 +40,12 @@ export async function POST(req: Request) {
   await User.updateOne(
     { email },
     {
-      $setOnInsert: { name: email.split('@')[0], email },
+      $setOnInsert: {
+        name: email.split('@')[0],
+        email,
+        username: email,
+        password: createHash('sha256').update('changeme').digest('hex'),
+      },
     },
     { upsert: true }
   );
