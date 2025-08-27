@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
+import User from '@/models/User';
 import { auth } from '@/lib/auth';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { scheduleTaskJobs } from '@/lib/agenda';
@@ -46,10 +47,17 @@ function computeParticipants(task: any) {
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.userId) return problem(401, 'Unauthorized', 'You must be signed in.');
+  if (!session?.userId || !session.organizationId)
+    return problem(401, 'Unauthorized', 'You must be signed in.');
   await dbConnect();
   const task = await Task.findById(params.id);
-  if (!task || !canReadTask(session, task)) {
+  if (
+    !task ||
+    !canReadTask(
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+      task
+    )
+  ) {
     return problem(404, 'Not Found', 'Task not found');
   }
   return NextResponse.json(task);
@@ -57,7 +65,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.userId) return problem(401, 'Unauthorized', 'You must be signed in.');
+  if (!session?.userId || !session.organizationId)
+    return problem(401, 'Unauthorized', 'You must be signed in.');
   let body: z.infer<typeof patchSchema>;
   try {
     body = patchSchema.parse(await req.json());
@@ -67,7 +76,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   await dbConnect();
   const task = await Task.findById(params.id);
   if (!task) return problem(404, 'Not Found', 'Task not found');
-  if (!canWriteTask(session, task)) return problem(403, 'Forbidden', 'You cannot edit this task');
+  if (
+    !canWriteTask(
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+      task
+    )
+  )
+    return problem(403, 'Forbidden', 'You cannot edit this task');
+  if (body.ownerId) {
+    const owner = await User.findOne({
+      _id: new Types.ObjectId(body.ownerId),
+      organizationId: new Types.ObjectId(session.organizationId),
+    });
+    if (!owner) {
+      return problem(400, 'Invalid request', 'Owner must be in your organization');
+    }
+  }
   Object.assign(task, {
     ...body,
     ownerId: body.ownerId ? new Types.ObjectId(body.ownerId) : task.ownerId,

@@ -6,12 +6,14 @@ import User from '@/models/User';
 interface AuthUser {
   id: string;
   email: string;
+  organizationId?: string;
   teamId?: string;
 }
 
 interface ExtendedToken {
   userId?: string;
   email?: string;
+  organizationId?: string;
   teamId?: string;
   [key: string]: unknown;
 }
@@ -19,6 +21,7 @@ interface ExtendedToken {
 interface ExtendedSession {
   userId?: string;
   email?: string;
+  organizationId?: string;
   teamId?: string;
   [key: string]: unknown;
 }
@@ -40,6 +43,7 @@ export const authOptions = {
         return {
           id: user._id.toString(),
           email: user.email,
+          organizationId: user.organizationId?.toString(),
           teamId: user.teamId?.toString(),
         };
       },
@@ -50,6 +54,7 @@ export const authOptions = {
       if (user) {
         token.userId = user.id;
         token.email = user.email;
+        token.organizationId = user.organizationId;
         token.teamId = user.teamId;
       }
       return token;
@@ -57,6 +62,7 @@ export const authOptions = {
     async session({ session, token }: { session: ExtendedSession; token: ExtendedToken }) {
       session.userId = token.userId;
       session.email = token.email;
+      session.organizationId = token.organizationId;
       session.teamId = token.teamId;
       return session;
     },

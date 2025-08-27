@@ -41,7 +41,8 @@ vi.mock('@/models/ActivityLog', () => ({
 }));
 
 let currentUserId = '';
-vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => ({ userId: currentUserId })) }));
+const orgId = new Types.ObjectId();
+vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => ({ userId: currentUserId, organizationId: orgId.toString() })) }));
 
 vi.mock('@/lib/ws', () => ({ emitTaskTransition: vi.fn() }));
 vi.mock('@/lib/notify', () => ({
@@ -67,6 +68,7 @@ describe('task flow with steps', () => {
       title: 'Test',
       creatorId: u1,
       ownerId: u1,
+      organizationId: orgId,
       status: 'FLOW_IN_PROGRESS',
       steps: [
         { ownerId: u1, status: 'OPEN' },
@@ -129,6 +131,7 @@ describe('simple task status transitions', () => {
       title: 'Test',
       creatorId: u1,
       ownerId: u1,
+      organizationId: orgId,
       status: 'OPEN',
       steps: [],
       currentStepIndex: 0,

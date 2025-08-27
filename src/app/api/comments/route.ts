@@ -26,7 +26,7 @@ const listQuerySchema = z.object({
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.userId) {
+  if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   let body: z.infer<typeof postSchema>;
@@ -37,7 +37,13 @@ export async function POST(req: Request) {
   }
   await dbConnect();
   const task = await Task.findById(body.taskId);
-  if (!task || !canReadTask(session, task)) {
+  if (
+    !task ||
+    !canReadTask(
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+      task
+    )
+  ) {
     return problem(404, 'Not Found', 'Task not found');
   }
   const mentionEmails = parseMentions(body.body);
@@ -80,7 +86,7 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   const session = await auth();
-  if (!session?.userId) {
+  if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   const url = new URL(req.url);
@@ -96,7 +102,13 @@ export async function GET(req: Request) {
   }
   await dbConnect();
   const task = await Task.findById(query.taskId);
-  if (!task || !canReadTask(session, task)) {
+  if (
+    !task ||
+    !canReadTask(
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+      task
+    )
+  ) {
     return problem(404, 'Not Found', 'Task not found');
   }
   const page = query.page ?? 1;

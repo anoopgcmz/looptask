@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
+import User from '@/models/User';
 import { auth } from '@/lib/auth';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
 import { scheduleTaskJobs } from '@/lib/agenda';
@@ -44,7 +45,7 @@ function computeParticipants(data: { creatorId: string; ownerId: string; helpers
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.userId) {
+  if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   let body: z.infer<typeof createTaskSchema>;
@@ -67,6 +68,14 @@ export async function POST(req: Request) {
     return problem(400, 'Invalid request', 'ownerId is required');
   }
   await dbConnect();
+  // ensure owner is from same organization
+  const owner = await User.findOne({
+    _id: new Types.ObjectId(ownerId),
+    organizationId: new Types.ObjectId(session.organizationId),
+  });
+  if (!owner) {
+    return problem(400, 'Invalid request', 'Owner must be in your organization');
+  }
   const task = await Task.create({
     title: body.title,
     description: body.description,
@@ -74,6 +83,7 @@ export async function POST(req: Request) {
     ownerId: new Types.ObjectId(ownerId),
     helpers: body.helpers?.map((id) => new Types.ObjectId(id)),
     mentions: body.mentions?.map((id) => new Types.ObjectId(id)),
+    organizationId: new Types.ObjectId(session.organizationId),
     teamId: body.teamId ? new Types.ObjectId(body.teamId) : undefined,
     status,
     priority: body.priority ?? 'MEDIUM',
@@ -142,6 +152,9 @@ export async function GET(req: Request) {
   if (!session?.userId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
+  if (!session.organizationId) {
+    return problem(401, 'Unauthorized', 'You must be signed in.');
+  }
   const url = new URL(req.url);
   const raw: Record<string, string | string[]> = {};
   url.searchParams.forEach((value, key) => {
@@ -160,7 +173,7 @@ export async function GET(req: Request) {
     return problem(400, 'Invalid request', e.message);
   }
   await dbConnect();
-  const filter: any = {};
+  const filter: any = { organizationId: new Types.ObjectId(session.organizationId) };
   if (query.ownerId) filter.ownerId = new Types.ObjectId(query.ownerId);
   if (query.creatorId) filter.creatorId = new Types.ObjectId(query.creatorId);
   if (query.status && query.status.length) filter.status = { $in: query.status };
