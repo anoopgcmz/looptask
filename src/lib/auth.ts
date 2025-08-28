@@ -1,5 +1,8 @@
 import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
+import type { NextAuthOptions } from 'next-auth';
+import { getServerSession } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { signIn as signInBase } from 'next-auth/react';
 import { sha256 } from '@/lib/hash';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
@@ -12,28 +15,10 @@ interface AuthUser {
   isAdmin?: boolean;
 }
 
-interface ExtendedToken {
-  userId?: string;
-  email?: string;
-  organizationId?: string;
-  teamId?: string;
-  isAdmin?: boolean;
-  [key: string]: unknown;
-}
-
-interface ExtendedSession {
-  userId?: string;
-  email?: string;
-  organizationId?: string;
-  teamId?: string;
-  isAdmin?: boolean;
-  [key: string]: unknown;
-}
-
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: 'Credentials',
       credentials: {
         username: { label: 'Username', type: 'text' },
@@ -57,7 +42,7 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: { token: ExtendedToken; user?: AuthUser }) {
+    async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
         token.email = user.email;
@@ -67,7 +52,7 @@ export const authOptions = {
       }
       return token;
     },
-    async session({ session, token }: { session: ExtendedSession; token: ExtendedToken }) {
+    async session({ session, token }) {
       session.userId = token.userId;
       session.email = token.email;
       session.organizationId = token.organizationId;
@@ -78,5 +63,9 @@ export const authOptions = {
   },
 };
 
-export const { handlers, auth, signIn } = NextAuth(authOptions);
-export const { GET, POST } = handlers;
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
+
+export const auth = () => getServerSession(authOptions);
+
+export const signIn = signInBase;

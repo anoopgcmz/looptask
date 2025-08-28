@@ -49,5 +49,6 @@ export async function POST(req: Request) {
     },
     { upsert: true }
   );
-  return signIn('credentials', { email, otpVerified: true, redirectTo: '/tasks' });
-}
+    await signIn('credentials', { email, otpVerified: true, callbackUrl: '/tasks', redirect: false });
+    return NextResponse.redirect(new URL('/tasks', req.url));
+  }
