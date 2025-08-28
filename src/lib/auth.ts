@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { createHash } from 'crypto';
+import { sha256 } from '@/lib/hash';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 
@@ -44,7 +44,7 @@ export const authOptions = {
         await dbConnect();
         const user = await User.findOne({ username: credentials.username });
         if (!user) return null;
-        const hashed = createHash('sha256').update(credentials.password).digest('hex');
+        const hashed = await sha256(credentials.password);
         if (user.password !== hashed) return null;
         return {
           id: user._id.toString(),

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createHash } from 'crypto';
 import { verifyAndConsumeOtp } from '@/lib/otp';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { signIn } from '@/lib/auth';
+import { sha256 } from '@/lib/hash';
 
 export async function POST(req: Request) {
   const { email, code } = await req.json();
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
         name: email.split('@')[0],
         email,
         username: email,
-        password: createHash('sha256').update('changeme').digest('hex'),
+        password: await sha256('changeme'),
       },
     },
     { upsert: true }
