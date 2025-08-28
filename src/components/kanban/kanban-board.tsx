@@ -12,7 +12,6 @@ import {
   useDroppable,
   DragOverlay,
 } from '@dnd-kit/core';
-import { SortableContext } from '@dnd-kit/sortable';
 import { motion } from 'framer-motion';
 import { springTransition } from '@/lib/motion';
 
@@ -82,13 +81,11 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
               >
                 {col.title}
               </motion.h2>
-              <SortableContext items={columnTasks.map((t) => t.id)}>
-                <div className="p-3 space-y-2 flex-1 overflow-auto">
-                  {columnTasks.map((t) => (
-                    <TaskCard key={t.id} task={t} />
-                  ))}
-                </div>
-              </SortableContext>
+              <div className="p-3 space-y-2 flex-1 overflow-auto">
+                {columnTasks.map((t) => (
+                  <TaskCard key={t.id} task={t} />
+                ))}
+              </div>
             </motion.div>
           );
         })}
