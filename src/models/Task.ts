@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import { Schema, model, models, type Document, Types } from 'mongoose';
 
 export type TaskStatus =
   | 'OPEN'
