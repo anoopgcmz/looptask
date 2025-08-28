@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Seed data
+
+Run `npm run seed` to populate the database with sample accounts. The script creates three regular users (`user1`, `user2`, `user3`) whose passwords match their usernames and an admin user (`admin`) with password `admin`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

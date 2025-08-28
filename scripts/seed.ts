@@ -15,28 +15,28 @@ async function run() {
 
   const org = await Organization.create({ name: 'Acme' });
   const team = await Team.create({ name: 'Accounts' });
-  const [acc, sr, chief, _admin] = await User.create([
+  const [user1, user2, user3, _admin] = await User.create([
     {
-      name: 'Acc',
-      email: 'acc@ex.com',
-      username: 'acc',
-      password: 'accpass',
+      name: 'User One',
+      email: 'user1@ex.com',
+      username: 'user1',
+      password: 'user1',
       organizationId: org._id,
       teamId: team._id,
     },
     {
-      name: 'Sr',
-      email: 'sr@ex.com',
-      username: 'sr',
-      password: 'srpass',
+      name: 'User Two',
+      email: 'user2@ex.com',
+      username: 'user2',
+      password: 'user2',
       organizationId: org._id,
       teamId: team._id,
     },
     {
-      name: 'Chief',
-      email: 'chief@ex.com',
-      username: 'chief',
-      password: 'chiefpass',
+      name: 'User Three',
+      email: 'user3@ex.com',
+      username: 'user3',
+      password: 'user3',
       organizationId: org._id,
       teamId: team._id,
     },
@@ -44,7 +44,7 @@ async function run() {
       name: 'Admin',
       email: 'admin@ex.com',
       username: 'admin',
-      password: 'adminpass',
+      password: 'admin',
       organizationId: org._id,
       teamId: team._id,
       isAdmin: true,
@@ -54,8 +54,8 @@ async function run() {
   const simpleDue = new Date(Date.now() + 2 * 60 * 60 * 1000);
   await Task.create({
     title: 'Simple task',
-    creatorId: acc._id,
-    ownerId: acc._id,
+    creatorId: user1._id,
+    ownerId: user1._id,
     organizationId: org._id,
     teamId: team._id,
     dueAt: simpleDue,
@@ -63,15 +63,15 @@ async function run() {
 
   await Task.create({
     title: 'Flow task',
-    creatorId: acc._id,
-    ownerId: acc._id,
+    creatorId: user1._id,
+    ownerId: user1._id,
     organizationId: org._id,
     teamId: team._id,
     status: 'FLOW_IN_PROGRESS',
     steps: [
-      { ownerId: acc._id, status: 'OPEN' },
-      { ownerId: sr._id, status: 'OPEN' },
-      { ownerId: chief._id, status: 'OPEN' }
+      { ownerId: user1._id, status: 'OPEN' },
+      { ownerId: user2._id, status: 'OPEN' },
+      { ownerId: user3._id, status: 'OPEN' }
     ],
     currentStepIndex: 0,
   });
