@@ -1,5 +1,5 @@
 import { Schema, model, models, type Document, type Types } from 'mongoose';
-import { createHash } from 'crypto';
+import { sha256 } from '@/lib/hash';
 
 export interface IUser extends Document {
   name: string;
@@ -40,12 +40,11 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (this.isModified('password')) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    (this as any).password = createHash('sha256').update((this as any).password).digest('hex');
+    (this as any).password = await sha256((this as any).password);
   }
-  next();
 });
 
 export default models.User || model<IUser>('User', userSchema);
