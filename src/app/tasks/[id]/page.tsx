@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { StepsProgress } from '@/components/steps-progress';
 import useTaskChannel from '@/hooks/useTaskChannel';
 
@@ -14,13 +15,32 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   const [status, setStatus] = useState<
     'OPEN' | 'IN_PROGRESS' | 'IN_REVIEW' | 'REVISIONS' | 'DONE'
   >('OPEN');
+  const [steps, setSteps] = useState<
+    { assignee: string; description: string; due: string }[]
+  >([]);
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch(`/api/comments?taskId=${id}`);
-      if (res.ok) {
-        const data = await res.json();
+      const [commentsRes, taskRes] = await Promise.all([
+        fetch(`/api/comments?taskId=${id}`),
+        fetch(`/api/tasks/${id}`),
+      ]);
+      if (commentsRes.ok) {
+        const data = await commentsRes.json();
         setComments(data);
+      }
+      if (taskRes.ok) {
+        const t = await taskRes.json();
+        setStatus(t.status);
+        setSteps(
+          (t.steps || []).map((s: any) => ({
+            assignee: s.ownerId,
+            description: s.description || '',
+            due: s.dueAt ? s.dueAt.substring(0, 10) : '',
+          }))
+        );
+        setCurrentStep(t.currentStepIndex || 0);
       }
     };
     load();
@@ -42,6 +62,33 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     if (res.ok) {
       setBody('');
     }
+  };
+
+  const addStep = () =>
+    setSteps((s) => [...s, { assignee: '', description: '', due: '' }]);
+  const updateStep = (
+    index: number,
+    field: 'assignee' | 'description' | 'due',
+    value: string
+  ) => {
+    setSteps((s) => s.map((step, i) => (i === index ? { ...step, [field]: value } : step)));
+  };
+  const removeStep = (index: number) => {
+    setSteps((s) => s.filter((_, i) => i !== index));
+  };
+  const saveSteps = async () => {
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        steps: steps.map((s) => ({
+          ownerId: s.assignee,
+          description: s.description,
+          dueAt: s.due || undefined,
+        })),
+        currentStepIndex: 0,
+      }),
+    });
   };
 
   return (
@@ -83,7 +130,9 @@ export default function TaskPage({ params }: { params: { id: string } }) {
             </Button>
           </div>
         </header>
-        <StepsProgress current={1} total={3} />
+        {steps.length > 0 && (
+          <StepsProgress current={currentStep + 1} total={steps.length} />
+        )}
         <section>
           <h2 className="font-medium mb-2">Description</h2>
           <p className="text-sm text-gray-600">Task description...</p>
@@ -107,6 +156,48 @@ export default function TaskPage({ params }: { params: { id: string } }) {
             />
             <Button type="submit">Send</Button>
           </form>
+        </section>
+        <section>
+          <h2 className="font-medium mb-2">Steps</h2>
+          <div className="space-y-4">
+            {steps.map((step, idx) => (
+              <div
+                key={idx}
+                className="rounded border border-gray-200 p-4 space-y-2"
+              >
+                <Input
+                  placeholder="Step assignee ID"
+                  value={step.assignee}
+                  onChange={(e) => updateStep(idx, 'assignee', e.target.value)}
+                />
+                <Textarea
+                  placeholder="Step description"
+                  value={step.description}
+                  onChange={(e) => updateStep(idx, 'description', e.target.value)}
+                />
+                <Input
+                  type="date"
+                  value={step.due}
+                  onChange={(e) => updateStep(idx, 'due', e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => removeStep(idx)}
+                >
+                  Remove Step
+                </Button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={addStep}>
+                Add Step
+              </Button>
+              <Button type="button" onClick={saveSteps}>
+                Save Steps
+              </Button>
+            </div>
+          </div>
         </section>
       </main>
       <aside className="w-60 border-l p-4 space-y-4">
