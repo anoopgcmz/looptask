@@ -92,6 +92,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return problem(400, 'Invalid request', 'Owner must be in your organization');
     }
   }
+  if (body.steps) {
+    for (const s of body.steps) {
+      const stepOwner = await User.findOne({
+        _id: new Types.ObjectId(s.ownerId),
+        organizationId: new Types.ObjectId(session.organizationId),
+      });
+      if (!stepOwner) {
+        return problem(400, 'Invalid request', 'Step owner must be in your organization');
+      }
+    }
+  }
   Object.assign(task, {
     ...body,
     ownerId: body.ownerId ? new Types.ObjectId(body.ownerId) : task.ownerId,
