@@ -76,6 +76,16 @@ export async function POST(req: Request) {
   if (!owner) {
     return problem(400, 'Invalid request', 'Owner must be in your organization');
   }
+  // ensure each step owner is from same organization
+  for (const s of steps) {
+    const stepOwner = await User.findOne({
+      _id: new Types.ObjectId(s.ownerId),
+      organizationId: new Types.ObjectId(session.organizationId),
+    });
+    if (!stepOwner) {
+      return problem(400, 'Invalid request', 'Step owner must be in your organization');
+    }
+  }
   const task = await Task.create({
     title: body.title,
     description: body.description,
