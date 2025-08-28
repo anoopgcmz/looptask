@@ -19,9 +19,41 @@ export default function CreateTaskModal({ open, onClose, onCreate }: CreateTaskM
     assignee: '',
     due: '',
   });
+  const [steps, setSteps] = useState<
+    { assignee: string; description: string; due: string }[]
+  >([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const addStep = () =>
+    setSteps((s) => [...s, { assignee: '', description: '', due: '' }]);
+  const updateStep = (
+    index: number,
+    field: 'assignee' | 'description' | 'due',
+    value: string
+  ) => {
+    setSteps((s) => s.map((step, i) => (i === index ? { ...step, [field]: value } : step)));
+  };
+  const removeStep = (index: number) => {
+    setSteps((s) => s.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: form.title,
+        description: form.description,
+        ownerId: form.assignee || undefined,
+        priority: form.priority.toUpperCase(),
+        dueAt: form.due || undefined,
+        steps: steps.map((s) => ({
+          ownerId: s.assignee,
+          description: s.description,
+          dueAt: s.due || undefined,
+        })),
+      }),
+    });
     onCreate({
       title: form.title,
       assignee: form.assignee,
@@ -31,6 +63,7 @@ export default function CreateTaskModal({ open, onClose, onCreate }: CreateTaskM
       due: form.due,
     });
     setForm({ title: '', description: '', priority: 'Low', assignee: '', due: '' });
+    setSteps([]);
     onClose();
   };
 
@@ -80,6 +113,40 @@ export default function CreateTaskModal({ open, onClose, onCreate }: CreateTaskM
               value={form.due}
               onChange={(e) => setForm({ ...form, due: e.target.value })}
             />
+          </div>
+          <div className="space-y-4">
+            {steps.map((step, idx) => (
+              <div
+                key={idx}
+                className="rounded border border-[var(--color-border)] p-4 space-y-2"
+              >
+                <Input
+                  placeholder="Step assignee ID"
+                  value={step.assignee}
+                  onChange={(e) => updateStep(idx, 'assignee', e.target.value)}
+                />
+                <Textarea
+                  placeholder="Step description"
+                  value={step.description}
+                  onChange={(e) => updateStep(idx, 'description', e.target.value)}
+                />
+                <Input
+                  type="date"
+                  value={step.due}
+                  onChange={(e) => updateStep(idx, 'due', e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => removeStep(idx)}
+                >
+                  Remove Step
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline" onClick={addStep}>
+              Add Step
+            </Button>
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
