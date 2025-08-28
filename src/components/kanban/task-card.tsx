@@ -1,5 +1,9 @@
 'use client';
 import { useMemo } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { motion } from 'framer-motion';
+import { springTransition } from '@/lib/motion';
 
 export interface Task {
   id: string;
@@ -13,9 +17,10 @@ export interface Task {
 
 interface TaskCardProps {
   task: Task;
+  dragOverlay?: boolean;
 }
 
-export default function TaskCard({ task }: TaskCardProps) {
+export default function TaskCard({ task, dragOverlay = false }: TaskCardProps) {
   const priorityColor = useMemo(() => {
     switch (task.priority) {
       case 'High':
@@ -38,11 +43,47 @@ export default function TaskCard({ task }: TaskCardProps) {
     }
   }, [task.status]);
 
+  if (dragOverlay) {
+    return (
+      <motion.div
+        className="bg-[var(--color-surface)] rounded-md border border-[var(--color-border)] p-3 shadow-sm"
+        transition={springTransition}
+      >
+        <div className="text-sm font-medium text-[var(--color-text)]">{task.title}</div>
+        <div className="mt-2 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+          <span>{task.assignee}</span>
+          <span
+            className="px-2 py-0.5 rounded-full text-white"
+            style={{ backgroundColor: priorityColor }}
+          >
+            {task.priority}
+          </span>
+          <span
+            className="px-2 py-0.5 rounded-full text-white"
+            style={{ backgroundColor: statusColor }}
+          >
+            {task.status === 'inprogress' ? 'In Progress' : task.status === 'todo' ? 'To Do' : 'Done'}
+          </span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: task.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  } as React.CSSProperties;
+
   return (
-    <div
-      draggable
-      onDragStart={(e) => e.dataTransfer.setData('text/plain', task.id)}
-      className="bg-[var(--color-surface)] rounded-md border border-[var(--color-border)] p-3 shadow-sm hover:shadow transition"
+    <motion.div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-[var(--color-surface)] rounded-md border border-[var(--color-border)] p-3 shadow-sm hover:shadow transition ${isDragging ? 'opacity-50' : ''}`}
+      {...attributes}
+      {...listeners}
+      transition={springTransition}
     >
       <div className="text-sm font-medium text-[var(--color-text)]">{task.title}</div>
       <div className="mt-2 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
@@ -60,6 +101,6 @@ export default function TaskCard({ task }: TaskCardProps) {
           {task.status === 'inprogress' ? 'In Progress' : task.status === 'todo' ? 'To Do' : 'Done'}
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 }
