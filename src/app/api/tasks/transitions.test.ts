@@ -71,9 +71,9 @@ describe('task flow with steps', () => {
       organizationId: orgId,
       status: 'FLOW_IN_PROGRESS',
       steps: [
-        { ownerId: u1, status: 'OPEN' },
-        { ownerId: u2, status: 'OPEN' },
-        { ownerId: u3, status: 'OPEN' },
+        { title: 'Step 1', ownerId: u1, status: 'OPEN' },
+        { title: 'Step 2', ownerId: u2, status: 'OPEN' },
+        { title: 'Step 3', ownerId: u3, status: 'OPEN' },
       ],
       currentStepIndex: 0,
     });

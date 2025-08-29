@@ -24,6 +24,7 @@ const patchSchema = z.object({
   dueAt: z.coerce.date().optional(),
   steps: z.array(
     z.object({
+      title: z.string(),
       ownerId: z.string(),
       description: z.string().optional(),
       dueAt: z.coerce.date().optional(),
@@ -111,6 +112,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     teamId: body.teamId ? new Types.ObjectId(body.teamId) : task.teamId,
     steps: body.steps
       ? body.steps.map((s) => ({
+          title: s.title,
           ownerId: new Types.ObjectId(s.ownerId),
           description: s.description,
           dueAt: s.dueAt,
