@@ -5,7 +5,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { StepsProgress } from '@/components/steps-progress';
 import { z } from 'zod';
 
 const simpleSchema = z.object({
@@ -13,11 +12,6 @@ const simpleSchema = z.object({
   owner: z.string().min(1, 'Owner is required'),
 });
 
-const flowSchemas = [
-  z.object({ owner: z.string().min(1, 'Owner is required') }),
-  z.object({ description: z.string().min(1, 'Description is required') }),
-  z.object({ due: z.string().min(1, 'Due date is required') }),
-];
 
 export default function NewTaskPage() {
   const router = useRouter();
@@ -63,64 +57,100 @@ export default function NewTaskPage() {
     }
   };
 
-  const [step, setStep] = useState(1);
-  const [flow, setFlow] = useState({ owner: '', description: '', due: '' });
+  const [flowTitle, setFlowTitle] = useState('');
+  const [steps, setSteps] = useState([
+    { title: '', description: '', ownerId: '', due: '' },
+  ]);
   const [flowError, setFlowError] = useState<string | null>(null);
 
-  const next = () => {
-    const schema = flowSchemas[step - 1];
-    const key = ['owner', 'description', 'due'][step - 1] as 'owner' | 'description' | 'due';
-    const res = schema.safeParse({ [key]: flow[key] });
-    if (!res.success) {
-      setFlowError(res.error.errors[0].message);
-      return;
-    }
-    setFlowError(null);
-    if (step < 3) setStep(step + 1);
-    else alert('Flow complete');
+  const addStep = () =>
+    setSteps([...steps, { title: '', description: '', ownerId: '', due: '' }]);
+
+  const updateStep = (
+    index: number,
+    key: 'title' | 'description' | 'ownerId' | 'due',
+    value: string,
+  ) => {
+    setSteps((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, [key]: value } : s)),
+    );
   };
 
-  const back = () => setStep((s) => Math.max(1, s - 1));
+  const submitFlow = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFlowError(null);
+    try {
+      const body = {
+        title: flowTitle,
+        steps: steps.map((s) => ({
+          title: s.title,
+          description: s.description,
+          ownerId: s.ownerId,
+          dueAt: s.due || undefined,
+        })),
+      };
+      const resp = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        setFlowError(err.detail || 'Failed to create task');
+        return;
+      }
+      const task = await resp.json();
+      router.push(`/tasks/${task._id}`);
+    } catch (err: any) {
+      setFlowError(err.message || 'Failed to create task');
+    }
+  };
 
   const flowContent = (
-    <div>
-      <StepsProgress current={step} total={3} />
-      {step === 1 && (
-        <div className="space-y-2">
+    <form onSubmit={submitFlow} className="space-y-4">
+      <Input
+        placeholder="Title"
+        value={flowTitle}
+        onChange={(e) => setFlowTitle(e.target.value)}
+      />
+      {steps.map((step, i) => (
+        <div key={i} className="border p-4 rounded space-y-2">
+          <Input
+            placeholder="Task Name"
+            value={step.title}
+            onChange={(e) => updateStep(i, 'title', e.target.value)}
+          />
+          <Textarea
+            placeholder="Description"
+            value={step.description}
+            onChange={(e) => updateStep(i, 'description', e.target.value)}
+          />
           <select
-            value={flow.owner}
-            onChange={(e) => setFlow({ ...flow, owner: e.target.value })}
+            value={step.ownerId}
+            onChange={(e) => updateStep(i, 'ownerId', e.target.value)}
             className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
           >
-            <option value="">Owner</option>
+            <option value="">Assignee</option>
             {users.map((u) => (
               <option key={u._id} value={u._id}>
                 {u.name}
               </option>
             ))}
           </select>
+          <Input
+            type="date"
+            value={step.due}
+            onChange={(e) => updateStep(i, 'due', e.target.value)}
+          />
         </div>
-      )}
-      {step === 2 && (
-        <Textarea
-          placeholder="Description"
-          value={flow.description}
-          onChange={(e) => setFlow({ ...flow, description: e.target.value })}
-        />
-      )}
-      {step === 3 && (
-        <Input
-          type="date"
-          value={flow.due}
-          onChange={(e) => setFlow({ ...flow, due: e.target.value })}
-        />
-      )}
-      {flowError && <p className="text-red-600 text-sm mt-2">{flowError}</p>}
-      <div className="flex gap-2 mt-4">
-        {step > 1 && <Button type="button" variant="outline" onClick={back}>Back</Button>}
-        <Button type="button" onClick={next}>{step < 3 ? 'Next' : 'Finish'}</Button>
-      </div>
-    </div>
+      ))}
+      <Button type="button" onClick={addStep}>
+        Create Flow
+      </Button>
+      {flowError && <p className="text-red-600 text-sm">{flowError}</p>}
+      <Button type="submit">Create Task</Button>
+    </form>
   );
 
   return (
