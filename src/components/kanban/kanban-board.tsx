@@ -81,7 +81,7 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
-        modifiers={isKeyboard ? undefined : [restrictToVerticalAxis]}
+        modifiers={isKeyboard ? undefined : [restrictToVerticalAxis()]}
       >
       <div className="flex gap-4 h-full">
         {columns.map((col) => {
