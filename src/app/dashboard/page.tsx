@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { SessionProvider, useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
@@ -69,9 +70,14 @@ function DashboardInner() {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 4 }}
-                  className="rounded border p-2"
+                  className="rounded border hover:bg-gray-50"
                 >
-                  {t.title}
+                  <Link
+                    href={`/tasks/${t._id}`}
+                    className="block p-2"
+                  >
+                    {t.title}
+                  </Link>
                 </motion.li>
               ))}
             </ul>
