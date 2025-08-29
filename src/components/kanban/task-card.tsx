@@ -46,13 +46,14 @@ export default function TaskCard({ task, dragOverlay = false }: TaskCardProps) {
     }
   }, [task.status]);
 
+  const sortable = useSortable({ id: task.id });
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = sortable ?? {};
 
   const style: MotionStyle | undefined = transform
     ? { x: transform.x, y: transform.y }
