@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Tabs } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -87,33 +87,31 @@ export default function NewTaskPage() {
 
   return (
     <div className="p-4">
-      <Tabs
-        items={[
-          {
-            value: 'simple',
-            label: 'Simple',
-            content: (
-              <form onSubmit={submitSimple} className="space-y-2">
-                <Input
-                  placeholder="Title"
-                  value={simple.title}
-                  onChange={(e) => setSimple({ ...simple, title: e.target.value })}
-                />
-                <Input
-                  placeholder="Owner"
-                  value={simple.owner}
-                  onChange={(e) => setSimple({ ...simple, owner: e.target.value })}
-                />
-                {simpleError && (
-                  <p className="text-red-600 text-sm">{simpleError}</p>
-                )}
-                <Button type="submit">Create</Button>
-              </form>
-            ),
-          },
-          { value: 'flow', label: 'Flow', content: flowContent },
-        ]}
-      />
+      <Tabs defaultValue="simple">
+        <TabsList className="mb-4">
+          <TabsTrigger value="simple">Simple</TabsTrigger>
+          <TabsTrigger value="flow">Flow</TabsTrigger>
+        </TabsList>
+        <TabsContent value="simple">
+          <form onSubmit={submitSimple} className="space-y-2">
+            <Input
+              placeholder="Title"
+              value={simple.title}
+              onChange={(e) => setSimple({ ...simple, title: e.target.value })}
+            />
+            <Input
+              placeholder="Owner"
+              value={simple.owner}
+              onChange={(e) => setSimple({ ...simple, owner: e.target.value })}
+            />
+            {simpleError && (
+              <p className="text-red-600 text-sm">{simpleError}</p>
+            )}
+            <Button type="submit">Create</Button>
+          </form>
+        </TabsContent>
+        <TabsContent value="flow">{flowContent}</TabsContent>
+      </Tabs>
     </div>
   );
 }

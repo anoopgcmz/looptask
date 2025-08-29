@@ -1,36 +1,102 @@
-'use client';
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+'use client'
 
-export interface TabItem {
-  value: string;
-  label: string;
-  content: React.ReactNode;
-}
+import * as React from 'react'
+import * as TabsPrimitive from '@radix-ui/react-tabs'
+import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 
-export function Tabs({ items, defaultValue }: { items: TabItem[]; defaultValue?: string }) {
-  const [value, setValue] = React.useState(defaultValue || items[0]?.value);
-  const active = items.find((i) => i.value === value);
+const TabsContext = React.createContext<{ value: string }>({ value: '' })
+
+function Tabs({ defaultValue, children, ...props }: TabsPrimitive.TabsProps) {
+  const [value, setValue] = React.useState(defaultValue)
   return (
-    <div>
-      <div className="flex border-b mb-4">
-        {items.map((i) => (
-          <button
-            key={i.value}
-            type="button"
-            className={cn(
-              'px-3 py-2 text-sm',
-              value === i.value
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-500'
-            )}
-            onClick={() => setValue(i.value)}
-          >
-            {i.label}
-          </button>
-        ))}
-      </div>
-      <div>{active?.content}</div>
-    </div>
-  );
+    <TabsContext.Provider value={{ value: value as string }}>
+      <TabsPrimitive.Root
+        value={value}
+        onValueChange={setValue}
+        {...props}
+      >
+        {children}
+      </TabsPrimitive.Root>
+    </TabsContext.Provider>
+  )
 }
+
+const TabsList = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.List>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.List
+    ref={ref}
+    className={cn('relative flex border-b', className)}
+    {...props}
+  />
+))
+TabsList.displayName = TabsPrimitive.List.displayName
+
+const TabsTrigger = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
+>(({ className, children, value, ...props }, ref) => {
+  const { value: current } = React.useContext(TabsContext)
+  const active = current === value
+  return (
+    <TabsPrimitive.Trigger
+      ref={ref}
+      value={value}
+      className={cn(
+        'relative px-3 py-2 text-sm text-muted-foreground transition-colors group',
+        'focus:outline-none',
+        'data-[state=active]:text-primary',
+        className
+      )}
+      {...props}
+    >
+      {children}
+      {active && (
+        <motion.span
+          layoutId="tab-indicator"
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-current"
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
+      <span className="pointer-events-none absolute left-1/2 bottom-0 h-0.5 w-0 -translate-x-1/2 bg-current transition-[width] duration-300 ease-out group-hover:w-full group-data-[state=active]:opacity-0" />
+    </TabsPrimitive.Trigger>
+  )
+})
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
+
+const TabsContent = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
+>(({ className, children, value, ...props }, ref) => {
+  const { value: current } = React.useContext(TabsContext)
+  const active = current === value
+  return (
+    <TabsPrimitive.Content
+      ref={ref}
+      value={value}
+      forceMount
+      className={cn('mt-4', className)}
+      {...props}
+    >
+      <AnimatePresence mode="popLayout">
+        {active && (
+          <motion.div
+            key={value}
+            layout
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </TabsPrimitive.Content>
+  )
+})
+TabsContent.displayName = TabsPrimitive.Content.displayName
+
+export { Tabs, TabsList, TabsTrigger, TabsContent }
