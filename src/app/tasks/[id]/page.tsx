@@ -1,215 +1,80 @@
 'use client';
+
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { StepsProgress } from '@/components/steps-progress';
 import useTaskChannel from '@/hooks/useTaskChannel';
+
+interface HistoryEvent {
+  id: string;
+  type: 'CREATED' | 'ASSIGNED' | 'ACCEPTED' | 'COMPLETED' | 'REASSIGNED';
+  user: { name: string; avatar?: string };
+  date: string;
+}
+
+const statusLabels: Record<HistoryEvent['type'], string> = {
+  CREATED: 'Created',
+  ASSIGNED: 'Assigned',
+  ACCEPTED: 'Accepted',
+  COMPLETED: 'Completed',
+  REASSIGNED: 'Reassigned',
+};
 
 export default function TaskPage({ params }: { params: { id: string } }) {
   const { id } = params;
-  const [comments, setComments] = useState<any[]>([]);
-  const [body, setBody] = useState('');
-  const [status, setStatus] = useState<
-    'OPEN' | 'IN_PROGRESS' | 'IN_REVIEW' | 'REVISIONS' | 'DONE'
-  >('OPEN');
-  const [steps, setSteps] = useState<
-    { assignee: string; description: string; due: string }[]
-  >([]);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [events, setEvents] = useState<HistoryEvent[]>([]);
 
   useEffect(() => {
     const load = async () => {
-      const [commentsRes, taskRes] = await Promise.all([
-        fetch(`/api/comments?taskId=${id}`),
-        fetch(`/api/tasks/${id}`),
-      ]);
-      if (commentsRes.ok) {
-        const data = await commentsRes.json();
-        setComments(data);
-      }
-      if (taskRes.ok) {
-        const t = await taskRes.json();
-        setStatus(t.status);
-        setSteps(
-          (t.steps || []).map((s: any) => ({
-            assignee: s.ownerId,
-            description: s.description || '',
-            due: s.dueAt ? s.dueAt.substring(0, 10) : '',
-          }))
-        );
-        setCurrentStep(t.currentStepIndex || 0);
+      const res = await fetch(`/api/tasks/${id}/history`);
+      if (res.ok) {
+        const data = await res.json();
+        setEvents(data);
       }
     };
     load();
   }, [id]);
 
   useTaskChannel(id, (data) => {
-    if (data.event === 'comment.created') {
-      setComments((prev) => [data.comment, ...prev]);
+    if (data.event === 'history.created') {
+      setEvents((prev) => [...prev, data.history]);
     }
   });
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch('/api/comments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskId: id, body }),
-    });
-    if (res.ok) {
-      setBody('');
-    }
-  };
-
-  const addStep = () =>
-    setSteps((s) => [...s, { assignee: '', description: '', due: '' }]);
-  const updateStep = (
-    index: number,
-    field: 'assignee' | 'description' | 'due',
-    value: string
-  ) => {
-    setSteps((s) => s.map((step, i) => (i === index ? { ...step, [field]: value } : step)));
-  };
-  const removeStep = (index: number) => {
-    setSteps((s) => s.filter((_, i) => i !== index));
-  };
-  const saveSteps = async () => {
-    await fetch(`/api/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        steps: steps.map((s) => ({
-          ownerId: s.assignee,
-          description: s.description,
-          dueAt: s.due || undefined,
-        })),
-        currentStepIndex: 0,
-      }),
-    });
-  };
-
   return (
-    <div className="flex">
-      <main className="flex-1 p-4 space-y-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold">Task {id}</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-              <Avatar fallback="A" />
-              <span>Alice</span>
-              <Badge>{new Date().toLocaleDateString()}</Badge>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              disabled={status !== 'OPEN'}
-              onClick={() => setStatus('IN_PROGRESS')}
-            >
-              Start
-            </Button>
-            <Button
-              disabled={status !== 'IN_PROGRESS'}
-              onClick={() => setStatus('IN_REVIEW')}
-            >
-              Send for review
-            </Button>
-            <Button
-              disabled={status !== 'IN_REVIEW'}
-              onClick={() => setStatus('REVISIONS')}
-            >
-              Request changes
-            </Button>
-            <Button
-              disabled={!(status === 'IN_REVIEW' || status === 'REVISIONS')}
-              onClick={() => setStatus('DONE')}
-            >
-              Done
-            </Button>
-          </div>
-        </header>
-        {steps.length > 0 && (
-          <StepsProgress current={currentStep + 1} total={steps.length} />
-        )}
-        <section>
-          <h2 className="font-medium mb-2">Description</h2>
-          <p className="text-sm text-gray-600">Task description...</p>
-        </section>
-        <section>
-          <h2 className="font-medium mb-2">Attachments</h2>
-          <p className="text-sm text-gray-600">No attachments</p>
-        </section>
-        <section>
-          <h2 className="font-medium mb-2">Comments</h2>
-          <ul className="flex flex-col gap-1 mb-2">
-            {comments.map((c) => (
-              <li key={c._id}>{c.body}</li>
-            ))}
-          </ul>
-          <form onSubmit={submit} className="flex gap-2">
-            <Input
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Write a comment"
-            />
-            <Button type="submit">Send</Button>
-          </form>
-        </section>
-        <section>
-          <h2 className="font-medium mb-2">Steps</h2>
-          <div className="space-y-4">
-            {steps.map((step, idx) => (
-              <div
-                key={idx}
-                className="rounded border border-gray-200 p-4 space-y-2"
+    <div className="fixed inset-0 flex flex-col bg-white">
+      <header className="border-b p-4">
+        <h1 className="text-lg font-semibold">Task {id} Timeline</h1>
+      </header>
+      <div className="flex-1 overflow-y-auto p-4">
+        <ul className="space-y-4">
+          <AnimatePresence>
+            {events.map((e) => (
+              <motion.li
+                key={e.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                layout
+                className="flex items-center gap-4"
               >
-                <Input
-                  placeholder="Step assignee ID"
-                  value={step.assignee}
-                  onChange={(e) => updateStep(idx, 'assignee', e.target.value)}
+                <Avatar
+                  src={e.user.avatar}
+                  fallback={e.user.name.charAt(0)}
                 />
-                <Textarea
-                  placeholder="Step description"
-                  value={step.description}
-                  onChange={(e) => updateStep(idx, 'description', e.target.value)}
-                />
-                <Input
-                  type="date"
-                  value={step.due}
-                  onChange={(e) => updateStep(idx, 'due', e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => removeStep(idx)}
-                >
-                  Remove Step
-                </Button>
-              </div>
+                <div>
+                  <div className="font-medium">{e.user.name}</div>
+                  <div className="text-sm text-gray-600 flex items-center gap-2">
+                    <Badge>{statusLabels[e.type]}</Badge>
+                    <span>{new Date(e.date).toLocaleString()}</span>
+                  </div>
+                </div>
+              </motion.li>
             ))}
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={addStep}>
-                Add Step
-              </Button>
-              <Button type="button" onClick={saveSteps}>
-                Save Steps
-              </Button>
-            </div>
-          </div>
-        </section>
-      </main>
-      <aside className="w-60 border-l p-4 space-y-4">
-        <div>
-          <h3 className="font-medium mb-2">Followers</h3>
-          <p className="text-sm text-gray-600">None</p>
-        </div>
-        <div>
-          <h3 className="font-medium mb-2">Tags</h3>
-          <p className="text-sm text-gray-600">-</p>
-        </div>
-      </aside>
+          </AnimatePresence>
+        </ul>
+      </div>
     </div>
   );
 }
