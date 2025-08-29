@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,17 +20,35 @@ const flowSchemas = [
 ];
 
 export default function NewTaskPage() {
+  const router = useRouter();
   const [simple, setSimple] = useState({ title: '', owner: '' });
   const [simpleError, setSimpleError] = useState<string | null>(null);
 
-  const submitSimple = (e: React.FormEvent) => {
+  const submitSimple = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = simpleSchema.safeParse(simple);
     if (!res.success) {
       setSimpleError(res.error.errors[0].message);
       return;
     }
-    alert('Submitted simple task');
+    setSimpleError(null);
+    try {
+      const resp = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title: simple.title, ownerId: simple.owner }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        setSimpleError(err.detail || 'Failed to create task');
+        return;
+      }
+      const task = await resp.json();
+      router.push(`/tasks/${task._id}`);
+    } catch (err: any) {
+      setSimpleError(err.message || 'Failed to create task');
+    }
   };
 
   const [step, setStep] = useState(1);
