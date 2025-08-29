@@ -12,10 +12,23 @@ interface Task {
   status: string;
 }
 
+const statusLabels: Record<string, string> = {
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  IN_REVIEW: 'In Review',
+  REVISIONS: 'Revisions',
+  FLOW_IN_PROGRESS: 'Flow In Progress',
+  DONE: 'Done',
+};
+
 const statusTabs = [
-  { value: 'OPEN', label: 'Open' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'DONE', label: 'Done' },
+  { value: 'OPEN', label: 'Open', query: ['OPEN'] },
+  {
+    value: 'IN_PROGRESS',
+    label: 'In Progress',
+    query: ['IN_PROGRESS', 'IN_REVIEW', 'REVISIONS', 'FLOW_IN_PROGRESS'],
+  },
+  { value: 'DONE', label: 'Done', query: ['DONE'] },
 ];
 
 function DashboardInner() {
@@ -30,7 +43,9 @@ function DashboardInner() {
     async function loadTasks() {
       const results = await Promise.all(
         statusTabs.map((s) =>
-          fetch(`/api/tasks?status=${s.value}`)
+          fetch(
+            `/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`
+          )
             .then((res) => res.json())
             .catch(() => [])
         )
@@ -77,6 +92,11 @@ function DashboardInner() {
                     className="block p-2"
                   >
                     {t.title}
+                    {s.query.length > 1 && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        {statusLabels[t.status] ?? t.status}
+                      </span>
+                    )}
                   </Link>
                 </motion.li>
               ))}
