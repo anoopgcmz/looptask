@@ -75,8 +75,8 @@ export default function TaskCard({ task, dragOverlay = false }: TaskCardProps) {
     <motion.div
       ref={dragOverlay ? undefined : setNodeRef}
       layoutId={`task-${task.id}`}
-      style={!dragOverlay ? style : undefined}
-      className={`bg-[var(--color-surface)] rounded-md border border-[var(--color-border)] p-3 shadow-sm transition
+      style={!dragOverlay ? { ...style, outlineColor: statusColor } : undefined}
+      className={`bg-[var(--color-surface)] rounded-md border border-[var(--color-border)] p-3 shadow-sm transition focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
  ${isDragging && !dragOverlay ? 'opacity-50' : ''}`}
       variants={variants}
       initial="initial"
@@ -84,7 +84,8 @@ export default function TaskCard({ task, dragOverlay = false }: TaskCardProps) {
       whileHover={dragOverlay ? undefined : 'hover'}
       whileTap={dragOverlay ? undefined : 'press'}
       transition={prefersReducedMotion ? timing.settle : dragOverlay ? spring.ghost : spring.lift}
-      {...(dragOverlay ? {} : attributes)}
+      aria-grabbed={isDragging}
+      {...(dragOverlay ? {} : { ...attributes, tabIndex: 0 })}
       {...(dragOverlay ? {} : listeners)}
     >
       <div className="text-sm font-medium text-[var(--color-text)]">{task.title}</div>
