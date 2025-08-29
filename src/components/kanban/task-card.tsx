@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { motion, useReducedMotion, type MotionStyle } from 'framer-motion';
-import { springTransition } from '@/lib/motion';
+import { spring, timing } from '@/lib/motion';
 
 export interface Task {
   id: string;
@@ -78,7 +78,7 @@ export default function TaskCard({ task, dragOverlay = false }: TaskCardProps) {
       animate={isDragging ? 'dragging' : 'initial'}
       whileHover={dragOverlay ? undefined : 'hover'}
       whileTap={dragOverlay ? undefined : 'press'}
-      transition={springTransition}
+      transition={prefersReducedMotion ? timing.settle : dragOverlay ? spring.ghost : spring.lift}
       {...(dragOverlay ? {} : attributes)}
       {...(dragOverlay ? {} : listeners)}
     >

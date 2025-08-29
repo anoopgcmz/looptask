@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { spring, timing } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -76,7 +77,7 @@ export default function CreateTaskModal({ open, onClose, onCreate }: CreateTaskM
         <motion.div
           initial={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', duration: 0.3 }}
+          transition={prefersReducedMotion ? timing.settle : spring.ghost}
         >
           <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Create Task</h2>
           <form className="space-y-4" onSubmit={handleSubmit}>

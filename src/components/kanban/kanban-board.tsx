@@ -12,8 +12,8 @@ import {
   useDroppable,
   DragOverlay,
 } from '@dnd-kit/core';
-import { motion } from 'framer-motion';
-import { springTransition } from '@/lib/motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import { spring, timing } from '@/lib/motion';
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -30,6 +30,7 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
   const sensors = useSensors(useSensor(PointerSensor));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<Task['status'] | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -69,15 +70,27 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
               key={col.key}
               ref={setNodeRef}
               className="flex-1 flex flex-col rounded-md bg-[var(--color-surface)] border border-[var(--color-border)]"
-              animate={{ scale: highlight ? 1.02 : 1 }}
+              animate={
+                highlight
+                  ? prefersReducedMotion
+                    ? { opacity: 0.95 }
+                    : { scale: 1.02 }
+                  : { opacity: 1, scale: 1 }
+              }
               style={highlight ? { boxShadow: `0 0 0 2px ${col.color}` } : undefined}
-              transition={springTransition}
+              transition={prefersReducedMotion ? timing.settle : spring.lift}
             >
               <motion.h2
                 className="p-3 text-sm font-medium border-b border-[var(--color-border)]"
                 style={{ backgroundColor: col.color, color: '#fff' }}
-                animate={{ scale: highlight ? 1.05 : 1 }}
-                transition={springTransition}
+                animate={
+                  highlight
+                    ? prefersReducedMotion
+                      ? { opacity: 1 }
+                      : { scale: 1.05 }
+                    : { opacity: 1, scale: 1 }
+                }
+                transition={prefersReducedMotion ? timing.settle : spring.lift}
               >
                 {col.title}
               </motion.h2>
