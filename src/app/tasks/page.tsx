@@ -57,6 +57,15 @@ export default function TasksPage() {
 
   return (
     <div className="p-4">
+      <div className="mb-4 flex items-center">
+        <h1 className="text-xl">Tasks</h1>
+        <Link
+          href="/tasks/new"
+          className="ml-auto bg-blue-500 text-white px-2 py-1"
+        >
+          Create Task
+        </Link>
+      </div>
       <Tabs defaultValue="OPEN">
         <TabsList>
           {statusTabs.map((s) => (
