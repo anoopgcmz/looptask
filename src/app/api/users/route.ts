@@ -1,20 +1,28 @@
 import { NextResponse } from 'next/server';
+import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
+import { auth } from '@/lib/auth';
+import { problem } from '@/lib/http';
 
 export async function GET(req: Request) {
+  const session = await auth();
+  if (!session?.organizationId) {
+    return problem(401, 'Unauthorized', 'You must be signed in.');
+  }
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q') || '';
   await dbConnect();
-  const query = q
-    ? {
-        $or: [
-          { name: { $regex: q, $options: 'i' } },
-          { email: { $regex: q, $options: 'i' } },
-          { username: { $regex: q, $options: 'i' } },
-        ],
-      }
-    : {};
+  const query: any = {
+    organizationId: new Types.ObjectId(session.organizationId),
+  };
+  if (q) {
+    query.$or = [
+      { name: { $regex: q, $options: 'i' } },
+      { email: { $regex: q, $options: 'i' } },
+      { username: { $regex: q, $options: 'i' } },
+    ];
+  }
   const users = await User.find(query).lean();
   return NextResponse.json(users);
 }
