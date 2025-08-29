@@ -12,6 +12,11 @@ import {
   useDroppable,
   DragOverlay,
 } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { motion, useReducedMotion } from 'framer-motion';
 import { spring, timing } from '@/lib/motion';
 
@@ -59,6 +64,7 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      modifiers={[restrictToVerticalAxis]}
     >
       <div className="flex gap-4 h-full">
         {columns.map((col) => {
@@ -95,9 +101,14 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
                 {col.title}
               </motion.h2>
               <div className="p-3 space-y-2 flex-1 overflow-auto">
-                {columnTasks.map((t) => (
-                  <TaskCard key={t.id} task={t} />
-                ))}
+                <SortableContext
+                  items={columnTasks.map((t) => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {columnTasks.map((t) => (
+                    <TaskCard key={t.id} task={t} />
+                  ))}
+                </SortableContext>
               </div>
             </motion.div>
           );
