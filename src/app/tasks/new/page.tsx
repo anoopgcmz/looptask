@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -21,8 +21,20 @@ const flowSchemas = [
 
 export default function NewTaskPage() {
   const router = useRouter();
+  const [users, setUsers] = useState<any[]>([]);
   const [simple, setSimple] = useState({ title: '', owner: '' });
   const [simpleError, setSimpleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch('/api/users', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      }
+    };
+    void load();
+  }, []);
 
   const submitSimple = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,11 +87,18 @@ export default function NewTaskPage() {
       <StepsProgress current={step} total={3} />
       {step === 1 && (
         <div className="space-y-2">
-          <Input
-            placeholder="Owner"
+          <select
             value={flow.owner}
             onChange={(e) => setFlow({ ...flow, owner: e.target.value })}
-          />
+            className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+          >
+            <option value="">Owner</option>
+            {users.map((u) => (
+              <option key={u._id} value={u._id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
         </div>
       )}
       {step === 2 && (
@@ -118,11 +137,18 @@ export default function NewTaskPage() {
               value={simple.title}
               onChange={(e) => setSimple({ ...simple, title: e.target.value })}
             />
-            <Input
-              placeholder="Owner"
+            <select
               value={simple.owner}
               onChange={(e) => setSimple({ ...simple, owner: e.target.value })}
-            />
+              className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+            >
+              <option value="">Owner</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
             {simpleError && (
               <p className="text-red-600 text-sm">{simpleError}</p>
             )}
