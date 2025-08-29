@@ -69,9 +69,9 @@ async function run() {
     teamId: team._id,
     status: 'FLOW_IN_PROGRESS',
     steps: [
-      { ownerId: user1._id, status: 'OPEN' },
-      { ownerId: user2._id, status: 'OPEN' },
-      { ownerId: user3._id, status: 'OPEN' }
+      { title: 'Step 1', ownerId: user1._id, status: 'OPEN' },
+      { title: 'Step 2', ownerId: user2._id, status: 'OPEN' },
+      { title: 'Step 3', ownerId: user3._id, status: 'OPEN' }
     ],
     currentStepIndex: 0,
   });

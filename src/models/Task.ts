@@ -11,6 +11,7 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH';
 export type TaskVisibility = 'PRIVATE' | 'TEAM';
 
 export interface IStep {
+  title: string;
   ownerId: Types.ObjectId;
   description?: string;
   dueAt?: Date;
@@ -41,6 +42,7 @@ export interface ITask extends Document {
 
 const stepSchema = new Schema<IStep>(
   {
+    title: { type: String, required: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     description: String,
     dueAt: Date,

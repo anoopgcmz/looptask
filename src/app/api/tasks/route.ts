@@ -11,6 +11,7 @@ import { scheduleTaskJobs } from '@/lib/agenda';
 import { problem } from '@/lib/http';
 
 const stepSchema = z.object({
+  title: z.string(),
   ownerId: z.string(),
   description: z.string().optional(),
   dueAt: z.coerce.date().optional(),
@@ -32,7 +33,7 @@ const createTaskSchema = z.object({
   steps: z.array(stepSchema).optional(),
 });
 
-function computeParticipants(data: { creatorId: string; ownerId: string; helpers?: string[]; mentions?: string[]; steps?: { ownerId: string }[] }) {
+function computeParticipants(data: { creatorId: string; ownerId: string; helpers?: string[]; mentions?: string[]; steps?: { ownerId: string; title: string }[] }) {
   const ids = new Set<string>();
   ids.add(data.creatorId);
   ids.add(data.ownerId);
@@ -101,6 +102,7 @@ export async function POST(req: Request) {
     visibility: body.visibility ?? 'PRIVATE',
     dueAt: body.dueAt,
     steps: steps.map((s) => ({
+      title: s.title,
       ownerId: new Types.ObjectId(s.ownerId),
       description: s.description,
       dueAt: s.dueAt,
