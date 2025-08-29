@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { Task } from './kanban/task-card';
 
 interface CreateTaskModalProps {
@@ -19,6 +21,7 @@ export default function CreateTaskModal({ open, onClose, onCreate }: CreateTaskM
     assignee: '',
     due: '',
   });
+  const prefersReducedMotion = useReducedMotion();
   const [steps, setSteps] = useState<
     { assignee: string; description: string; due: string }[]
   >([]);
@@ -67,13 +70,16 @@ export default function CreateTaskModal({ open, onClose, onCreate }: CreateTaskM
     onClose();
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="w-full max-w-md rounded-md bg-[var(--color-surface)] p-6 shadow-lg">
-        <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Create Task</h2>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent>
+        <motion.div
+          initial={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', duration: 0.3 }}
+        >
+          <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Create Task</h2>
+          <form className="space-y-4" onSubmit={handleSubmit}>
           <Input
             placeholder="Title"
             value={form.title}
@@ -155,7 +161,8 @@ export default function CreateTaskModal({ open, onClose, onCreate }: CreateTaskM
             <Button type="submit">Create</Button>
           </div>
         </form>
-      </div>
-    </div>
+      </motion.div>
+    </DialogContent>
+  </Dialog>
   );
 }
