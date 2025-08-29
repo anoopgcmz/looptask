@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDraggable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
 import { motion, useReducedMotion, type MotionStyle } from 'framer-motion';
 import { spring, timing } from '@/lib/motion';
 
@@ -46,8 +46,13 @@ export default function TaskCard({ task, dragOverlay = false }: TaskCardProps) {
     }
   }, [task.status]);
 
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({ id: task.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useSortable({ id: task.id });
 
   const style: MotionStyle | undefined = transform
     ? { x: transform.x, y: transform.y }
