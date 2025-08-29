@@ -7,6 +7,7 @@ import {
   DragStartEvent,
   DragOverEvent,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -15,6 +16,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -32,13 +34,21 @@ const columns: { key: Task['status']; title: string; color: string }[] = [
 ];
 
 export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<Task['status'] | null>(null);
+  const [isKeyboard, setIsKeyboard] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
   const prefersReducedMotion = useReducedMotion();
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    setIsKeyboard(event.activatorEvent instanceof KeyboardEvent);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -52,20 +62,27 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
     if (over) {
       const status = over.id as Task['status'];
       onMove(active.id as string, status);
+      const moved = tasks.find((t) => t.id === active.id);
+      const column = columns.find((c) => c.key === status);
+      if (moved && column) {
+        setAnnouncement(`${moved.title} moved to ${column.title}`);
+      }
     }
     setOverId(null);
+    setIsKeyboard(false);
   };
 
   const activeTask = tasks.find((t) => t.id === activeId) || null;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      modifiers={[restrictToVerticalAxis]}
-    >
+    <>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        modifiers={isKeyboard ? undefined : [restrictToVerticalAxis]}
+      >
       <div className="flex gap-4 h-full">
         {columns.map((col) => {
           const { setNodeRef, isOver } = useDroppable({ id: col.key });
@@ -114,9 +131,13 @@ export default function KanbanBoard({ tasks, onMove }: KanbanBoardProps) {
           );
         })}
       </div>
-      <DragOverlay dropAnimation={null}>
-        {activeTask ? <TaskCard task={activeTask} dragOverlay /> : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay dropAnimation={null}>
+          {activeTask ? <TaskCard task={activeTask} dragOverlay /> : null}
+        </DragOverlay>
+      </DndContext>
+      <div aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
+    </>
   );
 }
