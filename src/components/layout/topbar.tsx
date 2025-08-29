@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { timing } from '@/lib/motion';
 
 interface TopbarProps {
   onNewTask?: () => void;
@@ -9,6 +10,7 @@ interface TopbarProps {
 
 export default function Topbar({ onNewTask }: TopbarProps) {
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const prefersReducedMotion = useReducedMotion();
   const MotionButton = motion(Button);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -38,8 +40,8 @@ export default function Topbar({ onNewTask }: TopbarProps) {
               className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/30"
               style={{ left: r.x, top: r.y, width: 20, height: 20 }}
               initial={{ opacity: 0.5, scale: 0 }}
-              animate={{ opacity: 0, scale: 8 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
+              animate={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 8 }}
+              transition={timing.settle}
             />
           ))}
         </MotionButton>

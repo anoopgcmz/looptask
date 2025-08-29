@@ -3,7 +3,8 @@
 import * as React from 'react'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { timing } from '@/lib/motion'
 
 const TabsContext = React.createContext<{ value: string }>({ value: '' })
 
@@ -57,7 +58,7 @@ const TabsTrigger = React.forwardRef<
         <motion.span
           layoutId="tab-indicator"
           className="absolute bottom-0 left-0 right-0 h-0.5 bg-current"
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          transition={timing.inkBar}
         />
       )}
       <span className="pointer-events-none absolute left-1/2 bottom-0 h-0.5 w-0 -translate-x-1/2 bg-current transition-[width] duration-300 ease-out group-hover:w-full group-data-[state=active]:opacity-0" />
@@ -72,6 +73,7 @@ const TabsContent = React.forwardRef<
 >(({ className, children, value, ...props }, ref) => {
   const { value: current } = React.useContext(TabsContext)
   const active = current === value
+  const prefersReducedMotion = useReducedMotion()
   return (
     <TabsPrimitive.Content
       ref={ref}
@@ -84,11 +86,11 @@ const TabsContent = React.forwardRef<
         {active && (
           <motion.div
             key={value}
-            layout
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            layout={!prefersReducedMotion}
+            initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            transition={timing.inkBar}
           >
             {children}
           </motion.div>
