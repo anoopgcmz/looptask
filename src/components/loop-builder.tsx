@@ -28,6 +28,7 @@ export default function LoopBuilder() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [templateName, setTemplateName] = useState('');
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
 
   useEffect(() => {
     registerLoopBuilder(openBuilder);
@@ -46,7 +47,10 @@ export default function LoopBuilder() {
         // ignore
       }
     };
-    if (open) void load();
+    if (open) {
+      setMode('edit');
+      void load();
+    }
   }, [open]);
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -112,69 +116,87 @@ export default function LoopBuilder() {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && closeBuilder()}>
       <DialogContent>
-        <div className="flex flex-col gap-4">
-          <LoopVisualizer steps={steps} users={users} />
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-              className="flex h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
-            >
-              <option value="">Select template</option>
-              {templates.map((t) => (
-                <option key={t._id} value={t._id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-            <Button
-              variant="outline"
-              onClick={handleApplyTemplate}
-              disabled={!selectedTemplate}
-            >
-              Apply
-            </Button>
-            <Input
-              placeholder="Template name"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-            />
-            <Button
-              variant="outline"
-              onClick={handleSaveTemplate}
-              disabled={!templateName || !steps.length}
-            >
-              Save Template
-            </Button>
-          </div>
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={steps.map((s) => s.id)}>
-              {steps.map((step) => (
-                <StepItem
-                  key={step.id}
-                  step={step}
-                  allSteps={steps}
-                  users={users}
-                  onChange={updateStep}
-                  onRemove={removeStep}
-                  index={step.index}
-                  onReorder={reorderSteps}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-          <Button variant="outline" onClick={addStep}>
-            Add Step
-          </Button>
-          <div className="flex justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="outline" onClick={closeBuilder}>
-                Cancel
+        {mode === 'edit' ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="flex h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+              >
+                <option value="">Select template</option>
+                {templates.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="outline"
+                onClick={handleApplyTemplate}
+                disabled={!selectedTemplate}
+              >
+                Apply
               </Button>
-            </DialogClose>
-            <Button onClick={handleSave}>Save</Button>
+              <Input
+                placeholder="Template name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                onClick={handleSaveTemplate}
+                disabled={!templateName || !steps.length}
+              >
+                Save Template
+              </Button>
+            </div>
+            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={steps.map((s) => s.id)}>
+                {steps.map((step) => (
+                  <StepItem
+                    key={step.id}
+                    step={step}
+                    allSteps={steps}
+                    users={users}
+                    onChange={updateStep}
+                    onRemove={removeStep}
+                    index={step.index}
+                    onReorder={reorderSteps}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+            <Button variant="outline" onClick={addStep}>
+              Add Step
+            </Button>
+            <div className="flex justify-end gap-2">
+              <DialogClose asChild>
+                <Button variant="outline" onClick={closeBuilder}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button onClick={() => setMode('preview')} disabled={!steps.length}>
+                Preview
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <LoopVisualizer steps={steps} users={users} />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setMode('edit')}>
+                Edit
+              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" onClick={closeBuilder}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button onClick={handleSave}>Save Loop</Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
