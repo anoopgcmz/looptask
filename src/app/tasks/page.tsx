@@ -36,6 +36,8 @@ const statusTabs = [
   { value: 'DONE', label: 'Done', query: ['DONE'] },
 ];
 
+const PAGE_SIZE = 20;
+
 export default function TasksPage() {
   const { data: session } = useSession();
   const [filters, setFilters] = useState({
@@ -52,6 +54,16 @@ export default function TasksPage() {
     IN_PROGRESS: [],
     DONE: [],
   });
+  const [pages, setPages] = useState<Record<string, number>>({
+    OPEN: 1,
+    IN_PROGRESS: 1,
+    DONE: 1,
+  });
+  const [hasMore, setHasMore] = useState<Record<string, boolean>>({
+    OPEN: true,
+    IN_PROGRESS: true,
+    DONE: true,
+  });
 
   const loadTasks = useCallback(async () => {
     const results = await Promise.all(
@@ -64,17 +76,57 @@ export default function TasksPage() {
         if (filters.sort) params.append('sort', filters.sort);
         if (search) params.append('q', search);
         s.query.forEach((st) => params.append('status', st));
+        params.append('limit', PAGE_SIZE.toString());
+        params.append('page', '1');
         return fetch(`/api/tasks?${params.toString()}`)
           .then((res) => res.json())
           .catch(() => []);
       })
     );
-    const next: Record<string, Task[]> = {};
+    const nextTasks: Record<string, Task[]> = {};
+    const nextPages: Record<string, number> = {};
+    const nextHasMore: Record<string, boolean> = {};
     statusTabs.forEach((s, i) => {
-      next[s.value] = results[i] as Task[];
+      const result = results[i] as Task[];
+      nextTasks[s.value] = result;
+      nextPages[s.value] = 1;
+      nextHasMore[s.value] = result.length === PAGE_SIZE;
     });
-    setTasks(next);
+    setTasks(nextTasks);
+    setPages(nextPages);
+    setHasMore(nextHasMore);
   }, [filters, search]);
+
+  const loadMore = useCallback(
+    async (status: string) => {
+      const tab = statusTabs.find((s) => s.value === status);
+      if (!tab) return;
+      const nextPage = pages[status] + 1;
+      const params = new URLSearchParams();
+      if (filters.assignee) params.append('ownerId', filters.assignee);
+      if (filters.priority) params.append('priority', filters.priority);
+      if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
+      if (filters.dueTo) params.append('dueTo', filters.dueTo);
+      if (filters.sort) params.append('sort', filters.sort);
+      if (search) params.append('q', search);
+      tab.query.forEach((st) => params.append('status', st));
+      params.append('limit', PAGE_SIZE.toString());
+      params.append('page', nextPage.toString());
+      const result: Task[] = await fetch(`/api/tasks?${params.toString()}`)
+        .then((res) => res.json())
+        .catch(() => []);
+      setTasks((prev) => ({
+        ...prev,
+        [status]: [...prev[status], ...result],
+      }));
+      setPages((prev) => ({ ...prev, [status]: nextPage }));
+      setHasMore((prev) => ({
+        ...prev,
+        [status]: result.length === PAGE_SIZE,
+      }));
+    },
+    [filters, search, pages]
+  );
 
   useEffect(() => {
     void loadTasks();
@@ -201,6 +253,14 @@ export default function TasksPage() {
                 </motion.li>
               ))}
             </ul>
+            {hasMore[s.value] && (
+              <button
+                className="mt-4 border px-4 py-2"
+                onClick={() => void loadMore(s.value)}
+              >
+                Load more
+              </button>
+            )}
           </TabsContent>
         ))}
       </Tabs>
