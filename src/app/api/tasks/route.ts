@@ -148,6 +148,13 @@ const listQuerySchema = z
       .optional(),
     dueFrom: z.coerce.date().optional(),
     dueTo: z.coerce.date().optional(),
+    priority: z
+      .union([
+        z.enum(['LOW', 'MEDIUM', 'HIGH']),
+        z.array(z.enum(['LOW', 'MEDIUM', 'HIGH'])),
+      ])
+      .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+      .optional(),
     tag: z
       .union([z.string(), z.array(z.string())])
       .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
@@ -186,6 +193,7 @@ export const GET = withOrganization(async (req, session) => {
     if (query.dueFrom) filter.dueDate.$gte = query.dueFrom;
     if (query.dueTo) filter.dueDate.$lte = query.dueTo;
   }
+  if (query.priority && query.priority.length) filter.priority = { $in: query.priority };
   if (query.tag && query.tag.length) filter.tags = { $in: query.tag };
   if (query.visibility) filter.visibility = query.visibility;
   if (query.teamId) filter.teamId = new Types.ObjectId(query.teamId);
