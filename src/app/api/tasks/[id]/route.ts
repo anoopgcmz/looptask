@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
+import type { ITask } from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
 import { auth } from '@/lib/auth';
@@ -35,7 +36,7 @@ const patchSchema = z.object({
   currentStepIndex: z.number().int().optional(),
 });
 
-function computeParticipants(task: any) {
+function computeParticipants(task: ITask) {
   const ids = new Set<string>();
   ids.add(task.createdBy.toString());
   if (task.ownerId) ids.add(task.ownerId.toString());
@@ -51,7 +52,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (!session?.userId || !session.organizationId)
     return problem(401, 'Unauthorized', 'You must be signed in.');
   await dbConnect();
-  const task = await Task.findById(params.id);
+  const task: ITask | null = await Task.findById(params.id);
   if (
     !task ||
     !canReadTask(
@@ -75,7 +76,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return problem(400, 'Invalid request', e.message);
   }
   await dbConnect();
-  const task = await Task.findById(params.id);
+  const task: ITask | null = await Task.findById(params.id);
   if (!task) return problem(404, 'Not Found', 'Task not found');
   if (
     !canWriteTask(

@@ -1,5 +1,6 @@
 import Agenda from 'agenda';
 import dbConnect from './db';
+import type { ITask } from '@/models/Task';
 
 export const DEFAULT_TZ = 'Asia/Kolkata';
 
@@ -17,7 +18,7 @@ export async function initAgenda(): Promise<Agenda> {
   return connected;
 }
 
-export async function scheduleTaskJobs(task: any) {
+export async function scheduleTaskJobs(task: ITask) {
   const ag = await initAgenda();
   const taskId = task._id.toString();
   await ag.cancel({ name: { $in: ['task.dueSoon', 'task.dueNow'] }, 'data.taskId': taskId });
