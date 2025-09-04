@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import RoleSelector from '@/components/role-selector';
 
 export default function EditUserPage() {
   const params = useParams();
@@ -15,7 +16,7 @@ export default function EditUserPage() {
     teamId: '',
     role: 'USER',
   });
-  const router = useRouter();
+  const [status, setStatus] = useState<{ success?: string; error?: string }>({});
 
   useEffect(() => {
     const load = async () => {
@@ -34,25 +35,32 @@ export default function EditUserPage() {
     if (id) void load();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, type, checked, value } = e.target;
-    if (name === 'role' && type === 'checkbox') {
-      setForm({ ...form, role: checked ? 'ADMIN' : 'USER' });
-    } else {
-      setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
-    }
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form };
     if (!payload.password) delete (payload as any).password;
-    await fetch('/api/users/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    router.push('/admin/users');
+    setStatus({});
+    try {
+      const res = await fetch('/api/users/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || 'Failed to save');
+      }
+      setStatus({ success: 'Saved' });
+    } catch (e: any) {
+      setStatus({ error: e.message || 'Failed to save' });
+    }
   };
 
   return (
@@ -63,9 +71,14 @@ export default function EditUserPage() {
       <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Password" className="border p-2" />
       <input name="organizationId" value={form.organizationId} onChange={handleChange} placeholder="Organization ID" className="border p-2" required />
       <input name="teamId" value={form.teamId} onChange={handleChange} placeholder="Team ID" className="border p-2" />
-      <label className="flex items-center gap-2">
-        <input type="checkbox" name="role" checked={form.role === 'ADMIN'} onChange={handleChange} /> Admin
-      </label>
+      <RoleSelector
+        name="role"
+        value={form.role}
+        onChange={handleChange}
+        className="border p-2"
+      />
+      {status.success && <p className="text-green-600">{status.success}</p>}
+      {status.error && <p className="text-red-500">{status.error}</p>}
       <button type="submit" className="bg-blue-500 text-white p-2">Save</button>
     </form>
   );

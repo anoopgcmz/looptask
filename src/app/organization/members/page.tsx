@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import RoleSelector from '@/components/role-selector';
 
 interface User {
   _id: string;
@@ -26,9 +27,11 @@ function MemberRow({ user, onUpdated }: MemberRowProps) {
     defaultValues: { role: user.role },
   });
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const onSubmit = async (data: { role: User['role'] }) => {
     setError(null);
+    setSuccess(null);
     try {
       const res = await fetch(`/api/users/${user._id}`, {
         method: 'PUT',
@@ -41,6 +44,7 @@ function MemberRow({ user, onUpdated }: MemberRowProps) {
       }
       const updated = await res.json();
       onUpdated(updated);
+      setSuccess('Saved');
     } catch (e: any) {
       setError(e.message || 'Failed to update');
     }
@@ -52,16 +56,14 @@ function MemberRow({ user, onUpdated }: MemberRowProps) {
       <td className="p-2">{user.email}</td>
       <td className="p-2">
         <form onChange={handleSubmit(onSubmit)} className="flex items-center gap-2">
-          <select
+          <RoleSelector
             {...register('role')}
             className="border p-1 rounded"
             defaultValue={user.role}
-          >
-            <option value="USER">User</option>
-            <option value="ADMIN">Admin</option>
-          </select>
+          />
           {isSubmitting && <Spinner />}
         </form>
+        {success && <p className="text-green-600 text-sm mt-1">{success}</p>}
         {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </td>
     </tr>

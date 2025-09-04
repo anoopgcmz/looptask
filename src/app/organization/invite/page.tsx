@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import RoleSelector from '@/components/role-selector';
 
 interface FormData {
   email: string;
@@ -48,10 +49,7 @@ export default function InvitePage() {
         {...register('email', { required: 'Email is required' })}
       />
       {errors.email && <p className="text-red-500">{errors.email.message}</p>}
-      <select className="border p-2" {...register('role')}>
-        <option value="USER">User</option>
-        <option value="ADMIN">Admin</option>
-      </select>
+      <RoleSelector className="border p-2" {...register('role')} />
       {errors.root && <p className="text-red-500">{errors.root.message}</p>}
       {success && <p className="text-green-600">{success}</p>}
       <button
