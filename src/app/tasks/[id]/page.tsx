@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
 import Timeline, { TimelineEvent } from "@/components/timeline/timeline";
+import DeleteTaskModal from '@/components/delete-task-modal';
 import type { TaskStatus } from '@/models/Task';
 
 interface Task {
@@ -40,6 +42,7 @@ const ACTIONS: Record<TaskStatus, { action: string; label: string }[]> = {
 
 export default function TaskPage({ params }: { params: { id: string } }) {
   const { id } = params;
+  const router = useRouter();
   const [task, setTask] = useState<Task | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [history, setHistory] = useState<TimelineEvent[]>([]);
@@ -150,6 +153,13 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     }
   };
 
+  const deleteTask = async () => {
+    const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      router.push('/tasks');
+    }
+  };
+
   if (!task) return <div>Loading...</div>;
   const actions = ACTIONS[task.status];
 
@@ -160,19 +170,22 @@ export default function TaskPage({ params }: { params: { id: string } }) {
           <h1 className="text-xl font-semibold">{task.title}</h1>
           <StatusBadge status={task.status} />
         </div>
-        {actions.length ? (
-          <div className="flex gap-2">
-            {actions.map((a) => (
-              <button
-                key={a.action}
-                onClick={() => void handleTransition(a.action)}
-                className="border rounded px-2 py-1 text-sm"
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <div className="flex gap-2">
+          {actions.map((a) => (
+            <button
+              key={a.action}
+              onClick={() => void handleTransition(a.action)}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              {a.label}
+            </button>
+          ))}
+          <DeleteTaskModal onConfirm={deleteTask}>
+            <button className="border rounded px-2 py-1 text-sm text-red-600">
+              Delete Task
+            </button>
+          </DeleteTaskModal>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm">Owner:</span>
           <div className="relative flex-1">
