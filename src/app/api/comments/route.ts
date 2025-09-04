@@ -6,16 +6,13 @@ import { auth } from '@/lib/auth';
 import { canReadTask } from '@/lib/access';
 import Comment from '@/models/Comment';
 import Task from '@/models/Task';
-import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import { parseMentions } from '@/lib/mentions';
 import { emitCommentCreated } from '@/lib/ws';
-import { notifyMention } from '@/lib/notify';
 import { problem } from '@/lib/http';
 
 const postSchema = z.object({
   taskId: z.string(),
-  body: z.string(),
+  content: z.string(),
 });
 
 const listQuerySchema = z.object({
@@ -46,34 +43,11 @@ export async function POST(req: Request) {
   ) {
     return problem(404, 'Not Found', 'Task not found');
   }
-  const mentionEmails = parseMentions(body.body);
-  const users = mentionEmails.length
-    ? await User.find({ email: { $in: mentionEmails } })
-    : [];
-  const mentionIds = users.map((u) => u._id);
   const comment = await Comment.create({
     taskId: new Types.ObjectId(body.taskId),
-    authorId: new Types.ObjectId(session.userId),
-    body: body.body,
-    mentions: mentionIds,
-    attachments: [],
+    userId: new Types.ObjectId(session.userId),
+    content: body.content,
   });
-  if (mentionIds.length) {
-    await Task.updateOne(
-      { _id: body.taskId },
-      { $addToSet: { participantIds: { $each: mentionIds } } }
-    );
-    const notifyIds = mentionIds.filter(
-      (id) => id.toString() !== session.userId
-    );
-    if (notifyIds.length) {
-      await notifyMention(
-        notifyIds as Types.ObjectId[],
-        comment.taskId,
-        comment._id
-      );
-    }
-  }
   await ActivityLog.create({
     taskId: comment.taskId,
     actorId: new Types.ObjectId(session.userId),

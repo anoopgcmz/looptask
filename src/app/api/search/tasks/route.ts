@@ -91,12 +91,12 @@ export async function GET(req: Request) {
               {
                 text: {
                   query: query.q!,
-                  path: 'comments.body',
+                  path: 'comments.content',
                 },
               },
             ],
           },
-          highlight: { path: ['title', 'description', 'comments.body'] },
+          highlight: { path: ['title', 'description', 'comments.content'] },
         },
       },
       {
