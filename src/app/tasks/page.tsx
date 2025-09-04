@@ -43,6 +43,7 @@ export default function TasksPage() {
     priority: '',
     dueFrom: '',
     dueTo: '',
+    sort: '',
   });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -60,6 +61,7 @@ export default function TasksPage() {
         if (filters.priority) params.append('priority', filters.priority);
         if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
         if (filters.dueTo) params.append('dueTo', filters.dueTo);
+        if (filters.sort) params.append('sort', filters.sort);
         if (search) params.append('q', search);
         s.query.forEach((st) => params.append('status', st));
         return fetch(`/api/tasks?${params.toString()}`)
@@ -102,6 +104,20 @@ export default function TasksPage() {
         </Link>
       </div>
       <div className="mb-4 flex flex-wrap gap-4">
+        <div>
+          <label className="block text-sm mb-1">Sort By</label>
+          <select
+            className="border p-1"
+            value={filters.sort}
+            onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value }))}
+          >
+            <option value="">Updated</option>
+            <option value="dueDate">Due Date</option>
+            <option value="priority">Priority</option>
+            <option value="createdAt">Created</option>
+            <option value="title">Title</option>
+          </select>
+        </div>
         <div>
           <label className="block text-sm mb-1">Assignee</label>
           <select

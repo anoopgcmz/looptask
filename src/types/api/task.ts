@@ -36,6 +36,7 @@ export interface TaskListQuery {
   visibility?: TaskVisibility;
   teamId?: string;
   q?: string;
+  sort?: 'dueDate' | 'priority' | 'createdAt' | 'title';
 }
 
 export interface TaskStep {

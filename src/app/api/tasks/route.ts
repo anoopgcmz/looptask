@@ -162,6 +162,7 @@ const listQuerySchema = z
     visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
     teamId: z.string().optional(),
     q: z.string().optional(),
+    sort: z.enum(['dueDate', 'priority', 'createdAt', 'title']).optional(),
   })
   satisfies z.ZodType<TaskListQuery>;
 
@@ -205,7 +206,17 @@ export const GET = withOrganization(async (req, session) => {
   if (session.teamId) {
     access.push({ visibility: 'TEAM', teamId: new Types.ObjectId(session.teamId) });
   }
-  const tasks = await Task.find({ $and: [filter, { $or: access }] }).sort({ updatedAt: -1 });
+  const sortField = query.sort ?? 'updatedAt';
+  const sortOrder: Record<string, 1 | -1> = {
+    dueDate: 1,
+    priority: 1,
+    createdAt: -1,
+    title: 1,
+    updatedAt: -1,
+  };
+  const tasks = await Task.find({ $and: [filter, { $or: access }] }).sort({
+    [sortField]: sortOrder[sortField],
+  });
   return NextResponse.json<TaskResponse[]>(tasks);
 });
 
