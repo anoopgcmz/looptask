@@ -3,20 +3,23 @@ import { Schema, model, models, type Document, type Types } from 'mongoose';
 export interface INotification extends Document {
   userId: Types.ObjectId;
   type: string;
-  entityRef: unknown;
-  deliveredAt?: Date;
-  readAt?: Date;
+  message: string;
+  taskId?: Types.ObjectId;
+  read: boolean;
+  createdAt: Date;
 }
 
 const notificationSchema = new Schema<INotification>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     type: { type: String, required: true },
-    entityRef: Schema.Types.Mixed,
-    deliveredAt: Date,
-    readAt: Date,
+    message: { type: String, required: true },
+    taskId: { type: Schema.Types.ObjectId, ref: 'Task' },
+    read: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
+
+notificationSchema.index({ userId: 1, read: 1 });
 
 export default models.Notification || model<INotification>('Notification', notificationSchema);
