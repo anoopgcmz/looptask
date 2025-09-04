@@ -17,14 +17,16 @@ export function LoopVisualizer({ steps, users }: { steps: LoopStep[]; users: Use
     );
   }
 
+  const ordered = [...steps].sort((a, b) => a.index - b.index);
+
   return (
     <div className="flex items-center overflow-x-auto py-2">
-      {steps.map((step, idx) => {
+      {ordered.map((step, idx) => {
         const user = users.find((u) => u._id === step.assignedTo);
         const invalid = !step.assignedTo || !step.description;
         const dependencyIndexes = step.dependencies
-          .map((id) => steps.findIndex((s) => s.id === id) + 1)
-          .filter((n) => n > 0)
+          .map((id) => ordered.find((s) => s.id === id)?.index + 1)
+          .filter((n): n is number => !!n && n > 0)
           .join(', ');
         return (
           <div key={step.id} className="flex items-center">
@@ -48,7 +50,7 @@ export function LoopVisualizer({ steps, users }: { steps: LoopStep[]; users: Use
                 </span>
               )}
             </div>
-            {idx < steps.length - 1 && (
+            {idx < ordered.length - 1 && (
               <div className="mx-2 h-0.5 w-8 bg-gray-300" />
             )}
           </div>
