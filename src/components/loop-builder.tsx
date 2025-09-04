@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import useLoopBuilder, { type LoopStep } from '@/hooks/useLoopBuilder';
 import { registerLoopBuilder } from '@/lib/loopBuilder';
+import LoopVisualizer from '@/components/loop-visualizer';
 
 export default function LoopBuilder() {
   const {
@@ -73,6 +74,7 @@ export default function LoopBuilder() {
     <Dialog open={open} onOpenChange={(o) => !o && closeBuilder()}>
       <DialogContent>
         <div className="flex flex-col gap-4">
+          <LoopVisualizer steps={steps} users={users} />
           <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={steps.map((s) => s.id)}>
               {steps.map((step) => (
