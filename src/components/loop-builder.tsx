@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -22,10 +22,25 @@ export default function LoopBuilder() {
     removeStep,
     reorderSteps,
   } = useLoopBuilder();
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     registerLoopBuilder(openBuilder);
   }, [openBuilder]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/users', { credentials: 'include' });
+        if (res.ok) {
+          setUsers(await res.json());
+        }
+      } catch {
+        // ignore
+      }
+    };
+    if (open) void load();
+  }, [open]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -41,11 +56,14 @@ export default function LoopBuilder() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sequence: steps.map(({ assignedTo, description, estimatedTime }) => ({
-          assignedTo,
-          description,
-          estimatedTime,
-        })),
+        sequence: steps.map(
+          ({ assignedTo, description, estimatedTime, dependencies }) => ({
+            assignedTo,
+            description,
+            estimatedTime,
+            dependencies,
+          })
+        ),
       }),
     });
     closeBuilder();
@@ -61,6 +79,8 @@ export default function LoopBuilder() {
                 <StepItem
                   key={step.id}
                   step={step}
+                  allSteps={steps}
+                  users={users}
                   onChange={updateStep}
                   onRemove={removeStep}
                 />
@@ -86,10 +106,14 @@ export default function LoopBuilder() {
 
 function StepItem({
   step,
+  allSteps,
+  users,
   onChange,
   onRemove,
 }: {
   step: LoopStep;
+  allSteps: LoopStep[];
+  users: any[];
   onChange: (id: string, data: Partial<LoopStep>) => void;
   onRemove: (id: string) => void;
 }) {
@@ -110,11 +134,18 @@ function StepItem({
         ⋮⋮
       </div>
       <div className="flex-1 flex flex-col gap-2">
-        <Input
-          placeholder="Assigned To"
+        <select
           value={step.assignedTo}
           onChange={(e) => onChange(step.id, { assignedTo: e.target.value })}
-        />
+          className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+        >
+          <option value="">Assignee</option>
+          {users.map((u) => (
+            <option key={u._id} value={u._id}>
+              {u.name}
+            </option>
+          ))}
+        </select>
         <Input
           placeholder="Description"
           value={step.description}
@@ -130,6 +161,26 @@ function StepItem({
             })
           }
         />
+        <select
+          multiple
+          value={step.dependencies}
+          onChange={(e) =>
+            onChange(step.id, {
+              dependencies: Array.from(e.target.selectedOptions).map(
+                (o) => o.value
+              ),
+            })
+          }
+          className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+        >
+          {allSteps
+            .filter((s) => s.id !== step.id)
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.description || 'Untitled Step'}
+              </option>
+            ))}
+        </select>
       </div>
       <Button
         variant="ghost"

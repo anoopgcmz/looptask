@@ -8,6 +8,7 @@ export interface LoopStep {
   assignedTo: string;
   description: string;
   estimatedTime?: number;
+  dependencies: string[];
 }
 
 export default function useLoopBuilder() {
@@ -26,7 +27,12 @@ export default function useLoopBuilder() {
   const addStep = () => {
     setSteps((s) => [
       ...s,
-      { id: Math.random().toString(36).slice(2), assignedTo: '', description: '' },
+      {
+        id: Math.random().toString(36).slice(2),
+        assignedTo: '',
+        description: '',
+        dependencies: [],
+      },
     ]);
   };
 

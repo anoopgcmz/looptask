@@ -12,6 +12,7 @@ const loopStepSchema = z.object({
   assignedTo: z.string(),
   description: z.string(),
   estimatedTime: z.number().optional(),
+  dependencies: z.array(z.string()).optional(),
 });
 
 const loopSchema = z.object({
@@ -49,6 +50,8 @@ export const POST = withOrganization(
         assignedTo: new Types.ObjectId(s.assignedTo),
         description: s.description,
         estimatedTime: s.estimatedTime,
+        dependencies:
+          s.dependencies?.map((d) => new Types.ObjectId(d)) ?? [],
       })) ?? [];
 
     const loop = await TaskLoop.create({
