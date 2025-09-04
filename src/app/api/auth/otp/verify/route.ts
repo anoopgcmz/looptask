@@ -3,7 +3,9 @@ import { verifyAndConsumeOtp } from '@/lib/otp';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { signIn } from '@/lib/auth';
-import { sha256 } from '@/lib/hash';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 10;
 
 export async function POST(req: Request) {
   const { email, code } = await req.json();
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
         name: email.split('@')[0],
         email,
         username: email,
-        password: await sha256('changeme'),
+        password: await bcrypt.hash('changeme', SALT_ROUNDS),
       },
     },
     { upsert: true }

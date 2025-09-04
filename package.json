@@ -26,7 +26,8 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "framer-motion": "^11.0.0",
     "@radix-ui/react-dialog": "^1.0.5",
-    "@radix-ui/react-tabs": "^1.0.5"
+    "@radix-ui/react-tabs": "^1.0.5",
+    "bcrypt": "^5.1.1"
   },
   "devDependencies": {
     "typescript": "^5",

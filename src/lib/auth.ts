@@ -3,7 +3,7 @@ import type { NextAuthOptions } from 'next-auth';
 import { getServerSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { signIn as signInBase } from 'next-auth/react';
-import { sha256 } from '@/lib/hash';
+import bcrypt from 'bcrypt';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 
@@ -29,8 +29,8 @@ export const authOptions: NextAuthOptions = {
         await dbConnect();
         const user = await User.findOne({ username: credentials.username });
         if (!user) return null;
-        const hashed = await sha256(credentials.password);
-        if (user.password !== hashed) return null;
+        const match = await bcrypt.compare(credentials.password, user.password);
+        if (!match) return null;
         return {
           id: user._id.toString(),
           email: user.email,
