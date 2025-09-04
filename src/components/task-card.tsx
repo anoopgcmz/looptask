@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { openLoopBuilder } from '@/lib/loopBuilder';
 
 export interface TaskCardProps {
   task: {
@@ -45,11 +46,6 @@ export default function TaskCard({ task, onChange }: TaskCardProps) {
     onChange?.();
   };
 
-  const handleCreateLoop = async () => {
-    await fetch(`/api/tasks/${task._id}/loop`, { method: 'POST' });
-    onChange?.();
-  };
-
   return (
     <div className="rounded border p-4 flex flex-col gap-2 bg-white">
       <div className="flex items-center gap-3">
@@ -88,11 +84,11 @@ export default function TaskCard({ task, onChange }: TaskCardProps) {
           Delete
         </Button>
         <Button
-          onClick={() => void handleCreateLoop()}
+          onClick={() => openLoopBuilder(task._id)}
           variant="outline"
           className="text-xs"
         >
-          Create Loop
+          Add to Loop
         </Button>
       </div>
     </div>
