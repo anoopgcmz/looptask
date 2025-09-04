@@ -61,7 +61,7 @@ export async function GET(req: Request) {
     access.push({ visibility: 'TEAM', teamId: new Types.ObjectId(session.teamId) });
   }
   const tasks = await Task.find({
-    dueAt: { $gte: start, $lt: end },
+    dueDate: { $gte: start, $lt: end },
     $or: access,
   });
   const taskMap = new Map<string, any[]>();

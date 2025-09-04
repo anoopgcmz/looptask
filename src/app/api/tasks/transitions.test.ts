@@ -66,7 +66,7 @@ describe('task flow with steps', () => {
     tasks.set(taskId.toString(), {
       _id: taskId,
       title: 'Test',
-      creatorId: u1,
+      createdBy: u1,
       ownerId: u1,
       organizationId: orgId,
       status: 'FLOW_IN_PROGRESS',
@@ -129,7 +129,7 @@ describe('simple task status transitions', () => {
     tasks.set(taskId.toString(), {
       _id: taskId,
       title: 'Test',
-      creatorId: u1,
+      createdBy: u1,
       ownerId: u1,
       organizationId: orgId,
       status: 'OPEN',

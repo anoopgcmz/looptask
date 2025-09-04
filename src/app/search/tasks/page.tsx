@@ -71,9 +71,9 @@ export default function TaskSearchPage() {
         />
         <input
           type="text"
-          name="creatorId"
-          defaultValue={params.get('creatorId') ?? ''}
-          placeholder="creatorId"
+          name="createdBy"
+          defaultValue={params.get('createdBy') ?? ''}
+          placeholder="createdBy"
           className="border rounded px-2 py-1"
         />
         <input
@@ -99,7 +99,7 @@ export default function TaskSearchPage() {
         >
           <option value="relevance">Relevance</option>
           <option value="updatedAt">Updated</option>
-          <option value="dueAt">Due date</option>
+          <option value="dueDate">Due date</option>
         </select>
         <button type="submit" className="border rounded px-2 py-1">
           Apply

@@ -43,7 +43,7 @@ vi.mock('@/models/Task', () => ({
     find: vi.fn(async (filter: any) => {
       return Array.from(tasks.values()).filter((t) => {
         const due =
-          t.dueAt >= filter.dueAt.$gte && t.dueAt < filter.dueAt.$lt;
+          t.dueDate >= filter.dueDate.$gte && t.dueDate < filter.dueDate.$lt;
         const accessible = filter.$or.some((c: any) => {
           if (c.participantIds) {
             return t.participantIds.some(
@@ -123,14 +123,14 @@ describe('objectives api', () => {
       _id: new Types.ObjectId(),
       title: 't1',
       ownerId: u1,
-      dueAt: new Date('2023-01-01T10:00:00Z'),
+      dueDate: new Date('2023-01-01T10:00:00Z'),
       participantIds: [u1],
     };
     const task2 = {
       _id: new Types.ObjectId(),
       title: 't2',
       ownerId: u2,
-      dueAt: new Date('2023-01-01T12:00:00Z'),
+      dueDate: new Date('2023-01-01T12:00:00Z'),
       visibility: 'TEAM',
       teamId,
       participantIds: [],

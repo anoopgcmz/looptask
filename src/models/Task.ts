@@ -22,20 +22,20 @@ export interface IStep {
 export interface ITask extends Document {
   title: string;
   description?: string;
-  creatorId: Types.ObjectId;
-  ownerId: Types.ObjectId;
-  helpers: Types.ObjectId[];
-  mentions: Types.ObjectId[];
+  createdBy: Types.ObjectId;
+  ownerId?: Types.ObjectId;
+  helpers?: Types.ObjectId[];
+  mentions?: Types.ObjectId[];
   organizationId: Types.ObjectId;
   teamId?: Types.ObjectId;
   status: TaskStatus;
   priority: TaskPriority;
-  tags: string[];
-  visibility: TaskVisibility;
-  dueAt?: Date;
-  steps: IStep[];
-  currentStepIndex: number;
-  participantIds: Types.ObjectId[];
+  tags?: string[];
+  visibility?: TaskVisibility;
+  dueDate?: Date;
+  steps?: IStep[];
+  currentStepIndex?: number;
+  participantIds?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,8 +56,8 @@ const taskSchema = new Schema<ITask>(
   {
     title: { type: String, required: true },
     description: String,
-    creatorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User' },
     helpers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     mentions: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
@@ -70,7 +70,7 @@ const taskSchema = new Schema<ITask>(
     priority: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
     tags: [{ type: String }],
     visibility: { type: String, enum: ['PRIVATE', 'TEAM'], default: 'PRIVATE' },
-    dueAt: Date,
+    dueDate: Date,
     steps: [stepSchema],
     currentStepIndex: { type: Number, default: 0 },
     participantIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
@@ -78,17 +78,14 @@ const taskSchema = new Schema<ITask>(
   { timestamps: true }
 );
 
-taskSchema.index({ ownerId: 1, status: 1, dueAt: 1 });
-taskSchema.index({ creatorId: 1, status: 1 });
-taskSchema.index({ teamId: 1, visibility: 1 });
-taskSchema.index({ organizationId: 1 });
+taskSchema.index({ organizationId: 1, status: 1, dueDate: 1 });
 taskSchema.index({ updatedAt: -1 });
 taskSchema.index({ title: 'text', description: 'text' });
 
 taskSchema.pre('save', function (next) {
   const ids = new Set<string>();
-  ids.add(this.creatorId.toString());
-  ids.add(this.ownerId.toString());
+  ids.add(this.createdBy.toString());
+  if (this.ownerId) ids.add(this.ownerId.toString());
   this.helpers?.forEach((h) => ids.add(h.toString()));
   this.mentions?.forEach((m) => ids.add(m.toString()));
   this.steps?.forEach((s) => ids.add(s.ownerId.toString()));

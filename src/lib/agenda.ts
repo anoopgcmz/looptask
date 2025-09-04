@@ -21,8 +21,8 @@ export async function scheduleTaskJobs(task: any) {
   const ag = await initAgenda();
   const taskId = task._id.toString();
   await ag.cancel({ name: { $in: ['task.dueSoon', 'task.dueNow'] }, 'data.taskId': taskId });
-  if (task.dueAt) {
-    const due = new Date(task.dueAt);
+  if (task.dueDate) {
+    const due = new Date(task.dueDate);
     const soon = new Date(due.getTime() - 24 * 60 * 60 * 1000);
     if (soon > new Date()) {
       await ag.schedule(soon, 'task.dueSoon', { taskId });

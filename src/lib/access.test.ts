@@ -4,7 +4,7 @@ import type { ITask } from '../models/Task';
 import { canReadTask, canWriteTask } from './access';
 
 describe('task access', () => {
-  const creatorId = new Types.ObjectId();
+  const createdBy = new Types.ObjectId();
   const ownerId = new Types.ObjectId();
   const helperId = new Types.ObjectId();
   const mentionId = new Types.ObjectId();
@@ -15,7 +15,7 @@ describe('task access', () => {
   const otherOrgId = new Types.ObjectId();
 
   const baseTask = {
-    creatorId,
+    createdBy,
     ownerId,
     helpers: [],
     mentions: [],
@@ -26,7 +26,7 @@ describe('task access', () => {
 
   it('creator can read and write', () => {
     const task = { ...baseTask };
-    const user = { _id: creatorId, teamId, organizationId: orgId };
+    const user = { _id: createdBy, teamId, organizationId: orgId };
     expect(canReadTask(user, task)).toBe(true);
     expect(canWriteTask(user, task)).toBe(true);
   });

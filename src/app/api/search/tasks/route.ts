@@ -19,10 +19,10 @@ const querySchema = z.object({
   dueFrom: z.coerce.date().optional(),
   dueTo: z.coerce.date().optional(),
   ownerId: z.string().optional(),
-  creatorId: z.string().optional(),
+  createdBy: z.string().optional(),
   teamId: z.string().optional(),
   visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
-  sort: z.enum(['relevance', 'updatedAt', 'dueAt']).optional(),
+  sort: z.enum(['relevance', 'updatedAt', 'dueDate']).optional(),
 });
 
 export async function GET(req: Request) {
@@ -54,12 +54,12 @@ export async function GET(req: Request) {
 
   const filter: any = {};
   if (query.ownerId) filter.ownerId = new Types.ObjectId(query.ownerId);
-  if (query.creatorId) filter.creatorId = new Types.ObjectId(query.creatorId);
+  if (query.createdBy) filter.createdBy = new Types.ObjectId(query.createdBy);
   if (query.status && query.status.length) filter.status = { $in: query.status };
   if (query.dueFrom || query.dueTo) {
-    filter.dueAt = {};
-    if (query.dueFrom) filter.dueAt.$gte = query.dueFrom;
-    if (query.dueTo) filter.dueAt.$lte = query.dueTo;
+    filter.dueDate = {};
+    if (query.dueFrom) filter.dueDate.$gte = query.dueFrom;
+    if (query.dueTo) filter.dueDate.$lte = query.dueTo;
   }
   if (query.tag && query.tag.length) filter.tags = { $in: query.tag };
   if (query.visibility) filter.visibility = query.visibility;
@@ -115,10 +115,10 @@ export async function GET(req: Request) {
           status: 1,
           tags: 1,
           ownerId: 1,
-          creatorId: 1,
+          createdBy: 1,
           teamId: 1,
           visibility: 1,
-          dueAt: 1,
+          dueDate: 1,
           highlights: { $meta: 'searchHighlights' },
           score: { $meta: 'searchScore' },
         },
@@ -126,8 +126,8 @@ export async function GET(req: Request) {
     ];
     if (query.sort === 'updatedAt') {
       pipeline.push({ $sort: { updatedAt: -1 } });
-    } else if (query.sort === 'dueAt') {
-      pipeline.push({ $sort: { dueAt: 1 } });
+    } else if (query.sort === 'dueDate') {
+      pipeline.push({ $sort: { dueDate: 1 } });
     } else {
       pipeline.push({ $sort: { score: { $meta: 'searchScore' } } });
     }
@@ -138,7 +138,7 @@ export async function GET(req: Request) {
     const sort: any = {};
     if (query.q) sort.score = { $meta: 'textScore' };
     if (query.sort === 'updatedAt') sort.updatedAt = -1;
-    if (query.sort === 'dueAt') sort.dueAt = 1;
+    if (query.sort === 'dueDate') sort.dueDate = 1;
     results = await Task.find(
       { $and: [mongoFilter, { $or: access }] },
       query.q ? { score: { $meta: 'textScore' } } : undefined
@@ -167,7 +167,7 @@ export async function GET(req: Request) {
         dueFrom: query.dueFrom,
         dueTo: query.dueTo,
         ownerId: query.ownerId,
-        creatorId: query.creatorId,
+        createdBy: query.createdBy,
         teamId: query.teamId,
         visibility: query.visibility,
         sort: query.sort,
