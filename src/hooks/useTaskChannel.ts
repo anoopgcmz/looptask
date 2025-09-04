@@ -1,8 +1,13 @@
 import { useEffect } from 'react';
 
+interface Options {
+  refreshTask?: () => void;
+  insertComment?: (comment: any) => void;
+}
+
 export default function useTaskChannel(
   taskId: string,
-  onMessage: (data: any) => void
+  { refreshTask, insertComment }: Options
 ) {
   useEffect(() => {
     if (!taskId) return;
@@ -12,7 +17,17 @@ export default function useTaskChannel(
       try {
         const data = JSON.parse(event.data);
         if (data.taskId === taskId) {
-          onMessage(data);
+          switch (data.event) {
+            case 'task.updated':
+            case 'task.transitioned':
+              refreshTask?.();
+              break;
+            case 'comment.created':
+              insertComment?.(data.comment);
+              break;
+            default:
+              break;
+          }
         }
       } catch {
         // ignore
@@ -21,5 +36,5 @@ export default function useTaskChannel(
     return () => {
       ws.close();
     };
-  }, [taskId, onMessage]);
+  }, [taskId, refreshTask, insertComment]);
 }
