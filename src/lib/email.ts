@@ -16,3 +16,16 @@ export async function sendOtpEmail(to: string, code: string) {
     console.log(`OTP for ${to}: ${code}`);
   }
 }
+
+export async function sendInvitationEmail(to: string, link: string) {
+  if (resend) {
+    await resend.emails.send({
+      from: 'invite@example.com',
+      to,
+      subject: 'You\'re invited',
+      text: `You have been invited. Accept the invitation here: ${link}`,
+    });
+  } else {
+    console.log(`Invitation for ${to}: ${link}`);
+  }
+}
