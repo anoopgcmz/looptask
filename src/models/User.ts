@@ -1,5 +1,7 @@
 import { Schema, model, models, type Document, type Types } from 'mongoose';
-import { sha256 } from '@/lib/hash';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 10;
 
 export interface IUser extends Document {
   name: string;
@@ -48,7 +50,11 @@ userSchema.index({ email: 1, organizationId: 1 }, { unique: true });
 userSchema.pre('save', async function () {
   if (this.isModified('password')) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    (this as any).password = await sha256((this as any).password);
+    (this as any).password = await bcrypt.hash(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (this as any).password,
+      SALT_ROUNDS
+    );
   }
 });
 
