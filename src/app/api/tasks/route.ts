@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
+import type { ITask } from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
 import { auth } from '@/lib/auth';
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
       return problem(400, 'Invalid request', 'Step owner must be in your organization');
     }
   }
-  const task = await Task.create({
+  const task: ITask = await Task.create({
     title: body.title,
     description: body.description,
     createdBy: new Types.ObjectId(createdBy),
