@@ -34,6 +34,8 @@ The application configures Mongoose's connection pool with the following default
 
 You can override these values with the environment variables `MONGODB_MAX_POOL_SIZE`, `MONGODB_MIN_POOL_SIZE`, and `MONGODB_SOCKET_TIMEOUT_MS`.
 
+Set `DB_DEBUG` to any value to enable verbose logging of connection attempts and failures.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

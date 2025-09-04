@@ -16,6 +16,14 @@ const maxPoolSize = parseInt(MONGODB_MAX_POOL_SIZE, 10);
 const minPoolSize = parseInt(MONGODB_MIN_POOL_SIZE, 10);
 const socketTimeoutMS = parseInt(MONGODB_SOCKET_TIMEOUT_MS, 10);
 
+const DB_DEBUG = Boolean(process.env.DB_DEBUG);
+
+function debugLog(...args: unknown[]) {
+  if (DB_DEBUG) {
+    console.debug('[DB_DEBUG]', ...args);
+  }
+}
+
 declare global {
   var mongooseCache:
     | {
@@ -37,6 +45,7 @@ async function connectWithRetry(
 ): Promise<typeof mongoose> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
+      debugLog(`Attempt ${attempt + 1} to connect`);
       const connection = await mongoose.connect(MONGODB_URI, {
         bufferCommands: false,
         maxPoolSize,
@@ -46,16 +55,15 @@ async function connectWithRetry(
       console.log('MongoDB connection established');
       return connection;
     } catch (error) {
-      console.error(
-        `MongoDB connection attempt ${attempt + 1} failed`,
-        error,
-      );
+      console.warn(`MongoDB connection attempt ${attempt + 1} failed`);
+      debugLog(error);
       if (attempt === retries - 1) {
+        console.error(`MongoDB connection failed after ${retries} attempts`);
         throw error;
       }
-      await new Promise((resolve) =>
-        setTimeout(resolve, delay * 2 ** attempt),
-      );
+      const waitTime = delay * 2 ** attempt;
+      console.log(`Retrying MongoDB connection in ${waitTime}ms`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
   throw new Error('Failed to connect to MongoDB');
