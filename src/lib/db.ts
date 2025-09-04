@@ -31,15 +31,40 @@ if (!cached) {
   cached = global.mongooseCache = { conn: null, promise: null };
 }
 
+async function connectWithRetry(
+  retries = 5,
+  delay = 500,
+): Promise<typeof mongoose> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const connection = await mongoose.connect(MONGODB_URI, {
+        bufferCommands: false,
+        maxPoolSize,
+        minPoolSize,
+        socketTimeoutMS,
+      });
+      console.log('MongoDB connection established');
+      return connection;
+    } catch (error) {
+      console.error(
+        `MongoDB connection attempt ${attempt + 1} failed`,
+        error,
+      );
+      if (attempt === retries - 1) {
+        throw error;
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, delay * 2 ** attempt),
+      );
+    }
+  }
+  throw new Error('Failed to connect to MongoDB');
+}
+
 export default async function dbConnect(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-      maxPoolSize,
-      minPoolSize,
-      socketTimeoutMS,
-    });
+    cached.promise = connectWithRetry();
   }
   cached.conn = await cached.promise;
   return cached.conn;
