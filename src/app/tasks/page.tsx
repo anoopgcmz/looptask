@@ -44,6 +44,8 @@ export default function TasksPage() {
     dueFrom: '',
     dueTo: '',
   });
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const [tasks, setTasks] = useState<Record<string, Task[]>>({
     OPEN: [],
     IN_PROGRESS: [],
@@ -58,6 +60,7 @@ export default function TasksPage() {
         if (filters.priority) params.append('priority', filters.priority);
         if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
         if (filters.dueTo) params.append('dueTo', filters.dueTo);
+        if (search) params.append('q', search);
         s.query.forEach((st) => params.append('status', st));
         return fetch(`/api/tasks?${params.toString()}`)
           .then((res) => res.json())
@@ -69,16 +72,28 @@ export default function TasksPage() {
       next[s.value] = results[i] as Task[];
     });
     setTasks(next);
-  }, [filters]);
+  }, [filters, search]);
 
   useEffect(() => {
     void loadTasks();
   }, [loadTasks]);
 
+  useEffect(() => {
+    const handle = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(handle);
+  }, [searchInput]);
+
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center">
         <h1 className="text-xl">Tasks</h1>
+        <input
+          type="text"
+          placeholder="Search"
+          className="ml-4 border p-1"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
         <Link
           href="/tasks/new"
           className="ml-auto bg-blue-500 text-white px-2 py-1"
