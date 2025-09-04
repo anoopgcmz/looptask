@@ -21,16 +21,19 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        username: { label: 'Username', type: 'text' },
+        email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
       authorize: async (credentials): Promise<AuthUser | null> => {
-        if (!credentials?.username || !credentials.password) return null;
+        if (!credentials?.email) return null;
+        if (!credentials.password && !credentials.otpVerified) return null;
         await dbConnect();
-        const user = await User.findOne({ username: credentials.username });
+        const user = await User.findOne({ email: credentials.email });
         if (!user) return null;
-        const match = await bcrypt.compare(credentials.password, user.password);
-        if (!match) return null;
+        if (!credentials.otpVerified) {
+          const match = await bcrypt.compare(credentials.password!, user.password);
+          if (!match) return null;
+        }
         return {
           id: user._id.toString(),
           email: user.email,
