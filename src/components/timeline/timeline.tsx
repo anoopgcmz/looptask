@@ -7,9 +7,15 @@ export interface TimelineEvent {
   user: { name: string; avatar?: string };
   status: string;
   date: string;
+  type?: 'comment' | 'update' | 'transition';
 }
 
 export function Timeline({ events }: { events: TimelineEvent[] }) {
+  const ICONS: Record<NonNullable<TimelineEvent['type']>, string> = {
+    comment: '💬',
+    update: '✏️',
+    transition: '🔀',
+  };
   return (
     <div className="bg-white">
       <ul className="relative ml-4 border-l border-gray-200">
@@ -36,7 +42,8 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
               />
               <div>
                 <div className="font-medium">{event.user.name}</div>
-                <div className="text-sm">
+                <div className="text-sm flex items-center">
+                  {event.type && <span className="mr-1">{ICONS[event.type]}</span>}
                   <span>{event.status}</span>
                   <span className="ml-2 text-gray-500">
                     {new Date(event.date).toLocaleString()}
