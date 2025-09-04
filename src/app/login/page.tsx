@@ -1,62 +1,67 @@
 'use client';
 
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
+type FormData = {
+  email: string;
+  password: string;
+};
+
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<FormData>();
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (username.trim().length < 3) {
-      setError('Username must be at least 3 characters long');
-      return;
-    }
-
+  const onSubmit = async (data: FormData) => {
     const res = await signIn('credentials', {
       redirect: false,
-      username,
-      password,
+      email: data.email,
+      password: data.password,
     });
 
     if (res?.error) {
-      setError(res.error);
-    } else {
-      setSuccess('Login successful');
-      router.push('/');
+      setError('root', { message: res.error });
+      return;
     }
+
+    router.push('/');
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2 p-4">
       <input
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
+        type="email"
+        placeholder="Email"
         className="border p-2"
-        required
+        {...register('email', {
+          required: 'Email is required',
+          pattern: {
+            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            message: 'Invalid email address',
+          },
+        })}
       />
+      {errors.email && <p className="text-red-500">{errors.email.message}</p>}
       <input
         type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
         className="border p-2"
-        required
+        {...register('password', { required: 'Password is required' })}
       />
-      {error && <p className="text-red-500">{error}</p>}
-      {success && <p className="text-green-500">{success}</p>}
-      <button type="submit" className="bg-blue-500 text-white p-2">
-        Login
+      {errors.password && <p className="text-red-500">{errors.password.message}</p>}
+      {errors.root && <p className="text-red-500">{errors.root.message}</p>}
+      <button
+        type="submit"
+        className="bg-blue-500 text-white p-2"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Loading...' : 'Login'}
       </button>
     </form>
   );
