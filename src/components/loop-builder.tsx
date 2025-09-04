@@ -53,11 +53,12 @@ export default function LoopBuilder() {
 
   const handleSave = async () => {
     if (!taskId) return;
+    const orderedSteps = [...steps].sort((a, b) => a.index - b.index);
     await fetch(`/api/tasks/${taskId}/loop`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sequence: steps.map(
+        sequence: orderedSteps.map(
           ({ assignedTo, description, estimatedTime, dependencies }) => ({
             assignedTo,
             description,
@@ -85,6 +86,8 @@ export default function LoopBuilder() {
                   users={users}
                   onChange={updateStep}
                   onRemove={removeStep}
+                  index={step.index}
+                  onReorder={reorderSteps}
                 />
               ))}
             </SortableContext>
@@ -112,12 +115,16 @@ function StepItem({
   users,
   onChange,
   onRemove,
+  index,
+  onReorder,
 }: {
   step: LoopStep;
   allSteps: LoopStep[];
   users: any[];
   onChange: (id: string, data: Partial<LoopStep>) => void;
   onRemove: (id: string) => void;
+  index: number;
+  onReorder: (from: number, to: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: step.id,
@@ -126,6 +133,8 @@ function StepItem({
     transform: CSS.Transform.toString(transform),
     transition,
   };
+  const moveUp = () => onReorder(index, index - 1);
+  const moveDown = () => onReorder(index, index + 1);
   return (
     <div
       ref={setNodeRef}
@@ -134,6 +143,18 @@ function StepItem({
     >
       <div {...attributes} {...listeners} className="cursor-grab p-2 select-none">
         ⋮⋮
+      </div>
+      <div className="flex flex-col gap-1">
+        <Button variant="outline" onClick={moveUp} disabled={index === 0}>
+          Move up
+        </Button>
+        <Button
+          variant="outline"
+          onClick={moveDown}
+          disabled={index === allSteps.length - 1}
+        >
+          Move down
+        </Button>
       </div>
       <div className="flex-1 flex flex-col gap-2">
         <select
@@ -168,9 +189,7 @@ function StepItem({
           value={step.dependencies}
           onChange={(e) =>
             onChange(step.id, {
-              dependencies: Array.from(e.target.selectedOptions).map(
-                (o) => o.value
-              ),
+              dependencies: Array.from(e.target.selectedOptions).map((o) => o.value),
             })
           }
           className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"

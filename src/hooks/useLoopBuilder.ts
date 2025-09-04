@@ -9,6 +9,7 @@ export interface LoopStep {
   description: string;
   estimatedTime?: number;
   dependencies: string[];
+  index: number;
 }
 
 export default function useLoopBuilder() {
@@ -25,15 +26,19 @@ export default function useLoopBuilder() {
   const closeBuilder = () => setOpen(false);
 
   const addStep = () => {
-    setSteps((s) => [
-      ...s,
-      {
-        id: Math.random().toString(36).slice(2),
-        assignedTo: '',
-        description: '',
-        dependencies: [],
-      },
-    ]);
+    setSteps((s) => {
+      const nextIndex = s.length;
+      return [
+        ...s,
+        {
+          id: Math.random().toString(36).slice(2),
+          assignedTo: '',
+          description: '',
+          dependencies: [],
+          index: nextIndex,
+        },
+      ];
+    });
   };
 
   const updateStep = (id: string, data: Partial<LoopStep>) => {
@@ -41,11 +46,17 @@ export default function useLoopBuilder() {
   };
 
   const removeStep = (id: string) => {
-    setSteps((s) => s.filter((step) => step.id !== id));
+    setSteps((s) =>
+      s
+        .filter((step) => step.id !== id)
+        .map((step, idx) => ({ ...step, index: idx }))
+    );
   };
 
   const reorderSteps = (from: number, to: number) => {
-    setSteps((s) => arrayMove(s, from, to));
+    setSteps((s) =>
+      arrayMove(s, from, to).map((step, idx) => ({ ...step, index: idx }))
+    );
   };
 
   return {
