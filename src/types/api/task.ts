@@ -31,6 +31,7 @@ export interface TaskListQuery {
   status?: TaskStatus[];
   dueFrom?: string;
   dueTo?: string;
+  priority?: TaskPriority[];
   tag?: string[];
   visibility?: TaskVisibility;
   teamId?: string;

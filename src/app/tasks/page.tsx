@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import TaskCard from '@/components/task-card';
+import { useSession } from 'next-auth/react';
 
 interface Task {
   _id: string;
@@ -36,6 +37,13 @@ const statusTabs = [
 ];
 
 export default function TasksPage() {
+  const { data: session } = useSession();
+  const [filters, setFilters] = useState({
+    assignee: '',
+    priority: '',
+    dueFrom: '',
+    dueTo: '',
+  });
   const [tasks, setTasks] = useState<Record<string, Task[]>>({
     OPEN: [],
     IN_PROGRESS: [],
@@ -44,18 +52,24 @@ export default function TasksPage() {
 
   const loadTasks = useCallback(async () => {
     const results = await Promise.all(
-      statusTabs.map((s) =>
-        fetch(`/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`)
+      statusTabs.map((s) => {
+        const params = new URLSearchParams();
+        if (filters.assignee) params.append('ownerId', filters.assignee);
+        if (filters.priority) params.append('priority', filters.priority);
+        if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
+        if (filters.dueTo) params.append('dueTo', filters.dueTo);
+        s.query.forEach((st) => params.append('status', st));
+        return fetch(`/api/tasks?${params.toString()}`)
           .then((res) => res.json())
-          .catch(() => [])
-      )
+          .catch(() => []);
+      })
     );
     const next: Record<string, Task[]> = {};
     statusTabs.forEach((s, i) => {
       next[s.value] = results[i] as Task[];
     });
     setTasks(next);
-  }, []);
+  }, [filters]);
 
   useEffect(() => {
     void loadTasks();
@@ -71,6 +85,58 @@ export default function TasksPage() {
         >
           Create Task
         </Link>
+      </div>
+      <div className="mb-4 flex flex-wrap gap-4">
+        <div>
+          <label className="block text-sm mb-1">Assignee</label>
+          <select
+            className="border p-1"
+            value={filters.assignee}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, assignee: e.target.value }))
+            }
+          >
+            <option value="">All</option>
+            {session?.userId && <option value={session.userId}>Me</option>}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Priority</label>
+          <select
+            className="border p-1"
+            value={filters.priority}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, priority: e.target.value }))
+            }
+          >
+            <option value="">All</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">From</label>
+          <input
+            type="date"
+            className="border p-1"
+            value={filters.dueFrom}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, dueFrom: e.target.value }))
+            }
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">To</label>
+          <input
+            type="date"
+            className="border p-1"
+            value={filters.dueTo}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, dueTo: e.target.value }))
+            }
+          />
+        </div>
       </div>
       <Tabs defaultValue="OPEN">
         <TabsList>
