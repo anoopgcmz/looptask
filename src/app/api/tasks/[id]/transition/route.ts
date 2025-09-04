@@ -12,6 +12,7 @@ import {
   notifyTaskClosed,
 } from '@/lib/notify';
 import { problem } from '@/lib/http';
+import type { TaskResponse } from '@/types/api/task';
 
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
@@ -96,7 +97,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       }
     }
     emitTaskTransition(updated);
-    return NextResponse.json(updated);
+    return NextResponse.json<TaskResponse>(updated);
   } else {
     let newStatus = task.status;
     switch (body.action) {
@@ -139,7 +140,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       }
     }
     emitTaskTransition(task);
-    return NextResponse.json(task);
+    return NextResponse.json<TaskResponse>(task);
   }
 }
 
