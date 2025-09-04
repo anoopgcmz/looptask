@@ -47,7 +47,7 @@ async function run() {
       password: 'admin',
       organizationId: org._id,
       teamId: team._id,
-      isAdmin: true,
+      role: 'ADMIN',
     },
   ]);
 

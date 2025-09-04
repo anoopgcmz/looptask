@@ -13,7 +13,7 @@ export default function EditUserPage() {
     password: '',
     organizationId: '',
     teamId: '',
-    isAdmin: false,
+    role: 'USER',
   });
   const router = useRouter();
 
@@ -28,7 +28,7 @@ export default function EditUserPage() {
         password: '',
         organizationId: data.organizationId || '',
         teamId: data.teamId || '',
-        isAdmin: data.isAdmin || false,
+        role: data.role || 'USER',
       });
     };
     if (id) void load();
@@ -36,7 +36,11 @@ export default function EditUserPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, type, checked, value } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+    if (name === 'role' && type === 'checkbox') {
+      setForm({ ...form, role: checked ? 'ADMIN' : 'USER' });
+    } else {
+      setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,7 +64,7 @@ export default function EditUserPage() {
       <input name="organizationId" value={form.organizationId} onChange={handleChange} placeholder="Organization ID" className="border p-2" required />
       <input name="teamId" value={form.teamId} onChange={handleChange} placeholder="Team ID" className="border p-2" />
       <label className="flex items-center gap-2">
-        <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
+        <input type="checkbox" name="role" checked={form.role === 'ADMIN'} onChange={handleChange} /> Admin
       </label>
       <button type="submit" className="bg-blue-500 text-white p-2">Save</button>
     </form>

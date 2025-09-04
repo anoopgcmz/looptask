@@ -65,7 +65,7 @@ export default function UsersPage() {
               <td className="border p-2">{u.name}</td>
               <td className="border p-2">{u.email}</td>
               <td className="border p-2">{u.username}</td>
-              <td className="border p-2">{u.isAdmin ? 'Yes' : 'No'}</td>
+              <td className="border p-2">{u.role === 'ADMIN' ? 'Yes' : 'No'}</td>
               <td className="border p-2 flex gap-2">
                 <Link
                   href={`/admin/users/${u._id}`}
