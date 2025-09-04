@@ -13,10 +13,12 @@ import { problem } from '@/lib/http';
 const postSchema = z.object({
   taskId: z.string(),
   content: z.string(),
+  parentId: z.string().optional(),
 });
 
 const listQuerySchema = z.object({
   taskId: z.string(),
+  parentId: z.string().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
@@ -47,6 +49,7 @@ export async function POST(req: Request) {
     taskId: new Types.ObjectId(body.taskId),
     userId: new Types.ObjectId(session.userId),
     content: body.content,
+    parentId: body.parentId ? new Types.ObjectId(body.parentId) : null,
   });
   await ActivityLog.create({
     taskId: comment.taskId,
@@ -87,7 +90,11 @@ export async function GET(req: Request) {
   }
   const page = query.page ?? 1;
   const limit = query.limit ?? 20;
-  const comments = await Comment.find({ taskId: new Types.ObjectId(query.taskId) })
+  const filter: any = {
+    taskId: new Types.ObjectId(query.taskId),
+    parentId: query.parentId ? new Types.ObjectId(query.parentId) : null,
+  };
+  const comments = await Comment.find(filter)
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit);

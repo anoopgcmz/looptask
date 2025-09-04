@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
+import CommentThread from "@/components/comment-thread";
 import type { TaskStatus } from '@/models/Task';
 
 interface Task {
@@ -71,6 +72,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
         </div>
       ) : null}
       <TaskDetail id={id} />
+      <CommentThread taskId={id} />
     </div>
   );
 }
