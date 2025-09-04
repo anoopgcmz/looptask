@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import TaskDetail from "@/components/task-detail";
@@ -41,6 +43,39 @@ const ACTIONS: Record<TaskStatus, { action: string; label: string }[]> = {
   DONE: [],
 };
 
+const TRANSITION_MAP: Record<TaskStatus, Record<string, TaskStatus>> = {
+  OPEN: { START: 'IN_PROGRESS' },
+  IN_PROGRESS: { SEND_FOR_REVIEW: 'IN_REVIEW' },
+  IN_REVIEW: { REQUEST_CHANGES: 'REVISIONS', DONE: 'DONE' },
+  REVISIONS: { SEND_FOR_REVIEW: 'IN_REVIEW' },
+  FLOW_IN_PROGRESS: { DONE: 'DONE' },
+  DONE: {},
+};
+
+const ownerSchema = z.object({ ownerId: z.string().min(1, 'Owner is required') });
+const uploadSchema = z.object({
+  file: z
+    .custom<FileList>((v) => v instanceof FileList && v.length > 0, {
+      message: 'File is required',
+    }),
+});
+
+function createResolver<T>(schema: z.ZodSchema<T>) {
+  return (values: any) => {
+    const result = schema.safeParse(values);
+    if (result.success) return { values: result.data, errors: {} };
+    const errors = result.error.issues.reduce<Record<string, any>>(
+      (acc, issue) => {
+        const path = issue.path[0] as string;
+        acc[path] = { type: issue.code, message: issue.message };
+        return acc;
+      },
+      {}
+    );
+    return { values: {}, errors };
+  };
+}
+
 export default function TaskPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const router = useRouter();
@@ -50,6 +85,19 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   const [userQuery, setUserQuery] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [ownerName, setOwnerName] = useState('');
+
+  const {
+    handleSubmit: submitOwner,
+    setValue: setOwnerValue,
+    formState: { errors: ownerErrors },
+  } = useForm<{ ownerId: string }>({ resolver: createResolver(ownerSchema) });
+
+  const {
+    register: registerUpload,
+    handleSubmit: submitUpload,
+    reset: resetUpload,
+    formState: { errors: uploadErrors },
+  } = useForm<{ file: FileList }>({ resolver: createResolver(uploadSchema) });
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
@@ -97,17 +145,20 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     void loadUsers();
   }, [userQuery]);
 
-  const handleOwnerSelect = async (u: User) => {
+  const onOwnerSubmit = async (
+    { ownerId }: { ownerId: string },
+    u: User
+  ) => {
     if (!task) return;
     const previous = task;
-    setTask({ ...task, ownerId: u._id });
+    setTask({ ...task, ownerId });
     setOwnerName(u.name || u.email || '');
     setUserQuery('');
     setUsers([]);
     const res = await fetch(`/api/tasks/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ownerId: u._id }),
+      body: JSON.stringify({ ownerId }),
     });
     if (res.ok) {
       const updated = await res.json();
@@ -117,7 +168,16 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     }
   };
 
+  const handleOwnerSelect = (u: User) => {
+    setOwnerValue('ownerId', u._id, { shouldValidate: true });
+    void submitOwner((data) => onOwnerSubmit(data, u))();
+  };
+
   const handleTransition = async (action: string) => {
+    if (!task) return;
+    const previous = task;
+    const predicted = TRANSITION_MAP[task.status]?.[action] ?? task.status;
+    setTask({ ...task, status: predicted });
     const res = await fetch(`/api/tasks/${id}/transition`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -126,31 +186,41 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     if (res.ok) {
       const updated = await res.json();
       setTask(updated);
+    } else {
+      setTask(previous);
     }
   };
 
-  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const onUploadSubmit = async ({ file }: { file: FileList }) => {
+    const f = file[0];
+    const tempId = `temp-${Date.now()}`;
+    const tempAtt = { _id: tempId, filename: f.name, url: URL.createObjectURL(f) };
+    setAttachments((prev) => [tempAtt, ...prev]);
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', f);
     const res = await fetch(`/api/tasks/${id}/attachments`, {
       method: 'POST',
       body: formData,
     });
     if (res.ok) {
       const att = await res.json();
-      setAttachments((prev) => [att, ...prev]);
-      e.target.value = '';
+      setAttachments((prev) =>
+        prev.map((a) => (a._id === tempId ? att : a))
+      );
+    } else {
+      setAttachments((prev) => prev.filter((a) => a._id !== tempId));
     }
+    resetUpload();
   };
 
   const handleDelete = async (attachmentId: string) => {
+    const previous = attachments;
+    setAttachments((prev) => prev.filter((a) => a._id !== attachmentId));
     const res = await fetch(`/api/tasks/${id}/attachments?id=${attachmentId}`, {
       method: 'DELETE',
     });
-    if (res.ok) {
-      setAttachments((prev) => prev.filter((a) => a._id !== attachmentId));
+    if (!res.ok) {
+      setAttachments(previous);
     }
   };
 
@@ -203,6 +273,11 @@ export default function TaskPage({ params }: { params: { id: string } }) {
               onChange={(e) => setUserQuery(e.target.value)}
               placeholder={ownerName || 'Search users'}
             />
+            {ownerErrors.ownerId ? (
+              <span className="text-xs text-red-600">
+                {ownerErrors.ownerId.message}
+              </span>
+            ) : null}
             {users.length ? (
               <ul className="absolute z-10 bg-white border mt-1 w-full max-h-40 overflow-auto">
                 {users.map((u) => (
@@ -221,7 +296,17 @@ export default function TaskPage({ params }: { params: { id: string } }) {
         <TaskDetail key={task.ownerId} id={id} />
         <div className="flex flex-col gap-2">
           <h2 className="font-semibold">Attachments</h2>
-          <input type="file" onChange={(e) => void handleUpload(e)} />
+          <form onSubmit={submitUpload(onUploadSubmit)} className="flex flex-col gap-2">
+            <input type="file" {...registerUpload('file')} />
+            {uploadErrors.file ? (
+              <span className="text-xs text-red-600">
+                {uploadErrors.file.message as string}
+              </span>
+            ) : null}
+            <button type="submit" className="border rounded px-2 py-1 text-sm">
+              Upload
+            </button>
+          </form>
           <ul className="list-disc pl-4">
             {attachments.map((a) => (
               <li key={a._id} className="flex items-center gap-2">
