@@ -37,6 +37,8 @@ export interface TaskListQuery {
   teamId?: string;
   q?: string;
   sort?: 'dueDate' | 'priority' | 'createdAt' | 'title';
+  limit?: number;
+  page?: number;
 }
 
 export interface TaskStep {

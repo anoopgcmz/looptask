@@ -163,6 +163,8 @@ const listQuerySchema = z
     teamId: z.string().optional(),
     q: z.string().optional(),
     sort: z.enum(['dueDate', 'priority', 'createdAt', 'title']).optional(),
+    limit: z.coerce.number().int().positive().optional(),
+    page: z.coerce.number().int().positive().optional(),
   })
   satisfies z.ZodType<TaskListQuery>;
 
@@ -214,9 +216,14 @@ export const GET = withOrganization(async (req, session) => {
     title: 1,
     updatedAt: -1,
   };
-  const tasks = await Task.find({ $and: [filter, { $or: access }] }).sort({
-    [sortField]: sortOrder[sortField],
-  });
+  const limit = query.limit ?? 20;
+  const page = query.page ?? 1;
+  const tasks = await Task.find({ $and: [filter, { $or: access }] })
+    .sort({
+      [sortField]: sortOrder[sortField],
+    })
+    .skip((page - 1) * limit)
+    .limit(limit);
   return NextResponse.json<TaskResponse[]>(tasks);
 });
 
