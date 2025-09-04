@@ -47,6 +47,7 @@ export default function TaskCard({ task, onChange }: TaskCardProps) {
 
   const handleCreateLoop = async () => {
     await fetch(`/api/tasks/${task._id}/loop`, { method: 'POST' });
+    onChange?.();
   };
 
   return (
