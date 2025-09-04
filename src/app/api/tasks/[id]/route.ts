@@ -150,6 +150,35 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json(task);
 }
 
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth();
+  if (!session?.userId || !session.organizationId)
+    return problem(401, 'Unauthorized', 'You must be signed in.');
+
+  await dbConnect();
+  const task: ITask | null = await Task.findById(params.id);
+  if (!task) return problem(404, 'Not Found', 'Task not found');
+  if (
+    !canWriteTask(
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+      task
+    )
+  )
+    return problem(403, 'Forbidden', 'You cannot delete this task');
+
+  await Task.findByIdAndDelete(task._id);
+  await ActivityLog.create({
+    taskId: task._id,
+    actorId: new Types.ObjectId(session.userId),
+    type: 'DELETED',
+  });
+
+  return NextResponse.json({ success: true });
+}
+
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.userId || !session.organizationId)
