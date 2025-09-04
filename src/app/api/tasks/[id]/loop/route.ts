@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
+import User from '@/models/User';
 import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
@@ -44,15 +45,48 @@ export const POST = withOrganization(
       return problem(403, 'Forbidden', 'You cannot create a loop for this task');
     }
 
-    const sequence =
-      body.sequence?.map((s) => ({
-        taskId: new Types.ObjectId(params.id),
-        assignedTo: new Types.ObjectId(s.assignedTo),
-        description: s.description,
-        estimatedTime: s.estimatedTime,
-        dependencies:
-          s.dependencies?.map((d) => new Types.ObjectId(d)) ?? [],
-      })) ?? [];
+    const steps = body.sequence ?? [];
+    const errors: { index: number; message: string }[] = [];
+    const userIds = new Set<string>();
+    steps.forEach((s, idx) => {
+      if (!Types.ObjectId.isValid(s.assignedTo)) {
+        errors.push({ index: idx, message: 'Invalid user ID' });
+      } else {
+        userIds.add(s.assignedTo);
+      }
+    });
+
+    if (!errors.length && userIds.size) {
+      const users = await User.find({
+        _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
+      });
+      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+      steps.forEach((s, idx) => {
+        const u = userMap.get(s.assignedTo);
+        if (!u) {
+          errors.push({ index: idx, message: 'Assignee not found' });
+        } else if (u.organizationId.toString() !== task.organizationId.toString()) {
+          errors.push({ index: idx, message: 'Assignee outside organization' });
+        } else if (
+          task.teamId &&
+          u.teamId?.toString() !== task.teamId.toString()
+        ) {
+          errors.push({ index: idx, message: 'Assignee not in task team' });
+        }
+      });
+    }
+
+    if (errors.length) {
+      return NextResponse.json({ errors }, { status: 400 });
+    }
+
+    const sequence = steps.map((s) => ({
+      taskId: new Types.ObjectId(params.id),
+      assignedTo: new Types.ObjectId(s.assignedTo),
+      description: s.description,
+      estimatedTime: s.estimatedTime,
+      dependencies: s.dependencies?.map((d) => new Types.ObjectId(d)) ?? [],
+    }));
 
     const loop = await TaskLoop.create({
       taskId: new Types.ObjectId(params.id),

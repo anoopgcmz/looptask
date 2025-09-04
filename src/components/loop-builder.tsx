@@ -29,6 +29,7 @@ export default function LoopBuilder() {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     registerLoopBuilder(openBuilder);
@@ -64,7 +65,7 @@ export default function LoopBuilder() {
   const handleSave = async () => {
     if (!taskId) return;
     const orderedSteps = [...steps].sort((a, b) => a.index - b.index);
-    await fetch(`/api/tasks/${taskId}/loop`, {
+    const res = await fetch(`/api/tasks/${taskId}/loop`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -78,7 +79,37 @@ export default function LoopBuilder() {
         ),
       }),
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (Array.isArray(data.errors)) {
+        const map: Record<string, string> = {};
+        data.errors.forEach((e: { index: number; message: string }) => {
+          const id = orderedSteps[e.index]?.id;
+          if (id) map[id] = e.message;
+        });
+        setErrors(map);
+        setMode('edit');
+        return;
+      }
+      return;
+    }
     closeBuilder();
+  };
+
+  const handleUpdateStep = (id: string, data: Partial<LoopStep>) => {
+    updateStep(id, data);
+    setErrors((prev) => {
+      const { [id]: _omit, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const handleRemoveStep = (id: string) => {
+    removeStep(id);
+    setErrors((prev) => {
+      const { [id]: _omit, ...rest } = prev;
+      return rest;
+    });
   };
 
   const handleSaveTemplate = async () => {
@@ -159,10 +190,11 @@ export default function LoopBuilder() {
                     step={step}
                     allSteps={steps}
                     users={users}
-                    onChange={updateStep}
-                    onRemove={removeStep}
+                    onChange={handleUpdateStep}
+                    onRemove={handleRemoveStep}
                     index={step.index}
                     onReorder={reorderSteps}
+                    error={errors[step.id]}
                   />
                 ))}
               </SortableContext>
@@ -210,6 +242,7 @@ function StepItem({
   onRemove,
   index,
   onReorder,
+  error,
 }: {
   step: LoopStep;
   allSteps: LoopStep[];
@@ -218,6 +251,7 @@ function StepItem({
   onRemove: (id: string) => void;
   index: number;
   onReorder: (from: number, to: number) => void;
+  error?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: step.id,
@@ -287,14 +321,15 @@ function StepItem({
           }
           className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
         >
-          {allSteps
-            .filter((s) => s.id !== step.id)
-            .map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.description || 'Untitled Step'}
-              </option>
-            ))}
+        {allSteps
+          .filter((s) => s.id !== step.id)
+          .map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.description || 'Untitled Step'}
+            </option>
+          ))}
         </select>
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
       <Button
         variant="ghost"
