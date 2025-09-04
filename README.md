@@ -24,6 +24,16 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 Run `npm run seed` to populate the database with sample accounts. The script creates three regular users (`user1`, `user2`, `user3`) whose passwords match their usernames and an admin user (`admin`) with password `admin`.
 
+## Database connection
+
+The application configures Mongoose's connection pool with the following defaults:
+
+- `maxPoolSize`: 10
+- `minPoolSize`: 1
+- `socketTimeoutMS`: 45000
+
+You can override these values with the environment variables `MONGODB_MAX_POOL_SIZE`, `MONGODB_MIN_POOL_SIZE`, and `MONGODB_SOCKET_TIMEOUT_MS`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
