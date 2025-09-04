@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import TaskCard from '@/components/task-card';
 
 interface Task {
   _id: string;
   title: string;
   status: string;
+  assignee?: string;
+  ownerId?: string;
+  dueDate?: string;
+  priority?: string;
 }
 
 const statusLabels: Record<string, string> = {
@@ -37,23 +42,24 @@ export default function TasksPage() {
     DONE: [],
   });
 
-  useEffect(() => {
-    async function loadTasks() {
-      const results = await Promise.all(
-        statusTabs.map((s) =>
-          fetch(`/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`)
-            .then((res) => res.json())
-            .catch(() => [])
-        )
-      );
-      const next: Record<string, Task[]> = {};
-      statusTabs.forEach((s, i) => {
-        next[s.value] = results[i] as Task[];
-      });
-      setTasks(next);
-    }
-    void loadTasks();
+  const loadTasks = useCallback(async () => {
+    const results = await Promise.all(
+      statusTabs.map((s) =>
+        fetch(`/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`)
+          .then((res) => res.json())
+          .catch(() => [])
+      )
+    );
+    const next: Record<string, Task[]> = {};
+    statusTabs.forEach((s, i) => {
+      next[s.value] = results[i] as Task[];
+    });
+    setTasks(next);
   }, []);
+
+  useEffect(() => {
+    void loadTasks();
+  }, [loadTasks]);
 
   return (
     <div className="p-4">
@@ -83,16 +89,18 @@ export default function TasksPage() {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 4 }}
-                  className="rounded border hover:bg-gray-50"
                 >
-                  <Link href={`/tasks/${t._id}`} className="block p-2">
-                    {t.title}
-                    {s.query.length > 1 && (
-                      <span className="ml-2 text-xs text-gray-500">
-                        {statusLabels[t.status] ?? t.status}
-                      </span>
-                    )}
-                  </Link>
+                  <TaskCard
+                    task={{
+                      _id: t._id,
+                      title: t.title,
+                      assignee: t.assignee || t.ownerId,
+                      dueDate: t.dueDate,
+                      priority: t.priority,
+                      status: t.status,
+                    }}
+                    onChange={loadTasks}
+                  />
                 </motion.li>
               ))}
             </ul>
