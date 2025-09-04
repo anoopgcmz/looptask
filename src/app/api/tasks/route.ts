@@ -6,11 +6,11 @@ import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
-import { auth } from '@/lib/auth';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
 import { scheduleTaskJobs } from '@/lib/agenda';
 import { problem } from '@/lib/http';
 import { computeParticipants } from '@/lib/taskParticipants';
+import { withOrganization } from '@/lib/middleware/withOrganization';
 
 const stepSchema = z.object({
   title: z.string(),
@@ -35,11 +35,7 @@ const createTaskSchema = z.object({
   steps: z.array(stepSchema).optional(),
 });
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.userId || !session.organizationId) {
-    return problem(401, 'Unauthorized', 'You must be signed in.');
-  }
+export const POST = withOrganization(async (req, session) => {
   let body: z.infer<typeof createTaskSchema>;
   try {
     body = createTaskSchema.parse(await req.json());
@@ -130,7 +126,7 @@ export async function POST(req: Request) {
     await notifyMention(mentionIds as Types.ObjectId[], task._id);
   }
   return NextResponse.json(task, { status: 201 });
-}
+});
 
 const listQuerySchema = z.object({
   ownerId: z.string().optional(),
@@ -150,14 +146,7 @@ const listQuerySchema = z.object({
   q: z.string().optional(),
 });
 
-export async function GET(req: Request) {
-  const session = await auth();
-  if (!session?.userId) {
-    return problem(401, 'Unauthorized', 'You must be signed in.');
-  }
-  if (!session.organizationId) {
-    return problem(401, 'Unauthorized', 'You must be signed in.');
-  }
+export const GET = withOrganization(async (req, session) => {
   const url = new URL(req.url);
   const raw: Record<string, string | string[]> = {};
   url.searchParams.forEach((value, key) => {
@@ -198,5 +187,5 @@ export async function GET(req: Request) {
   }
   const tasks = await Task.find({ $and: [filter, { $or: access }] }).sort({ updatedAt: -1 });
   return NextResponse.json(tasks);
-}
+});
 
