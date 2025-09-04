@@ -9,6 +9,7 @@ export interface ILoopStep {
   actualTime?: number;
   completedAt?: Date;
   comments?: string;
+  dependencies?: Types.ObjectId[];
 }
 
 export interface ITaskLoop extends Document {
@@ -34,6 +35,7 @@ const loopStepSchema = new Schema<ILoopStep>(
     actualTime: { type: Number },
     completedAt: Date,
     comments: String,
+    dependencies: [{ type: Schema.Types.ObjectId }],
   },
   { _id: false }
 );
