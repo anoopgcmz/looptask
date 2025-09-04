@@ -11,12 +11,19 @@ interface Task {
   _id: string;
   title: string;
   status: TaskStatus;
+  ownerId?: string;
 }
 
 interface Attachment {
   _id: string;
   filename: string;
   url: string;
+}
+
+interface User {
+  _id: string;
+  name?: string;
+  email?: string;
 }
 
 const ACTIONS: Record<TaskStatus, { action: string; label: string }[]> = {
@@ -36,6 +43,9 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   const [task, setTask] = useState<Task | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [history, setHistory] = useState<TimelineEvent[]>([]);
+  const [userQuery, setUserQuery] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [ownerName, setOwnerName] = useState('');
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
@@ -57,6 +67,51 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     void loadAttachments();
     void loadHistory();
   }, [load, loadAttachments, loadHistory]);
+
+  useEffect(() => {
+    if (!task?.ownerId) return;
+    const loadOwner = async () => {
+      const res = await fetch(`/api/users/${task.ownerId}`);
+      if (res.ok) {
+        const u = await res.json();
+        setOwnerName(u.name || u.email || '');
+      }
+    };
+    void loadOwner();
+  }, [task?.ownerId]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const q = userQuery.trim();
+      if (!q) {
+        setUsers([]);
+        return;
+      }
+      const res = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+      if (res.ok) setUsers(await res.json());
+    };
+    void loadUsers();
+  }, [userQuery]);
+
+  const handleOwnerSelect = async (u: User) => {
+    if (!task) return;
+    const previous = task;
+    setTask({ ...task, ownerId: u._id });
+    setOwnerName(u.name || u.email || '');
+    setUserQuery('');
+    setUsers([]);
+    const res = await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: u._id }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setTask(updated);
+    } else {
+      setTask(previous);
+    }
+  };
 
   const handleTransition = async (action: string) => {
     const res = await fetch(`/api/tasks/${id}/transition`, {
@@ -118,7 +173,31 @@ export default function TaskPage({ params }: { params: { id: string } }) {
             ))}
           </div>
         ) : null}
-        <TaskDetail id={id} />
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Owner:</span>
+          <div className="relative flex-1">
+            <input
+              className="border rounded px-2 py-1 text-sm w-full"
+              value={userQuery}
+              onChange={(e) => setUserQuery(e.target.value)}
+              placeholder={ownerName || 'Search users'}
+            />
+            {users.length ? (
+              <ul className="absolute z-10 bg-white border mt-1 w-full max-h-40 overflow-auto">
+                {users.map((u) => (
+                  <li
+                    key={u._id}
+                    className="p-1 cursor-pointer hover:bg-gray-100"
+                    onClick={() => void handleOwnerSelect(u)}
+                  >
+                    {u.name || u.email}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </div>
+        <TaskDetail key={task.ownerId} id={id} />
         <div className="flex flex-col gap-2">
           <h2 className="font-semibold">Attachments</h2>
           <input type="file" onChange={(e) => void handleUpload(e)} />
