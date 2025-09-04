@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { openLoopBuilder } from "@/lib/loopBuilder";
 
 interface Task {
   title?: string;
@@ -69,6 +71,13 @@ export default function TaskDetail({ id }: { id: string }) {
       <div>Owner: {task.ownerId}</div>
       <div>Tags: {task.tags?.join(", ")}</div>
       <div>Status: {task.status}</div>
+      <Button
+        onClick={() => openLoopBuilder(id)}
+        variant="outline"
+        className="text-xs self-start"
+      >
+        Add to Loop
+      </Button>
     </div>
   );
 }
