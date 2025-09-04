@@ -12,7 +12,7 @@ interface AuthUser {
   email: string;
   organizationId?: string;
   teamId?: string;
-  isAdmin?: boolean;
+  role?: string;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           organizationId: user.organizationId?.toString(),
           teamId: user.teamId?.toString(),
-          isAdmin: user.isAdmin,
+          role: user.role,
         };
       },
     }),
@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.organizationId = user.organizationId;
         token.teamId = user.teamId;
-        token.isAdmin = user.isAdmin;
+        token.role = user.role;
       }
       return token;
     },
@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
       session.email = token.email;
       session.organizationId = token.organizationId;
       session.teamId = token.teamId;
-      session.isAdmin = token.isAdmin;
+      session.role = token.role;
       return session;
     },
   },

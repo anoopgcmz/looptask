@@ -10,7 +10,9 @@ export interface IUser extends Document {
   teamId?: Types.ObjectId;
   timezone: string;
   isActive: boolean;
-  isAdmin: boolean;
+  role: 'ADMIN' | 'USER';
+  avatar?: string;
+  permissions: string[];
 }
 
 const userSchema = new Schema<IUser>(
@@ -19,7 +21,6 @@ const userSchema = new Schema<IUser>(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       index: true,
     },
@@ -35,10 +36,14 @@ const userSchema = new Schema<IUser>(
     teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
     timezone: { type: String, default: 'Asia/Kolkata' },
     isActive: { type: Boolean, default: true },
-    isAdmin: { type: Boolean, default: false },
+    role: { type: String, enum: ['ADMIN', 'USER'], default: 'USER' },
+    avatar: { type: String },
+    permissions: { type: [String], default: [] },
   },
   { timestamps: true }
 );
+
+userSchema.index({ email: 1, organizationId: 1 }, { unique: true });
 
 userSchema.pre('save', async function () {
   if (this.isModified('password')) {

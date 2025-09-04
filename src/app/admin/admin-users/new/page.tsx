@@ -23,7 +23,7 @@ export default function NewAdminPage() {
     await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, isAdmin: true }),
+      body: JSON.stringify({ ...form, role: 'ADMIN' }),
     });
     router.push('/admin/users');
   };
