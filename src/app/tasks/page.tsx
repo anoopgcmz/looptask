@@ -64,37 +64,43 @@ export default function TasksPage() {
     IN_PROGRESS: true,
     DONE: true,
   });
+  const [loading, setLoading] = useState(false);
 
   const loadTasks = useCallback(async () => {
-    const results = await Promise.all(
-      statusTabs.map((s) => {
-        const params = new URLSearchParams();
-        if (filters.assignee) params.append('ownerId', filters.assignee);
-        if (filters.priority) params.append('priority', filters.priority);
-        if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
-        if (filters.dueTo) params.append('dueTo', filters.dueTo);
-        if (filters.sort) params.append('sort', filters.sort);
-        if (search) params.append('q', search);
-        s.query.forEach((st) => params.append('status', st));
-        params.append('limit', PAGE_SIZE.toString());
-        params.append('page', '1');
-        return fetch(`/api/tasks?${params.toString()}`)
-          .then((res) => res.json())
-          .catch(() => []);
-      })
-    );
-    const nextTasks: Record<string, Task[]> = {};
-    const nextPages: Record<string, number> = {};
-    const nextHasMore: Record<string, boolean> = {};
-    statusTabs.forEach((s, i) => {
-      const result = results[i] as Task[];
-      nextTasks[s.value] = result;
-      nextPages[s.value] = 1;
-      nextHasMore[s.value] = result.length === PAGE_SIZE;
-    });
-    setTasks(nextTasks);
-    setPages(nextPages);
-    setHasMore(nextHasMore);
+    setLoading(true);
+    try {
+      const results = await Promise.all(
+        statusTabs.map((s) => {
+          const params = new URLSearchParams();
+          if (filters.assignee) params.append('ownerId', filters.assignee);
+          if (filters.priority) params.append('priority', filters.priority);
+          if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
+          if (filters.dueTo) params.append('dueTo', filters.dueTo);
+          if (filters.sort) params.append('sort', filters.sort);
+          if (search) params.append('q', search);
+          s.query.forEach((st) => params.append('status', st));
+          params.append('limit', PAGE_SIZE.toString());
+          params.append('page', '1');
+          return fetch(`/api/tasks?${params.toString()}`)
+            .then((res) => res.json())
+            .catch(() => []);
+        })
+      );
+      const nextTasks: Record<string, Task[]> = {};
+      const nextPages: Record<string, number> = {};
+      const nextHasMore: Record<string, boolean> = {};
+      statusTabs.forEach((s, i) => {
+        const result = results[i] as Task[];
+        nextTasks[s.value] = result;
+        nextPages[s.value] = 1;
+        nextHasMore[s.value] = result.length === PAGE_SIZE;
+      });
+      setTasks(nextTasks);
+      setPages(nextPages);
+      setHasMore(nextHasMore);
+    } finally {
+      setLoading(false);
+    }
   }, [filters, search]);
 
   const loadMore = useCallback(
@@ -102,28 +108,33 @@ export default function TasksPage() {
       const tab = statusTabs.find((s) => s.value === status);
       if (!tab) return;
       const nextPage = pages[status] + 1;
-      const params = new URLSearchParams();
-      if (filters.assignee) params.append('ownerId', filters.assignee);
-      if (filters.priority) params.append('priority', filters.priority);
-      if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
-      if (filters.dueTo) params.append('dueTo', filters.dueTo);
-      if (filters.sort) params.append('sort', filters.sort);
-      if (search) params.append('q', search);
-      tab.query.forEach((st) => params.append('status', st));
-      params.append('limit', PAGE_SIZE.toString());
-      params.append('page', nextPage.toString());
-      const result: Task[] = await fetch(`/api/tasks?${params.toString()}`)
-        .then((res) => res.json())
-        .catch(() => []);
-      setTasks((prev) => ({
-        ...prev,
-        [status]: [...prev[status], ...result],
-      }));
-      setPages((prev) => ({ ...prev, [status]: nextPage }));
-      setHasMore((prev) => ({
-        ...prev,
-        [status]: result.length === PAGE_SIZE,
-      }));
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (filters.assignee) params.append('ownerId', filters.assignee);
+        if (filters.priority) params.append('priority', filters.priority);
+        if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
+        if (filters.dueTo) params.append('dueTo', filters.dueTo);
+        if (filters.sort) params.append('sort', filters.sort);
+        if (search) params.append('q', search);
+        tab.query.forEach((st) => params.append('status', st));
+        params.append('limit', PAGE_SIZE.toString());
+        params.append('page', nextPage.toString());
+        const result: Task[] = await fetch(`/api/tasks?${params.toString()}`)
+          .then((res) => res.json())
+          .catch(() => []);
+        setTasks((prev) => ({
+          ...prev,
+          [status]: [...prev[status], ...result],
+        }));
+        setPages((prev) => ({ ...prev, [status]: nextPage }));
+        setHasMore((prev) => ({
+          ...prev,
+          [status]: result.length === PAGE_SIZE,
+        }));
+      } finally {
+        setLoading(false);
+      }
     },
     [filters, search, pages]
   );
@@ -231,7 +242,16 @@ export default function TasksPage() {
         </TabsList>
         {statusTabs.map((s) => (
           <TabsContent key={s.value} value={s.value}>
-            {tasks[s.value]?.length ? (
+            {loading ? (
+              <ul className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <li
+                    key={i}
+                    className="h-24 rounded bg-gray-200 animate-pulse"
+                  />
+                ))}
+              </ul>
+            ) : tasks[s.value]?.length ? (
               <>
                 <ul className="space-y-2">
                   {tasks[s.value]?.map((t) => (
