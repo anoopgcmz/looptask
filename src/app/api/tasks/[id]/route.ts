@@ -11,47 +11,67 @@ import { scheduleTaskJobs } from '@/lib/agenda';
 import { problem } from '@/lib/http';
 import { computeParticipants } from '@/lib/taskParticipants';
 import { withOrganization } from '@/lib/middleware/withOrganization';
+import type {
+  TaskPayload,
+  TaskResponse,
+  TaskStepPayload,
+} from '@/types/api/task';
 
-const stepSchema = z.object({
-  title: z.string(),
-  ownerId: z.string(),
-  description: z.string().optional(),
-  dueAt: z.coerce.date().optional(),
-  status: z.enum(['OPEN', 'DONE']).optional(),
-  completedAt: z.coerce.date().optional(),
-});
+const stepSchema = z
+  .object({
+    title: z.string(),
+    ownerId: z.string(),
+    description: z.string().optional(),
+    dueAt: z.coerce.date().optional(),
+    status: z.enum(['OPEN', 'DONE']).optional(),
+    completedAt: z.coerce.date().optional(),
+  })
+  satisfies z.ZodType<TaskStepPayload>;
 
-const patchSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  ownerId: z.string().optional(),
-  helpers: z.array(z.string()).optional(),
-  mentions: z.array(z.string()).optional(),
-  teamId: z.string().optional(),
-  status: z.enum(['OPEN','IN_PROGRESS','IN_REVIEW','REVISIONS','FLOW_IN_PROGRESS','DONE']).optional(),
-  priority: z.enum(['LOW','MEDIUM','HIGH']).optional(),
-  tags: z.array(z.string()).optional(),
-  visibility: z.enum(['PRIVATE','TEAM']).optional(),
-  dueDate: z.coerce.date().optional(),
-  steps: z.array(stepSchema).optional(),
-  currentStepIndex: z.number().int().optional(),
-});
+const patchSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    ownerId: z.string().optional(),
+    helpers: z.array(z.string()).optional(),
+    mentions: z.array(z.string()).optional(),
+    teamId: z.string().optional(),
+    status: z
+      .enum(['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'REVISIONS', 'FLOW_IN_PROGRESS', 'DONE'])
+      .optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+    tags: z.array(z.string()).optional(),
+    visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
+    dueDate: z.coerce.date().optional(),
+    steps: z.array(stepSchema).optional(),
+    currentStepIndex: z.number().int().optional(),
+  })
+  satisfies z.ZodType<Partial<TaskPayload>>;
 
-const putSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  ownerId: z.string(),
-  helpers: z.array(z.string()),
-  mentions: z.array(z.string()),
-  teamId: z.string().optional(),
-  status: z.enum(['OPEN','IN_PROGRESS','IN_REVIEW','REVISIONS','FLOW_IN_PROGRESS','DONE']),
-  priority: z.enum(['LOW','MEDIUM','HIGH']),
-  tags: z.array(z.string()),
-  visibility: z.enum(['PRIVATE','TEAM']),
-  dueDate: z.coerce.date().optional(),
-  steps: z.array(stepSchema),
-  currentStepIndex: z.number().int().optional(),
-});
+const putSchema = z
+  .object({
+    title: z.string(),
+    description: z.string().optional(),
+    ownerId: z.string(),
+    helpers: z.array(z.string()),
+    mentions: z.array(z.string()),
+    teamId: z.string().optional(),
+    status: z.enum([
+      'OPEN',
+      'IN_PROGRESS',
+      'IN_REVIEW',
+      'REVISIONS',
+      'FLOW_IN_PROGRESS',
+      'DONE',
+    ]),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']),
+    tags: z.array(z.string()),
+    visibility: z.enum(['PRIVATE', 'TEAM']),
+    dueDate: z.coerce.date().optional(),
+    steps: z.array(stepSchema),
+    currentStepIndex: z.number().int().optional(),
+  })
+  satisfies z.ZodType<TaskPayload>;
 
 export const GET = withOrganization(
   async (req: Request, { params }: { params: { id: string } }, session) => {
@@ -66,12 +86,12 @@ export const GET = withOrganization(
   ) {
     return problem(404, 'Not Found', 'Task not found');
   }
-  return NextResponse.json(task);
+  return NextResponse.json<TaskResponse>(task);
 });
 
 export const PATCH = withOrganization(
   async (req: Request, { params }: { params: { id: string } }, session) => {
-  let body: z.infer<typeof patchSchema>;
+  let body: Partial<TaskPayload>;
   try {
     body = patchSchema.parse(await req.json());
   } catch (e: any) {
@@ -143,7 +163,7 @@ export const PATCH = withOrganization(
     payload: body,
   });
   await scheduleTaskJobs(task);
-  return NextResponse.json(task);
+  return NextResponse.json<TaskResponse>(task);
 });
 
 export const DELETE = withOrganization(
@@ -172,7 +192,7 @@ export const DELETE = withOrganization(
 
 export const PUT = withOrganization(
   async (req: Request, { params }: { params: { id: string } }, session) => {
-    let body: z.infer<typeof putSchema>;
+    let body: TaskPayload;
     try {
       body = putSchema.parse(await req.json());
     } catch (e: any) {
@@ -245,7 +265,7 @@ export const PUT = withOrganization(
       payload: body,
     });
     await scheduleTaskJobs(task);
-    return NextResponse.json(task);
+    return NextResponse.json<TaskResponse>(task);
   }
 );
 

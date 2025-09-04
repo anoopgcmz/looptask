@@ -11,32 +11,42 @@ import { scheduleTaskJobs } from '@/lib/agenda';
 import { problem } from '@/lib/http';
 import { computeParticipants } from '@/lib/taskParticipants';
 import { withOrganization } from '@/lib/middleware/withOrganization';
+import type {
+  TaskListQuery,
+  TaskPayload,
+  TaskResponse,
+  TaskStepPayload,
+} from '@/types/api/task';
 
-const stepSchema = z.object({
-  title: z.string(),
-  ownerId: z.string(),
-  description: z.string().optional(),
-  dueAt: z.coerce.date().optional(),
-  status: z.enum(['OPEN', 'DONE']).optional(),
-  completedAt: z.coerce.date().optional(),
-});
+const stepSchema = z
+  .object({
+    title: z.string(),
+    ownerId: z.string(),
+    description: z.string().optional(),
+    dueAt: z.coerce.date().optional(),
+    status: z.enum(['OPEN', 'DONE']).optional(),
+    completedAt: z.coerce.date().optional(),
+  })
+  satisfies z.ZodType<TaskStepPayload>;
 
-const createTaskSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  ownerId: z.string().optional(),
-  helpers: z.array(z.string()).optional(),
-  mentions: z.array(z.string()).optional(),
-  teamId: z.string().optional(),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
-  tags: z.array(z.string()).optional(),
-  visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
-  dueDate: z.coerce.date().optional(),
-  steps: z.array(stepSchema).optional(),
-});
+const createTaskSchema = z
+  .object({
+    title: z.string(),
+    description: z.string().optional(),
+    ownerId: z.string().optional(),
+    helpers: z.array(z.string()).optional(),
+    mentions: z.array(z.string()).optional(),
+    teamId: z.string().optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+    tags: z.array(z.string()).optional(),
+    visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
+    dueDate: z.coerce.date().optional(),
+    steps: z.array(stepSchema).optional(),
+  })
+  satisfies z.ZodType<TaskPayload>;
 
 export const POST = withOrganization(async (req, session) => {
-  let body: z.infer<typeof createTaskSchema>;
+  let body: TaskPayload;
   try {
     body = createTaskSchema.parse(await req.json());
   } catch (e: any) {
@@ -125,26 +135,28 @@ export const POST = withOrganization(async (req, session) => {
   if (mentionIds.length) {
     await notifyMention(mentionIds as Types.ObjectId[], task._id);
   }
-  return NextResponse.json(task, { status: 201 });
+  return NextResponse.json<TaskResponse>(task, { status: 201 });
 });
 
-const listQuerySchema = z.object({
-  ownerId: z.string().optional(),
-  createdBy: z.string().optional(),
-  status: z
-    .union([z.string(), z.array(z.string())])
-    .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
-    .optional(),
-  dueFrom: z.coerce.date().optional(),
-  dueTo: z.coerce.date().optional(),
-  tag: z
-    .union([z.string(), z.array(z.string())])
-    .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
-    .optional(),
-  visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
-  teamId: z.string().optional(),
-  q: z.string().optional(),
-});
+const listQuerySchema = z
+  .object({
+    ownerId: z.string().optional(),
+    createdBy: z.string().optional(),
+    status: z
+      .union([z.string(), z.array(z.string())])
+      .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+      .optional(),
+    dueFrom: z.coerce.date().optional(),
+    dueTo: z.coerce.date().optional(),
+    tag: z
+      .union([z.string(), z.array(z.string())])
+      .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+      .optional(),
+    visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
+    teamId: z.string().optional(),
+    q: z.string().optional(),
+  })
+  satisfies z.ZodType<TaskListQuery>;
 
 export const GET = withOrganization(async (req, session) => {
   const url = new URL(req.url);
@@ -158,7 +170,7 @@ export const GET = withOrganization(async (req, session) => {
       raw[key] = value;
     }
   });
-  let query: z.infer<typeof listQuerySchema>;
+  let query: TaskListQuery;
   try {
     query = listQuerySchema.parse(raw);
   } catch (e: any) {
@@ -186,6 +198,6 @@ export const GET = withOrganization(async (req, session) => {
     access.push({ visibility: 'TEAM', teamId: new Types.ObjectId(session.teamId) });
   }
   const tasks = await Task.find({ $and: [filter, { $or: access }] }).sort({ updatedAt: -1 });
-  return NextResponse.json(tasks);
+  return NextResponse.json<TaskResponse[]>(tasks);
 });
 
