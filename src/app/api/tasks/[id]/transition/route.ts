@@ -35,8 +35,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return problem(404, 'Not Found', 'Task not found');
 
   const actorId = session.userId;
-  const isCreator = task.creatorId.toString() === actorId;
-  const isOwner = task.ownerId.toString() === actorId;
+  const isCreator = task.createdBy.toString() === actorId;
+  const isOwner = task.ownerId?.toString() === actorId;
   if (!isCreator && !isOwner) {
     return problem(403, 'Forbidden', 'You cannot transition this task');
   }

@@ -54,16 +54,16 @@ async function run() {
   const simpleDue = new Date(Date.now() + 2 * 60 * 60 * 1000);
   await Task.create({
     title: 'Simple task',
-    creatorId: user1._id,
+    createdBy: user1._id,
     ownerId: user1._id,
     organizationId: org._id,
     teamId: team._id,
-    dueAt: simpleDue,
+    dueDate: simpleDue,
   });
 
   await Task.create({
     title: 'Flow task',
-    creatorId: user1._id,
+    createdBy: user1._id,
     ownerId: user1._id,
     organizationId: org._id,
     teamId: team._id,

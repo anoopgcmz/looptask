@@ -21,7 +21,7 @@ const patchSchema = z.object({
   priority: z.enum(['LOW','MEDIUM','HIGH']).optional(),
   tags: z.array(z.string()).optional(),
   visibility: z.enum(['PRIVATE','TEAM']).optional(),
-  dueAt: z.coerce.date().optional(),
+  dueDate: z.coerce.date().optional(),
   steps: z.array(
     z.object({
       title: z.string(),
@@ -37,8 +37,8 @@ const patchSchema = z.object({
 
 function computeParticipants(task: any) {
   const ids = new Set<string>();
-  ids.add(task.creatorId.toString());
-  ids.add(task.ownerId.toString());
+  ids.add(task.createdBy.toString());
+  if (task.ownerId) ids.add(task.ownerId.toString());
   task.helpers?.forEach((h: any) => ids.add(h.toString()));
   task.mentions?.forEach((m: any) => ids.add(m.toString()));
   task.steps?.forEach((s: any) => ids.add(s.ownerId.toString()));

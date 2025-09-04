@@ -29,13 +29,13 @@ const createTaskSchema = z.object({
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
   tags: z.array(z.string()).optional(),
   visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
-  dueAt: z.coerce.date().optional(),
+  dueDate: z.coerce.date().optional(),
   steps: z.array(stepSchema).optional(),
 });
 
-function computeParticipants(data: { creatorId: string; ownerId: string; helpers?: string[]; mentions?: string[]; steps?: { ownerId: string; title: string }[] }) {
+function computeParticipants(data: { createdBy: string; ownerId: string; helpers?: string[]; mentions?: string[]; steps?: { ownerId: string; title: string }[] }) {
   const ids = new Set<string>();
-  ids.add(data.creatorId);
+  ids.add(data.createdBy);
   ids.add(data.ownerId);
   data.helpers?.forEach((h) => ids.add(h));
   data.mentions?.forEach((m) => ids.add(m));
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
   } catch (e: any) {
     return problem(400, 'Invalid request', e.message);
   }
-  const creatorId = session.userId;
+  const createdBy = session.userId;
   let ownerId = body.ownerId;
   let status: string = 'OPEN';
   let currentStepIndex = 0;
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
   const task = await Task.create({
     title: body.title,
     description: body.description,
-    creatorId: new Types.ObjectId(creatorId),
+    createdBy: new Types.ObjectId(createdBy),
     ownerId: new Types.ObjectId(ownerId),
     helpers: body.helpers?.map((id) => new Types.ObjectId(id)),
     mentions: body.mentions?.map((id) => new Types.ObjectId(id)),
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
     priority: body.priority ?? 'MEDIUM',
     tags: body.tags ?? [],
     visibility: body.visibility ?? 'PRIVATE',
-    dueAt: body.dueAt,
+    dueDate: body.dueDate,
     steps: steps.map((s) => ({
       title: s.title,
       ownerId: new Types.ObjectId(s.ownerId),
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     })),
     currentStepIndex,
     participantIds: computeParticipants({
-      creatorId,
+      createdBy,
       ownerId,
       helpers: body.helpers,
       mentions: body.mentions,
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
   });
   await ActivityLog.create({
     taskId: task._id,
-    actorId: new Types.ObjectId(creatorId),
+    actorId: new Types.ObjectId(createdBy),
     type: 'CREATED',
     payload: {},
   });
@@ -128,12 +128,12 @@ export async function POST(req: Request) {
   const assignmentIds = [
     task.ownerId,
     ...(task.helpers || []),
-  ].filter((id) => id.toString() !== creatorId);
+  ].filter((id) => id.toString() !== createdBy);
   if (assignmentIds.length) {
     await notifyAssignment(assignmentIds as Types.ObjectId[], task);
   }
   const mentionIds = (task.mentions || []).filter(
-    (id) => id.toString() !== creatorId
+    (id) => id.toString() !== createdBy
   );
   if (mentionIds.length) {
     await notifyMention(mentionIds as Types.ObjectId[], task._id);
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
 
 const listQuerySchema = z.object({
   ownerId: z.string().optional(),
-  creatorId: z.string().optional(),
+  createdBy: z.string().optional(),
   status: z
     .union([z.string(), z.array(z.string())])
     .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
@@ -187,12 +187,12 @@ export async function GET(req: Request) {
   await dbConnect();
   const filter: any = { organizationId: new Types.ObjectId(session.organizationId) };
   if (query.ownerId) filter.ownerId = new Types.ObjectId(query.ownerId);
-  if (query.creatorId) filter.creatorId = new Types.ObjectId(query.creatorId);
+  if (query.createdBy) filter.createdBy = new Types.ObjectId(query.createdBy);
   if (query.status && query.status.length) filter.status = { $in: query.status };
   if (query.dueFrom || query.dueTo) {
-    filter.dueAt = {};
-    if (query.dueFrom) filter.dueAt.$gte = query.dueFrom;
-    if (query.dueTo) filter.dueAt.$lte = query.dueTo;
+    filter.dueDate = {};
+    if (query.dueFrom) filter.dueDate.$gte = query.dueFrom;
+    if (query.dueTo) filter.dueDate.$lte = query.dueTo;
   }
   if (query.tag && query.tag.length) filter.tags = { $in: query.tag };
   if (query.visibility) filter.visibility = query.visibility;
