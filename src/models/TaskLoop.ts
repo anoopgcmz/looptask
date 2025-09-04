@@ -1,21 +1,39 @@
 import { Schema, model, models, type Document, Types } from 'mongoose';
 
-export interface LoopStep {
+export interface ILoopStep {
   taskId: Types.ObjectId;
+  assignedTo: Types.ObjectId;
+  description: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'DONE';
+  estimatedTime?: number;
+  actualTime?: number;
+  completedAt?: Date;
+  comments?: string;
 }
 
 export interface ITaskLoop extends Document {
   taskId: Types.ObjectId;
-  sequence: LoopStep[];
+  sequence: ILoopStep[];
   currentStep: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const loopStepSchema = new Schema<LoopStep>(
+const loopStepSchema = new Schema<ILoopStep>(
   {
     taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
+    assignedTo: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    description: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ['PENDING', 'IN_PROGRESS', 'DONE'],
+      default: 'PENDING',
+    },
+    estimatedTime: { type: Number },
+    actualTime: { type: Number },
+    completedAt: Date,
+    comments: String,
   },
   { _id: false }
 );
