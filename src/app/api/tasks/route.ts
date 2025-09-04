@@ -10,6 +10,7 @@ import { auth } from '@/lib/auth';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
 import { scheduleTaskJobs } from '@/lib/agenda';
 import { problem } from '@/lib/http';
+import { computeParticipants } from '@/lib/taskParticipants';
 
 const stepSchema = z.object({
   title: z.string(),
@@ -33,17 +34,6 @@ const createTaskSchema = z.object({
   dueDate: z.coerce.date().optional(),
   steps: z.array(stepSchema).optional(),
 });
-
-function computeParticipants(data: { createdBy: string; ownerId: string; helpers?: string[]; mentions?: string[]; steps?: { ownerId: string; title: string }[] }) {
-  const ids = new Set<string>();
-  ids.add(data.createdBy);
-  ids.add(data.ownerId);
-  data.helpers?.forEach((h) => ids.add(h));
-  data.mentions?.forEach((m) => ids.add(m));
-  data.steps?.forEach((s) => ids.add(s.ownerId));
-  return Array.from(ids).map((id) => new Types.ObjectId(id));
-}
-
 
 export async function POST(req: Request) {
   const session = await auth();
