@@ -231,35 +231,43 @@ export default function TasksPage() {
         </TabsList>
         {statusTabs.map((s) => (
           <TabsContent key={s.value} value={s.value}>
-            <ul className="space-y-2">
-              {tasks[s.value]?.map((t) => (
-                <motion.li
-                  key={t._id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                >
-                  <TaskCard
-                    task={{
-                      _id: t._id,
-                      title: t.title,
-                      assignee: t.assignee || t.ownerId,
-                      dueDate: t.dueDate,
-                      priority: t.priority,
-                      status: t.status,
-                    }}
-                    onChange={loadTasks}
-                  />
-                </motion.li>
-              ))}
-            </ul>
-            {hasMore[s.value] && (
-              <button
-                className="mt-4 border px-4 py-2"
-                onClick={() => void loadMore(s.value)}
-              >
-                Load more
-              </button>
+            {tasks[s.value]?.length ? (
+              <>
+                <ul className="space-y-2">
+                  {tasks[s.value]?.map((t) => (
+                    <motion.li
+                      key={t._id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                    >
+                      <TaskCard
+                        task={{
+                          _id: t._id,
+                          title: t.title,
+                          assignee: t.assignee || t.ownerId,
+                          dueDate: t.dueDate,
+                          priority: t.priority,
+                          status: t.status,
+                        }}
+                        onChange={loadTasks}
+                      />
+                    </motion.li>
+                  ))}
+                </ul>
+                {hasMore[s.value] && (
+                  <button
+                    className="mt-4 border px-4 py-2"
+                    onClick={() => void loadMore(s.value)}
+                  >
+                    Load more
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="p-4 text-center text-sm text-gray-500">
+                No tasks found.
+              </div>
             )}
           </TabsContent>
         ))}
