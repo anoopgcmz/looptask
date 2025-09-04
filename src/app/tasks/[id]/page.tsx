@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
@@ -10,6 +10,12 @@ interface Task {
   _id: string;
   title: string;
   status: TaskStatus;
+}
+
+interface Attachment {
+  _id: string;
+  filename: string;
+  url: string;
 }
 
 const ACTIONS: Record<TaskStatus, { action: string; label: string }[]> = {
@@ -27,15 +33,22 @@ const ACTIONS: Record<TaskStatus, { action: string; label: string }[]> = {
 export default function TaskPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [task, setTask] = useState<Task | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
     if (res.ok) setTask(await res.json());
   }, [id]);
 
+  const loadAttachments = useCallback(async () => {
+    const res = await fetch(`/api/tasks/${id}/attachments`);
+    if (res.ok) setAttachments(await res.json());
+  }, [id]);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadAttachments();
+  }, [load, loadAttachments]);
 
   const handleTransition = async (action: string) => {
     const res = await fetch(`/api/tasks/${id}/transition`, {
@@ -46,6 +59,31 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     if (res.ok) {
       const updated = await res.json();
       setTask(updated);
+    }
+  };
+
+  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`/api/tasks/${id}/attachments`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (res.ok) {
+      const att = await res.json();
+      setAttachments((prev) => [att, ...prev]);
+      e.target.value = '';
+    }
+  };
+
+  const handleDelete = async (attachmentId: string) => {
+    const res = await fetch(`/api/tasks/${id}/attachments?id=${attachmentId}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      setAttachments((prev) => prev.filter((a) => a._id !== attachmentId));
     }
   };
 
@@ -72,6 +110,25 @@ export default function TaskPage({ params }: { params: { id: string } }) {
         </div>
       ) : null}
       <TaskDetail id={id} />
+      <div className="flex flex-col gap-2">
+        <h2 className="font-semibold">Attachments</h2>
+        <input type="file" onChange={(e) => void handleUpload(e)} />
+        <ul className="list-disc pl-4">
+          {attachments.map((a) => (
+            <li key={a._id} className="flex items-center gap-2">
+              <a href={a.url} target="_blank" rel="noreferrer" className="underline">
+                {a.filename}
+              </a>
+              <button
+                onClick={() => void handleDelete(a._id)}
+                className="text-xs text-red-600"
+              >
+                delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
       <CommentThread taskId={id} />
     </div>
   );
