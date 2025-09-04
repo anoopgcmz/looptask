@@ -215,7 +215,10 @@ export default function LoopBuilder() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <LoopVisualizer steps={steps} users={users} />
+            <LoopVisualizer
+              steps={steps.map((s) => ({ ...s, status: 'PENDING' }))}
+              users={users}
+            />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setMode('edit')}>
                 Edit

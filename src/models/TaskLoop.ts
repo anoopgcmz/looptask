@@ -4,7 +4,7 @@ export interface ILoopStep {
   taskId: Types.ObjectId;
   assignedTo: Types.ObjectId;
   description: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'DONE';
+  status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
   estimatedTime?: number;
   actualTime?: number;
   completedAt?: Date;
@@ -28,8 +28,18 @@ const loopStepSchema = new Schema<ILoopStep>(
     description: { type: String, required: true },
     status: {
       type: String,
-      enum: ['PENDING', 'IN_PROGRESS', 'DONE'],
+      enum: ['PENDING', 'ACTIVE', 'COMPLETED', 'BLOCKED'],
       default: 'PENDING',
+      get: (v: string): ILoopStep['status'] => {
+        if (v === 'IN_PROGRESS') return 'ACTIVE';
+        if (v === 'DONE') return 'COMPLETED';
+        return v as ILoopStep['status'];
+      },
+      set: (v: string): ILoopStep['status'] => {
+        if (v === 'IN_PROGRESS') return 'ACTIVE';
+        if (v === 'DONE') return 'COMPLETED';
+        return v as ILoopStep['status'];
+      },
     },
     estimatedTime: { type: Number },
     actualTime: { type: Number },
@@ -37,7 +47,11 @@ const loopStepSchema = new Schema<ILoopStep>(
     comments: String,
     dependencies: [{ type: Schema.Types.ObjectId }],
   },
-  { _id: false }
+  {
+    _id: false,
+    toObject: { getters: true },
+    toJSON: { getters: true },
+  }
 );
 
 const taskLoopSchema = new Schema<ITaskLoop>(

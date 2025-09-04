@@ -20,13 +20,29 @@ const loopSchema = z.object({
   sequence: z.array(loopStepSchema).optional(),
 });
 
+const loopStepStatus = z
+  .enum([
+    'PENDING',
+    'ACTIVE',
+    'COMPLETED',
+    'BLOCKED',
+    'IN_PROGRESS',
+    'DONE',
+  ])
+  .transform((s) => {
+    if (s === 'IN_PROGRESS') return 'ACTIVE';
+    if (s === 'DONE') return 'COMPLETED';
+    return s;
+  })
+  .pipe(z.enum(['PENDING', 'ACTIVE', 'COMPLETED', 'BLOCKED']));
+
 const loopPatchSchema = z.object({
   sequence: z.array(
     z.object({
       index: z.number().int(),
       assignedTo: z.string().optional(),
       description: z.string().optional(),
-      status: z.enum(['PENDING', 'IN_PROGRESS', 'DONE']).optional(),
+      status: loopStepStatus.optional(),
     })
   ),
 });

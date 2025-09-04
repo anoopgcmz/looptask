@@ -10,7 +10,11 @@ interface User {
   avatar?: string;
 }
 
-export function LoopVisualizer({ steps, users }: { steps: LoopStep[]; users: User[] }) {
+export interface StepWithStatus extends LoopStep {
+  status?: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
+}
+
+export function LoopVisualizer({ steps, users }: { steps: StepWithStatus[]; users: User[] }) {
   if (!steps.length) {
     return (
       <div className="text-sm text-gray-500">No steps defined yet.</div>
@@ -43,6 +47,9 @@ export function LoopVisualizer({ steps, users }: { steps: LoopStep[]; users: Use
               />
               <span className="text-sm text-center">
                 {step.description || 'Untitled Step'}
+              </span>
+              <span className="mt-1 text-xs font-medium">
+                {step.status ?? 'PENDING'}
               </span>
               {dependencyIndexes && (
                 <span className="mt-1 text-xs text-gray-500">

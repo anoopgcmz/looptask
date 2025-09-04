@@ -14,8 +14,18 @@ interface Task {
   status?: string;
 }
 
+interface LoopStep {
+  description: string;
+  status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
+}
+
+interface TaskLoop {
+  sequence: LoopStep[];
+}
+
 export default function TaskDetail({ id }: { id: string }) {
   const [task, setTask] = useState<Task | null>(null);
+  const [loop, setLoop] = useState<TaskLoop | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -25,6 +35,14 @@ export default function TaskDetail({ id }: { id: string }) {
       }
     };
     void load();
+  }, [id]);
+
+  useEffect(() => {
+    const loadLoop = async () => {
+      const res = await fetch(`/api/tasks/${id}/loop`);
+      if (res.ok) setLoop(await res.json());
+    };
+    void loadLoop();
   }, [id]);
 
   const updateField = async (field: keyof Task, value: string) => {
@@ -71,6 +89,18 @@ export default function TaskDetail({ id }: { id: string }) {
       <div>Owner: {task.ownerId}</div>
       <div>Tags: {task.tags?.join(", ")}</div>
       <div>Status: {task.status}</div>
+      {loop && (
+        <div className="flex flex-col gap-1">
+          <div className="font-semibold">Loop Steps</div>
+          <ul className="list-disc pl-4">
+            {loop.sequence.map((s, idx) => (
+              <li key={idx} className="text-sm">
+                {s.description} - {s.status}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <Button
         onClick={() => openLoopBuilder(id)}
         variant="outline"
