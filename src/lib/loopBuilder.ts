@@ -1,5 +1,10 @@
-export function openLoopBuilder(taskId: string): void {
-  // Placeholder for loop builder modal integration
-  // eslint-disable-next-line no-console
-  console.log('Open loop builder for task', taskId);
+let listener: ((taskId: string) => void) | null = null;
+
+export function registerLoopBuilder(fn: (taskId: string) => void): void {
+  listener = fn;
 }
+
+export function openLoopBuilder(taskId: string): void {
+  listener?.(taskId);
+}
+
