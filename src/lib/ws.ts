@@ -20,6 +20,21 @@ export function emitTaskTransition(task: any) {
   });
 }
 
+export function emitTaskUpdated(task: any) {
+  const message = JSON.stringify({
+    event: 'task.updated',
+    taskId: task._id?.toString(),
+    task,
+  });
+  clients.forEach((ws) => {
+    try {
+      ws.send(message);
+    } catch {
+      clients.delete(ws);
+    }
+  });
+}
+
 export function emitCommentCreated(comment: any) {
   const message = JSON.stringify({
     event: 'comment.created',

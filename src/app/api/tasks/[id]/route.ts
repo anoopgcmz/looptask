@@ -8,6 +8,7 @@ import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { scheduleTaskJobs } from '@/lib/agenda';
+import { emitTaskUpdated } from '@/lib/ws';
 import { problem } from '@/lib/http';
 import { computeParticipants } from '@/lib/taskParticipants';
 import { withOrganization } from '@/lib/middleware/withOrganization';
@@ -163,6 +164,7 @@ export const PATCH = withOrganization(
     payload: body,
   });
   await scheduleTaskJobs(task);
+  emitTaskUpdated(task);
   return NextResponse.json<TaskResponse>(task);
 });
 
@@ -265,6 +267,7 @@ export const PUT = withOrganization(
       payload: body,
     });
     await scheduleTaskJobs(task);
+    emitTaskUpdated(task);
     return NextResponse.json<TaskResponse>(task);
   }
 );
