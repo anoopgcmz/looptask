@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
+import Timeline, { TimelineEvent } from "@/components/timeline/timeline";
 import type { TaskStatus } from '@/models/Task';
 
 interface Task {
@@ -34,6 +35,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [task, setTask] = useState<Task | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [history, setHistory] = useState<TimelineEvent[]>([]);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
@@ -45,10 +47,16 @@ export default function TaskPage({ params }: { params: { id: string } }) {
     if (res.ok) setAttachments(await res.json());
   }, [id]);
 
+  const loadHistory = useCallback(async () => {
+    const res = await fetch(`/api/tasks/${id}/history`);
+    if (res.ok) setHistory(await res.json());
+  }, [id]);
+
   useEffect(() => {
     void load();
     void loadAttachments();
-  }, [load, loadAttachments]);
+    void loadHistory();
+  }, [load, loadAttachments, loadHistory]);
 
   const handleTransition = async (action: string) => {
     const res = await fetch(`/api/tasks/${id}/transition`, {
@@ -91,45 +99,50 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   const actions = ACTIONS[task.status];
 
   return (
-    <div className="p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <h1 className="text-xl font-semibold">{task.title}</h1>
-        <StatusBadge status={task.status} />
-      </div>
-      {actions.length ? (
-        <div className="flex gap-2">
-          {actions.map((a) => (
-            <button
-              key={a.action}
-              onClick={() => void handleTransition(a.action)}
-              className="border rounded px-2 py-1 text-sm"
-            >
-              {a.label}
-            </button>
-          ))}
+    <div className="p-4 flex gap-8">
+      <div className="flex-1 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold">{task.title}</h1>
+          <StatusBadge status={task.status} />
         </div>
-      ) : null}
-      <TaskDetail id={id} />
-      <div className="flex flex-col gap-2">
-        <h2 className="font-semibold">Attachments</h2>
-        <input type="file" onChange={(e) => void handleUpload(e)} />
-        <ul className="list-disc pl-4">
-          {attachments.map((a) => (
-            <li key={a._id} className="flex items-center gap-2">
-              <a href={a.url} target="_blank" rel="noreferrer" className="underline">
-                {a.filename}
-              </a>
+        {actions.length ? (
+          <div className="flex gap-2">
+            {actions.map((a) => (
               <button
-                onClick={() => void handleDelete(a._id)}
-                className="text-xs text-red-600"
+                key={a.action}
+                onClick={() => void handleTransition(a.action)}
+                className="border rounded px-2 py-1 text-sm"
               >
-                delete
+                {a.label}
               </button>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        ) : null}
+        <TaskDetail id={id} />
+        <div className="flex flex-col gap-2">
+          <h2 className="font-semibold">Attachments</h2>
+          <input type="file" onChange={(e) => void handleUpload(e)} />
+          <ul className="list-disc pl-4">
+            {attachments.map((a) => (
+              <li key={a._id} className="flex items-center gap-2">
+                <a href={a.url} target="_blank" rel="noreferrer" className="underline">
+                  {a.filename}
+                </a>
+                <button
+                  onClick={() => void handleDelete(a._id)}
+                  className="text-xs text-red-600"
+                >
+                  delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <CommentThread taskId={id} />
       </div>
-      <CommentThread taskId={id} />
+      <aside className="w-64">
+        <Timeline events={history} />
+      </aside>
     </div>
   );
 }
