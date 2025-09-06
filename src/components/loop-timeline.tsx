@@ -7,7 +7,6 @@ import { Avatar } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import CommentThread from '@/components/comment-thread';
-import { cn } from '@/lib/utils';
 
 interface User {
   _id: string;
@@ -84,11 +83,30 @@ export default function LoopTimeline({
     (d) => localSteps.find((s) => s.id === d)?.description || d
   );
 
-  const statusStyles: Record<StepStatus, string> = {
-    PENDING: 'border-gray-300 bg-gray-100 text-gray-700',
-    ACTIVE: 'border-blue-500 bg-blue-100 text-blue-700',
-    COMPLETED: 'border-green-500 bg-green-100 text-green-700',
-    BLOCKED: 'border-red-500 bg-red-100 text-red-700',
+  const statusColors: Record<
+    StepStatus,
+    { bg: string; border: string; text: string }
+  > = {
+    PENDING: {
+      bg: '#f3f4f6',
+      border: '#d1d5db',
+      text: '#374151',
+    },
+    ACTIVE: {
+      bg: '#dbeafe',
+      border: '#3b82f6',
+      text: '#1e40af',
+    },
+    COMPLETED: {
+      bg: '#dcfce7',
+      border: '#22c55e',
+      text: '#166534',
+    },
+    BLOCKED: {
+      bg: '#fee2e2',
+      border: '#ef4444',
+      text: '#991b1b',
+    },
   };
 
   return (
@@ -110,13 +128,16 @@ export default function LoopTimeline({
                 <motion.button
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: isCurrent ? 1.05 : 1 }}
+                  animate={{
+                    opacity: 1,
+                    scale: isCurrent ? 1.05 : 1,
+                    backgroundColor: statusColors[step.status ?? 'PENDING'].bg,
+                    borderColor: statusColors[step.status ?? 'PENDING'].border,
+                    color: statusColors[step.status ?? 'PENDING'].text,
+                  }}
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setSelected(step)}
-                  className={cn(
-                    'relative flex flex-col items-center p-2 sm:p-3 md:p-4 min-w-24 sm:min-w-28 md:min-w-32 rounded border cursor-pointer z-10',
-                    statusStyles[step.status ?? 'PENDING']
-                  )}
+                  className="relative flex flex-col items-center p-2 sm:p-3 md:p-4 min-w-24 sm:min-w-28 md:min-w-32 rounded border cursor-pointer z-10"
                   title={step.description}
                   transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
@@ -167,8 +188,18 @@ export default function LoopTimeline({
               </div>
               {idx < ordered.length - 1 && (
                 <>
-                  <div className="hidden md:block mx-2 h-0.5 w-8 bg-gray-300" />
-                  <div className="md:hidden my-2 w-0.5 h-8 bg-gray-300" />
+                  <motion.div
+                    className="hidden md:block mx-2 h-0.5 bg-gray-300"
+                    initial={false}
+                    animate={{ width: step.status === 'COMPLETED' ? 32 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                  <motion.div
+                    className="md:hidden my-2 w-0.5 bg-gray-300"
+                    initial={false}
+                    animate={{ height: step.status === 'COMPLETED' ? 32 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
                 </>
               )}
             </div>
