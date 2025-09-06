@@ -44,14 +44,14 @@ export default function EditUserPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form };
-    if (!payload.password) delete (payload as unknown).password;
+    const { password, ...payload } = form;
+    const body = password ? { ...payload, password } : payload;
     setStatus({});
     try {
       const res = await fetch('/api/users/' + id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
