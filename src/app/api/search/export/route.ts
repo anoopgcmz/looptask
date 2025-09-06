@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { GET as searchTasks } from '../tasks/route';
 import { GET as searchGlobal } from '../global/route';
 
@@ -24,9 +24,13 @@ export async function GET(req: NextRequest) {
       url.searchParams.delete('skip');
       url.searchParams.set('page', String(page));
     }
-    searchRes = await searchGlobal(new Request(url.toString(), { headers: req.headers }));
+    searchRes = await searchGlobal(
+      new NextRequest(url.toString(), { headers: req.headers })
+    );
   } else {
-    searchRes = await searchTasks(new Request(url.toString(), { headers: req.headers }));
+    searchRes = await searchTasks(
+      new NextRequest(url.toString(), { headers: req.headers })
+    );
   }
 
   if (!searchRes.ok) {
