@@ -15,6 +15,11 @@ export interface IUser extends Document {
   role: 'ADMIN' | 'USER';
   avatar?: string;
   permissions: string[];
+  notificationSettings: {
+    email: boolean;
+    push: boolean;
+    digestFrequency: 'daily' | 'weekly';
+  };
 }
 
 const userSchema = new Schema<IUser>(
@@ -41,6 +46,15 @@ const userSchema = new Schema<IUser>(
     role: { type: String, enum: ['ADMIN', 'USER'], default: 'USER' },
     avatar: { type: String },
     permissions: { type: [String], default: [] },
+    notificationSettings: {
+      email: { type: Boolean, default: true },
+      push: { type: Boolean, default: true },
+      digestFrequency: {
+        type: String,
+        enum: ['daily', 'weekly'],
+        default: 'daily',
+      },
+    },
   },
   { timestamps: true }
 );

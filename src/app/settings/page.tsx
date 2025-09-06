@@ -12,6 +12,7 @@ interface PasswordFormData {
 interface NotificationsFormData {
   email: boolean;
   push: boolean;
+  digestFrequency: 'daily' | 'weekly';
 }
 
 interface TimezoneFormData {
@@ -64,7 +65,11 @@ export default function SettingsPage() {
         const user = await userRes.json();
         const prefs = await notifRes.json();
         resetTimezone({ timezone: user.timezone || '' });
-        resetNotifications({ email: prefs.email ?? true, push: prefs.push ?? true });
+        resetNotifications({
+          email: prefs.email ?? true,
+          push: prefs.push ?? true,
+          digestFrequency: prefs.digestFrequency || 'daily',
+        });
       } catch {
         setLoadError('Failed to load settings');
       } finally {
@@ -208,6 +213,16 @@ export default function SettingsPage() {
           <label className="flex items-center gap-2">
             <input type="checkbox" {...registerNotifications('push')} />
             <span>Push Notifications</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <span>Digest Frequency</span>
+            <select
+              className="border p-2"
+              {...registerNotifications('digestFrequency')}
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
           </label>
           {notificationsError && <p className="text-red-500">{notificationsError}</p>}
           {notificationsSuccess && <p className="text-green-500">{notificationsSuccess}</p>}
