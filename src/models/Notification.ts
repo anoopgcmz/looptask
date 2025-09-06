@@ -6,6 +6,7 @@ export interface INotification extends Document {
   message: string;
   taskId?: Types.ObjectId;
   read: boolean;
+  readAt?: Date | null;
   createdAt: Date;
 }
 
@@ -16,6 +17,7 @@ const notificationSchema = new Schema<INotification>(
     message: { type: String, required: true },
     taskId: { type: Schema.Types.ObjectId, ref: 'Task' },
     read: { type: Boolean, default: false },
+    readAt: { type: Date, default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
