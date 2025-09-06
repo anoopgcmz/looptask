@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { Types } from 'mongoose';
+import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Objective from '@/models/Objective';
-import Task from '@/models/Task';
+import Task, { type ITask } from '@/models/Task';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   const start = new Date(query.date);
   const end = new Date(start);
   end.setDate(start.getDate() + 1);
-  const access: unknown[] = [
+  const access: FilterQuery<ITask>[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     dueDate: { $gte: start, $lt: end },
     $or: access,
   });
-  const taskMap = new Map<string, unknown[]>();
+  const taskMap = new Map<string, ITask[]>();
   tasks.forEach((t) => {
     const key = t.ownerId.toString();
     if (!taskMap.has(key)) taskMap.set(key, []);
