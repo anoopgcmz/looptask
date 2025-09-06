@@ -109,5 +109,6 @@ export async function completeStep(
   return updatedLoop;
 }
 
-export default { completeStep };
+const loopUtils = { completeStep };
+export default loopUtils;
 
