@@ -37,14 +37,17 @@ const loopStepStatus = z
   .pipe(z.enum(['PENDING', 'ACTIVE', 'COMPLETED', 'BLOCKED']));
 
 const loopPatchSchema = z.object({
-  sequence: z.array(
-    z.object({
-      index: z.number().int(),
-      assignedTo: z.string().optional(),
-      description: z.string().optional(),
-      status: loopStepStatus.optional(),
-    })
-  ),
+  parallel: z.boolean().optional(),
+  sequence: z
+    .array(
+      z.object({
+        index: z.number().int(),
+        assignedTo: z.string().optional(),
+        description: z.string().optional(),
+        status: loopStepStatus.optional(),
+      })
+    )
+    .optional(),
 });
 
 export const POST = withOrganization(
@@ -169,78 +172,86 @@ export const PATCH = withOrganization(
     const loop = await TaskLoop.findOne({ taskId: params.id });
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
 
-    const steps = body.sequence;
-    if (steps.length !== loop.sequence.length) {
-      return problem(400, 'Invalid request', 'Sequence length mismatch');
-    }
+    const { sequence: steps, parallel } = body;
 
-    const errors: { index: number; message: string }[] = [];
-    const userIds = new Set<string>();
-    const seen = new Set<number>();
-    steps.forEach((s, idx) => {
-      if (seen.has(s.index)) {
-        errors.push({ index: idx, message: 'Duplicate index' });
-      } else if (s.index < 0 || s.index >= loop.sequence.length) {
-        errors.push({ index: idx, message: 'Invalid index' });
-      } else {
-        seen.add(s.index);
+    if (steps) {
+      if (steps.length !== loop.sequence.length) {
+        return problem(400, 'Invalid request', 'Sequence length mismatch');
       }
-      if (s.assignedTo !== undefined) {
-        if (!Types.ObjectId.isValid(s.assignedTo)) {
-          errors.push({ index: idx, message: 'Invalid user ID' });
-        } else {
-          userIds.add(s.assignedTo);
-        }
-      }
-    });
 
-    if (!errors.length && userIds.size) {
-      const users = await User.find({
-        _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
-      });
-      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+      const errors: { index: number; message: string }[] = [];
+      const userIds = new Set<string>();
+      const seen = new Set<number>();
       steps.forEach((s, idx) => {
+        if (seen.has(s.index)) {
+          errors.push({ index: idx, message: 'Duplicate index' });
+        } else if (s.index < 0 || s.index >= loop.sequence.length) {
+          errors.push({ index: idx, message: 'Invalid index' });
+        } else {
+          seen.add(s.index);
+        }
         if (s.assignedTo !== undefined) {
-          const u = userMap.get(s.assignedTo);
-          if (!u) {
-            errors.push({ index: idx, message: 'Assignee not found' });
-          } else if (u.organizationId.toString() !== task.organizationId.toString()) {
-            errors.push({ index: idx, message: 'Assignee outside organization' });
-          } else if (
-            task.teamId &&
-            u.teamId?.toString() !== task.teamId.toString()
-          ) {
-            errors.push({ index: idx, message: 'Assignee not in task team' });
+          if (!Types.ObjectId.isValid(s.assignedTo)) {
+            errors.push({ index: idx, message: 'Invalid user ID' });
+          } else {
+            userIds.add(s.assignedTo);
           }
         }
       });
+
+      if (!errors.length && userIds.size) {
+        const users = await User.find({
+          _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
+        });
+        const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+        steps.forEach((s, idx) => {
+          if (s.assignedTo !== undefined) {
+            const u = userMap.get(s.assignedTo);
+            if (!u) {
+              errors.push({ index: idx, message: 'Assignee not found' });
+            } else if (u.organizationId.toString() !== task.organizationId.toString()) {
+              errors.push({ index: idx, message: 'Assignee outside organization' });
+            } else if (
+              task.teamId &&
+              u.teamId?.toString() !== task.teamId.toString()
+            ) {
+              errors.push({ index: idx, message: 'Assignee not in task team' });
+            }
+          }
+        });
+      }
+
+      if (errors.length) {
+        const detail = errors
+          .map((e) => `Step ${e.index}: ${e.message}`)
+          .join('; ');
+        return problem(400, 'Invalid request', detail);
+      }
+
+      const newSequence = steps.map((s) => {
+        const current = loop.sequence[s.index];
+        return {
+          taskId: new Types.ObjectId(params.id),
+          assignedTo: s.assignedTo
+            ? new Types.ObjectId(s.assignedTo)
+            : current.assignedTo,
+          description: s.description ?? current.description,
+          status: s.status ?? current.status,
+          estimatedTime: current.estimatedTime,
+          actualTime: current.actualTime,
+          completedAt: current.completedAt,
+          comments: current.comments,
+          dependencies: current.dependencies,
+        };
+      });
+
+      loop.sequence = newSequence;
     }
 
-    if (errors.length) {
-      const detail = errors
-        .map((e) => `Step ${e.index}: ${e.message}`)
-        .join('; ');
-      return problem(400, 'Invalid request', detail);
+    if (parallel !== undefined) {
+      loop.parallel = parallel;
     }
 
-    const newSequence = steps.map((s) => {
-      const current = loop.sequence[s.index];
-      return {
-        taskId: new Types.ObjectId(params.id),
-        assignedTo: s.assignedTo
-          ? new Types.ObjectId(s.assignedTo)
-          : current.assignedTo,
-        description: s.description ?? current.description,
-        status: s.status ?? current.status,
-        estimatedTime: current.estimatedTime,
-        actualTime: current.actualTime,
-        completedAt: current.completedAt,
-        comments: current.comments,
-        dependencies: current.dependencies,
-      };
-    });
-
-    loop.sequence = newSequence;
     await loop.save();
     return NextResponse.json(loop);
   }

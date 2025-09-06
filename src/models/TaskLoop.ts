@@ -17,6 +17,7 @@ export interface ITaskLoop extends Document {
   sequence: ILoopStep[];
   currentStep: number;
   isActive: boolean;
+  parallel: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,6 +61,7 @@ const taskLoopSchema = new Schema<ITaskLoop>(
     sequence: [loopStepSchema],
     currentStep: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    parallel: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
