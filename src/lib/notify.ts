@@ -13,6 +13,19 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 const THROTTLE_SECONDS = 60;
 
+interface Task {
+  _id: Types.ObjectId;
+  title: string;
+  status?: string;
+}
+
+interface EntityRef {
+  taskId?: Types.ObjectId;
+  step?: string;
+  commentId?: Types.ObjectId;
+  status?: string;
+}
+
 export enum NotificationType {
   ASSIGNMENT = 'ASSIGNMENT',
   LOOP_STEP_READY = 'LOOP_STEP_READY',
@@ -62,7 +75,7 @@ async function shouldSend(key: string): Promise<boolean> {
 async function createAndEmail(
   userIds: Types.ObjectId[],
   type: NotificationType,
-  entityRef: any,
+  entityRef: EntityRef,
   subject: string,
   text: string
 ) {
@@ -121,7 +134,7 @@ async function createAndEmail(
 
 export async function notifyAssignment(
   userIds: Types.ObjectId[],
-  task: any,
+  task: Task,
   step?: string
 ) {
   const stepText = step ? `step "${step}" of ` : '';
@@ -148,7 +161,7 @@ export async function notifyMention(
   );
 }
 
-export async function notifyStatusChange(userIds: Types.ObjectId[], task: any) {
+export async function notifyStatusChange(userIds: Types.ObjectId[], task: Task) {
   await createAndEmail(
     userIds,
     NotificationType.STATUS_CHANGE,
@@ -158,7 +171,7 @@ export async function notifyStatusChange(userIds: Types.ObjectId[], task: any) {
   );
 }
 
-export async function notifyDueSoon(userIds: Types.ObjectId[], task: any) {
+export async function notifyDueSoon(userIds: Types.ObjectId[], task: Task) {
   await createAndEmail(
     userIds,
     NotificationType.DUE_SOON,
@@ -168,7 +181,7 @@ export async function notifyDueSoon(userIds: Types.ObjectId[], task: any) {
   );
 }
 
-export async function notifyDueNow(userIds: Types.ObjectId[], task: any) {
+export async function notifyDueNow(userIds: Types.ObjectId[], task: Task) {
   await createAndEmail(
     userIds,
     NotificationType.DUE_NOW,
@@ -178,7 +191,7 @@ export async function notifyDueNow(userIds: Types.ObjectId[], task: any) {
   );
 }
 
-export async function notifyOverdue(userIds: Types.ObjectId[], task: any) {
+export async function notifyOverdue(userIds: Types.ObjectId[], task: Task) {
   await createAndEmail(
     userIds,
     NotificationType.OVERDUE,
@@ -190,7 +203,7 @@ export async function notifyOverdue(userIds: Types.ObjectId[], task: any) {
 
 export async function notifyLoopStepReady(
   userIds: Types.ObjectId[],
-  task: any,
+  task: Task,
   step?: string
 ) {
   await createAndEmail(
@@ -204,7 +217,7 @@ export async function notifyLoopStepReady(
   );
 }
 
-export async function notifyTaskClosed(userIds: Types.ObjectId[], task: any) {
+export async function notifyTaskClosed(userIds: Types.ObjectId[], task: Task) {
   await createAndEmail(
     userIds,
     NotificationType.TASK_CLOSED,
