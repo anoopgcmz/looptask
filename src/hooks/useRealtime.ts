@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'offline';
 
-type MessageHandler = (data: any) => void;
+export interface RealtimeMessage {
+  event: string;
+  [key: string]: unknown;
+}
+
+type MessageHandler = (data: RealtimeMessage) => void;
 
 interface Options {
   onMessage?: MessageHandler;
@@ -15,12 +20,21 @@ let status: ConnectionStatus = 'offline';
 let ws: WebSocket | null = null;
 let es: EventSource | null = null;
 let backoff = 1000;
-let heartbeatInterval: any;
-let heartbeatTimeout: any;
+let heartbeatInterval: ReturnType<typeof setInterval> | undefined;
+let heartbeatTimeout: ReturnType<typeof setTimeout> | undefined;
 
 const HEARTBEAT_INTERVAL = 30000;
 const HEARTBEAT_TIMEOUT = 10000;
 const MAX_BACKOFF = 30000;
+
+function isRealtimeMessage(data: unknown): data is RealtimeMessage {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'event' in data &&
+    typeof (data as { event: unknown }).event === 'string'
+  );
+}
 
 function notifyStatus(s: ConnectionStatus) {
   status = s;
@@ -73,13 +87,19 @@ function startHeartbeat() {
 function handlePong() {
   if (heartbeatTimeout) {
     clearTimeout(heartbeatTimeout);
-    heartbeatTimeout = null;
+    heartbeatTimeout = undefined;
   }
 }
 
 function clearHeartbeat() {
-  if (heartbeatInterval) clearInterval(heartbeatInterval);
-  if (heartbeatTimeout) clearTimeout(heartbeatTimeout);
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = undefined;
+  }
+  if (heartbeatTimeout) {
+    clearTimeout(heartbeatTimeout);
+    heartbeatTimeout = undefined;
+  }
 }
 
 function reconnect() {
@@ -107,8 +127,10 @@ function connect() {
         return;
       }
       try {
-        const data = JSON.parse(event.data);
-        subscribers.forEach((cb) => cb(data));
+        const data: unknown = JSON.parse(event.data);
+        if (isRealtimeMessage(data)) {
+          subscribers.forEach((cb) => cb(data));
+        }
       } catch {}
     };
     ws.onerror = () => {
@@ -136,8 +158,10 @@ function fallbackToSse() {
     };
     es.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        subscribers.forEach((cb) => cb(data));
+        const data: unknown = JSON.parse(event.data);
+        if (isRealtimeMessage(data)) {
+          subscribers.forEach((cb) => cb(data));
+        }
       } catch {}
     };
     es.onerror = () => {
@@ -163,7 +187,12 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export function enqueue(url: string, init?: RequestInit) {
+interface OfflineResponse {
+  ok: false;
+  offline: true;
+}
+
+export function enqueue(url: string, init?: RequestInit): Promise<Response | OfflineResponse> {
   if (status === 'connected') {
     return fetch(url, init);
   }
@@ -171,7 +200,7 @@ export function enqueue(url: string, init?: RequestInit) {
   const queue = raw ? JSON.parse(raw) : [];
   queue.push({ url, init });
   localStorage.setItem('offlineQueue', JSON.stringify(queue));
-  return Promise.resolve({ ok: false, offline: true } as any);
+  return Promise.resolve<OfflineResponse>({ ok: false, offline: true });
 }
 
 export default function useRealtime({ onMessage }: Options = {}) {
