@@ -17,8 +17,9 @@ export async function completeStep(taskId: string, stepIndex: number) {
   step.completedAt = new Date();
 
   const newlyActiveIndexes: number[] = [];
+  let activated = false;
   loop.sequence.forEach((s, idx) => {
-    if (s.status !== 'PENDING') return;
+    if (s.status === 'COMPLETED') return;
     const deps = (s.dependencies as any[]) || [];
     const depsMet = deps.every((d) => {
       if (typeof d === 'number') {
@@ -30,9 +31,17 @@ export async function completeStep(taskId: string, stepIndex: number) {
       }
       return false;
     });
-    if (depsMet) {
+    if (!depsMet) {
+      s.status = 'BLOCKED';
+      return;
+    }
+
+    if (loop.parallel || !activated) {
+      if (s.status !== 'ACTIVE') newlyActiveIndexes.push(idx);
       s.status = 'ACTIVE';
-      newlyActiveIndexes.push(idx);
+      activated = activated || !loop.parallel;
+    } else {
+      s.status = 'PENDING';
     }
   });
 
