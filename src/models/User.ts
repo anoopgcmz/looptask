@@ -18,7 +18,8 @@ export interface IUser extends Document {
   notificationSettings: {
     email: boolean;
     push: boolean;
-    digestFrequency: 'daily' | 'weekly';
+    digestFrequency: 'immediate' | 'daily' | 'weekly';
+    lastDigestAt?: Date;
     types: {
       ASSIGNMENT: boolean;
       LOOP_STEP_READY: boolean;
@@ -58,9 +59,10 @@ const userSchema = new Schema<IUser>(
       push: { type: Boolean, default: true },
       digestFrequency: {
         type: String,
-        enum: ['daily', 'weekly'],
-        default: 'daily',
+        enum: ['immediate', 'daily', 'weekly'],
+        default: 'immediate',
       },
+      lastDigestAt: { type: Date },
       types: {
         ASSIGNMENT: { type: Boolean, default: true },
         LOOP_STEP_READY: { type: Boolean, default: true },
