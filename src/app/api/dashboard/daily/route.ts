@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Objective from '@/models/Objective';
+import Objective, { type IObjective } from '@/models/Objective';
 import Task, { type ITask } from '@/models/Task';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     teamId: new Types.ObjectId(query.teamId),
   });
   const summaryMap = new Map<string, { ownerId: string; completed: number; total: number }>();
-  const pending: unknown[] = [];
+  const pending: IObjective[] = [];
   objectives.forEach((o) => {
     const key = o.ownerId.toString();
     if (!summaryMap.has(key)) {

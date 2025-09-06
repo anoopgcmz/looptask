@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { Types } from 'mongoose';
+import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
@@ -177,7 +177,9 @@ export const GET = withOrganization(async (req, session) => {
     return problem(400, 'Invalid request', err.message);
   }
   await dbConnect();
-  const filter: unknown = { organizationId: new Types.ObjectId(session.organizationId) };
+  const filter: FilterQuery<ITask> = {
+    organizationId: new Types.ObjectId(session.organizationId),
+  };
   if (query.ownerId) filter.ownerId = new Types.ObjectId(query.ownerId);
   if (query.createdBy) filter.createdBy = new Types.ObjectId(query.createdBy);
   if (query.status && query.status.length) filter.status = { $in: query.status };
@@ -192,7 +194,7 @@ export const GET = withOrganization(async (req, session) => {
   if (query.teamId) filter.teamId = new Types.ObjectId(query.teamId);
   if (query.q) filter.$text = { $search: query.q };
 
-  const access: unknown[] = [
+  const access: FilterQuery<ITask>[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
