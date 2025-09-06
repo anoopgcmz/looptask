@@ -13,15 +13,26 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 const THROTTLE_SECONDS = 60;
 
-const templateMap: Record<string, string> = {
-  ASSIGNMENT: 'task-assigned.html',
-  FLOW_ADVANCED: 'loop-step-ready.html',
-  TASK_CLOSED: 'task-completed.html',
-  OVERDUE: 'overdue-alert.html',
+export enum NotificationType {
+  ASSIGNMENT = 'ASSIGNMENT',
+  LOOP_STEP_READY = 'LOOP_STEP_READY',
+  TASK_CLOSED = 'TASK_CLOSED',
+  OVERDUE = 'OVERDUE',
+  COMMENT_MENTION = 'COMMENT_MENTION',
+  STATUS_CHANGE = 'STATUS_CHANGE',
+  DUE_SOON = 'DUE_SOON',
+  DUE_NOW = 'DUE_NOW',
+}
+
+const templateMap: Record<NotificationType, string> = {
+  [NotificationType.ASSIGNMENT]: 'task-assigned.html',
+  [NotificationType.LOOP_STEP_READY]: 'loop-step-ready.html',
+  [NotificationType.TASK_CLOSED]: 'task-completed.html',
+  [NotificationType.OVERDUE]: 'overdue-alert.html',
 };
 
 async function renderTemplate(
-  type: string,
+  type: NotificationType,
   vars: Record<string, string>
 ): Promise<string | null> {
   const file = templateMap[type];
@@ -50,7 +61,7 @@ async function shouldSend(key: string): Promise<boolean> {
 
 async function createAndEmail(
   userIds: Types.ObjectId[],
-  type: string,
+  type: NotificationType,
   entityRef: any,
   subject: string,
   text: string
@@ -58,9 +69,9 @@ async function createAndEmail(
   if (!userIds.length) return;
   const recipients: Types.ObjectId[] = [];
   for (const userId of userIds) {
-    const key = `notify:${userId.toString()}:${type}:${entityRef.taskId?.toString() || ''}:${
-      entityRef.step || ''
-    }`;
+    const key = `notify:${userId.toString()}:${type}:${
+      entityRef.taskId?.toString() || ''
+    }:${entityRef.step || ''}`;
     if (await shouldSend(key)) {
       recipients.push(userId);
     }
@@ -111,7 +122,7 @@ export async function notifyAssignment(
   const stepText = step ? `step "${step}" of ` : '';
   await createAndEmail(
     userIds,
-    'ASSIGNMENT',
+    NotificationType.ASSIGNMENT,
     { taskId: task._id, step },
     `Task assigned: ${task.title}`,
     `You have been assigned to ${stepText}task "${task.title}" (#${task._id}).`
@@ -125,7 +136,7 @@ export async function notifyMention(
 ) {
   await createAndEmail(
     userIds,
-    'COMMENT_MENTION',
+    NotificationType.COMMENT_MENTION,
     { taskId, commentId },
     'You were mentioned',
     'You were mentioned in a comment.'
@@ -135,7 +146,7 @@ export async function notifyMention(
 export async function notifyStatusChange(userIds: Types.ObjectId[], task: any) {
   await createAndEmail(
     userIds,
-    'STATUS_CHANGE',
+    NotificationType.STATUS_CHANGE,
     { taskId: task._id, status: task.status },
     'Task status updated',
     `Task "${task.title}" is now ${task.status}.`
@@ -145,7 +156,7 @@ export async function notifyStatusChange(userIds: Types.ObjectId[], task: any) {
 export async function notifyDueSoon(userIds: Types.ObjectId[], task: any) {
   await createAndEmail(
     userIds,
-    'DUE_SOON',
+    NotificationType.DUE_SOON,
     { taskId: task._id },
     'Task due soon',
     `Task "${task.title}" is due soon.`
@@ -155,7 +166,7 @@ export async function notifyDueSoon(userIds: Types.ObjectId[], task: any) {
 export async function notifyDueNow(userIds: Types.ObjectId[], task: any) {
   await createAndEmail(
     userIds,
-    'DUE_NOW',
+    NotificationType.DUE_NOW,
     { taskId: task._id },
     'Task due now',
     `Task "${task.title}" is due now.`
@@ -165,31 +176,33 @@ export async function notifyDueNow(userIds: Types.ObjectId[], task: any) {
 export async function notifyOverdue(userIds: Types.ObjectId[], task: any) {
   await createAndEmail(
     userIds,
-    'OVERDUE',
+    NotificationType.OVERDUE,
     { taskId: task._id },
     'Task overdue',
     `Task "${task.title}" is overdue.`
   );
 }
 
-export async function notifyFlowAdvanced(
+export async function notifyLoopStepReady(
   userIds: Types.ObjectId[],
   task: any,
   step?: string
 ) {
   await createAndEmail(
     userIds,
-    'FLOW_ADVANCED',
+    NotificationType.LOOP_STEP_READY,
     { taskId: task._id, step },
     `Task flow advanced: ${task.title}`,
-    `Task "${task.title}" (#${task._id}) advanced to ${step ? `step "${step}"` : 'the next step'}.`
+    `Task "${task.title}" (#${task._id}) advanced to ${
+      step ? `step "${step}"` : 'the next step'
+    }.`
   );
 }
 
 export async function notifyTaskClosed(userIds: Types.ObjectId[], task: any) {
   await createAndEmail(
     userIds,
-    'TASK_CLOSED',
+    NotificationType.TASK_CLOSED,
     { taskId: task._id },
     'Task closed',
     `Task "${task.title}" has been completed.`

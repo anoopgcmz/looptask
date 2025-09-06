@@ -9,7 +9,7 @@ import { emitTaskTransition } from '@/lib/ws';
 import { diff } from '@/lib/diff';
 import {
   notifyStatusChange,
-  notifyFlowAdvanced,
+  notifyLoopStepReady,
   notifyTaskClosed,
   notifyAssignment,
 } from '@/lib/notify';
@@ -101,7 +101,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const step = updated.steps[updated.currentStepIndex];
         const desc = step?.title;
         await notifyAssignment([ownerId] as Types.ObjectId[], updated, desc);
-        await notifyFlowAdvanced([ownerId] as Types.ObjectId[], updated, desc);
+        await notifyLoopStepReady([ownerId] as Types.ObjectId[], updated, desc);
       }
     }
     const patch = diff(task, updated.toObject());

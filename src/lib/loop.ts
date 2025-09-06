@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
 import LoopHistory from '@/models/LoopHistory';
-import { notifyAssignment, notifyFlowAdvanced } from '@/lib/notify';
+import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 
 export async function completeStep(
   taskId: string,
@@ -101,7 +101,7 @@ export async function completeStep(
         const s = updatedLoop.sequence[idx];
         const assignee = s.assignedTo as Types.ObjectId;
         await notifyAssignment([assignee], task, s.description);
-        await notifyFlowAdvanced([assignee], task, s.description);
+        await notifyLoopStepReady([assignee], task, s.description);
       }
     }
   }
