@@ -9,6 +9,7 @@ import User from '@/models/User';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { scheduleTaskJobs } from '@/lib/agenda';
 import { emitTaskUpdated } from '@/lib/ws';
+import { diff } from '@/lib/diff';
 import { problem } from '@/lib/http';
 import { computeParticipants } from '@/lib/taskParticipants';
 import { withOrganization } from '@/lib/middleware/withOrganization';
@@ -164,7 +165,7 @@ export const PATCH = withOrganization(
     payload: body,
   });
   await scheduleTaskJobs(task);
-  emitTaskUpdated(task);
+  emitTaskUpdated({ taskId: task._id, patch: body, updatedAt: task.updatedAt });
   return NextResponse.json<TaskResponse>(task);
 });
 
@@ -226,6 +227,7 @@ export const PUT = withOrganization(
         return problem(400, 'Invalid request', 'Step owner must be in your organization');
       }
     }
+    const oldTask = task.toObject();
     task.set({
       title: body.title,
       description: body.description,
@@ -267,7 +269,8 @@ export const PUT = withOrganization(
       payload: body,
     });
     await scheduleTaskJobs(task);
-    emitTaskUpdated(task);
+    const patch = diff(oldTask, task.toObject());
+    emitTaskUpdated({ taskId: task._id, patch, updatedAt: task.updatedAt });
     return NextResponse.json<TaskResponse>(task);
   }
 );

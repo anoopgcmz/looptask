@@ -137,7 +137,7 @@ export const POST = withOrganization(
         userId: new Types.ObjectId(session.userId),
       }))
     );
-    emitLoopUpdated({ taskId: params.id, loop });
+    emitLoopUpdated({ taskId: params.id, patch: loop, updatedAt: loop.updatedAt });
     return NextResponse.json(loop);
   }
 );
@@ -310,7 +310,7 @@ export const PATCH = withOrganization(
     const uid = new Types.ObjectId(a.userId);
     await notifyAssignment([uid], task, a.description);
   }
-    emitLoopUpdated({ taskId: params.id, loop: updatedLoop });
+    emitLoopUpdated({ taskId: params.id, patch: body, updatedAt: updatedLoop.updatedAt });
     return NextResponse.json(updatedLoop);
   }
 );
