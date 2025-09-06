@@ -16,10 +16,16 @@ export default function GlobalSearchPage() {
   const params = useSearchParams();
   const [data, setData] = useState<{ results: SearchItem[]; total: number }>();
   const [saved, setSaved] = useState<{ _id: string; name: string; query: string }[]>([]);
+  const [q, setQ] = useState(params.get('q') ?? '');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     const qs = params.toString();
     fetch(`/api/search/global?${qs}`).then((res) => res.json()).then(setData);
+  }, [params]);
+
+  useEffect(() => {
+    setQ(params.get('q') ?? '');
   }, [params]);
 
   useEffect(() => {
@@ -37,6 +43,24 @@ export default function GlobalSearchPage() {
     }).then(() =>
       fetch('/api/search/saved').then((res) => res.json()).then(setSaved)
     );
+  };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (!q) {
+        setSuggestions([]);
+        return;
+      }
+      fetch(`/api/search/suggestions?q=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data) => setSuggestions(data.suggestions || []));
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [q]);
+
+  const chooseSuggestion = (s: string) => {
+    setQ(s);
+    setSuggestions([]);
   };
 
   return (
@@ -62,13 +86,32 @@ export default function GlobalSearchPage() {
         )}
       </div>
       <form method="GET" className="flex flex-wrap gap-2 mb-4">
-        <input
-          type="text"
-          name="q"
-          defaultValue={params.get('q') ?? ''}
-          placeholder="Search"
-          className="border rounded px-2 py-1"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            name="q"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search"
+            className="border rounded px-2 py-1"
+            autoComplete="off"
+          />
+          {suggestions.length > 0 && (
+            <ul className="absolute left-0 right-0 bg-white border rounded mt-1 z-10 max-h-40 overflow-auto">
+              {suggestions.map((s) => (
+                <li key={s}>
+                  <button
+                    type="button"
+                    className="block w-full text-left px-2 py-1 hover:bg-gray-100"
+                    onClick={() => chooseSuggestion(s)}
+                  >
+                    {s}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <input
           type="number"
           name="limit"
