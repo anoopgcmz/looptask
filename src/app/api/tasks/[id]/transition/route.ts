@@ -10,6 +10,7 @@ import {
   notifyStatusChange,
   notifyFlowAdvanced,
   notifyTaskClosed,
+  notifyAssignment,
 } from '@/lib/notify';
 import { problem } from '@/lib/http';
 import type { TaskResponse } from '@/types/api/task';
@@ -96,7 +97,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     } else {
       const ownerId = updated.ownerId;
       if (ownerId && ownerId.toString() !== actorId) {
-        await notifyFlowAdvanced([ownerId] as Types.ObjectId[], updated);
+        const step = updated.steps[updated.currentStepIndex];
+        const desc = step?.title;
+        await notifyAssignment([ownerId] as Types.ObjectId[], updated, desc);
+        await notifyFlowAdvanced([ownerId] as Types.ObjectId[], updated, desc);
       }
     }
     emitTaskTransition(updated);

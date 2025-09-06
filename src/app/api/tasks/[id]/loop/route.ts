@@ -9,7 +9,7 @@ import User from '@/models/User';
 import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
-import { notifyAssignment } from '@/lib/notify';
+import { notifyAssignment, notifyFlowAdvanced } from '@/lib/notify';
 
 const loopStepSchema = z.object({
   assignedTo: z.string(),
@@ -241,8 +241,8 @@ export const PATCH = withOrganization(
     }
 
   const sessionDb = await mongoose.startSession();
-  const newAssignees = new Set<string>();
-  const oldAssignees = new Set<string>();
+  const newAssignments: { userId: string; description: string }[] = [];
+  const oldAssignments: { userId: string; description: string }[] = [];
   const history: { stepIndex: number; action: 'UPDATE' | 'COMPLETE' | 'REASSIGN' }[] = [];
   let updatedLoop: any = null;
   try {
@@ -253,8 +253,8 @@ export const PATCH = withOrganization(
         steps.forEach((s) => {
           const current = loopDoc.sequence[s.index];
           if (s.assignedTo !== undefined && s.assignedTo !== current.assignedTo.toString()) {
-            oldAssignees.add(current.assignedTo.toString());
-            newAssignees.add(s.assignedTo);
+            oldAssignments.push({ userId: current.assignedTo.toString(), description: current.description });
+            newAssignments.push({ userId: s.assignedTo, description: current.description });
             current.assignedTo = new Types.ObjectId(s.assignedTo);
             if (current.status !== 'PENDING' && s.status === undefined) {
               current.status = 'PENDING';
@@ -300,10 +300,15 @@ export const PATCH = withOrganization(
   }
     if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
 
-    const newIds = Array.from(newAssignees).map((id) => new Types.ObjectId(id));
-    const oldIds = Array.from(oldAssignees).map((id) => new Types.ObjectId(id));
-    await notifyAssignment(newIds, task);
-    if (oldIds.length) await notifyAssignment(oldIds, task);
+    for (const a of newAssignments) {
+      const uid = new Types.ObjectId(a.userId);
+      await notifyAssignment([uid], task, a.description);
+      await notifyFlowAdvanced([uid], task, a.description);
+    }
+    for (const a of oldAssignments) {
+      const uid = new Types.ObjectId(a.userId);
+      await notifyAssignment([uid], task, a.description);
+    }
 
     return NextResponse.json(updatedLoop);
   }

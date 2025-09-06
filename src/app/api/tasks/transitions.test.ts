@@ -14,7 +14,7 @@ vi.mock('mongoose', async () => {
   };
 });
 import mongoose from 'mongoose';
-import { notifyTaskClosed } from '@/lib/notify';
+import { notifyTaskClosed, notifyFlowAdvanced, notifyAssignment } from '@/lib/notify';
 
 // mocks
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
@@ -50,6 +50,7 @@ vi.mock('@/lib/notify', () => ({
   notifyStatusChange: vi.fn(),
   notifyFlowAdvanced: vi.fn(),
   notifyTaskClosed: vi.fn(),
+  notifyAssignment: vi.fn(),
 }));
 
 const { Types } = mongoose;
@@ -92,6 +93,16 @@ describe('task flow with steps', () => {
     expect(t.currentStepIndex).toBe(1);
     expect(t.ownerId.toString()).toBe(u2.toString());
     expect(t.status).toBe('FLOW_IN_PROGRESS');
+    expect(notifyAssignment).toHaveBeenCalledWith(
+      [u2],
+      expect.objectContaining({ _id: taskId }),
+      'Step 2'
+    );
+    expect(notifyFlowAdvanced).toHaveBeenCalledWith(
+      [u2],
+      expect.objectContaining({ _id: taskId }),
+      'Step 2'
+    );
 
     currentUserId = u2.toString();
     await POST(
@@ -105,6 +116,16 @@ describe('task flow with steps', () => {
     expect(t.currentStepIndex).toBe(2);
     expect(t.ownerId.toString()).toBe(u3.toString());
     expect(t.status).toBe('FLOW_IN_PROGRESS');
+    expect(notifyAssignment).toHaveBeenCalledWith(
+      [u3],
+      expect.objectContaining({ _id: taskId }),
+      'Step 3'
+    );
+    expect(notifyFlowAdvanced).toHaveBeenCalledWith(
+      [u3],
+      expect.objectContaining({ _id: taskId }),
+      'Step 3'
+    );
 
     currentUserId = u3.toString();
     await POST(

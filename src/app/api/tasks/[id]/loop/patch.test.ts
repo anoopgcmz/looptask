@@ -7,7 +7,8 @@ const auth = vi.fn();
 vi.mock('@/lib/auth', () => ({ auth }));
 
 const notifyAssignment = vi.fn();
-vi.mock('@/lib/notify', () => ({ notifyAssignment }));
+const notifyFlowAdvanced = vi.fn();
+vi.mock('@/lib/notify', () => ({ notifyAssignment, notifyFlowAdvanced }));
 
 const findTaskById = vi.fn();
 vi.mock('@/models/Task', () => ({ default: { findById: findTaskById } }));
@@ -68,6 +69,7 @@ describe('PATCH /tasks/:id/loop assignedTo updates', () => {
     startSession.mockReset();
     startSession.mockResolvedValue({ withTransaction, endSession: vi.fn() });
     notifyAssignment.mockReset();
+    notifyFlowAdvanced.mockReset();
   });
 
   it('updates assignee, resets status, and notifies users', async () => {
@@ -84,7 +86,20 @@ describe('PATCH /tasks/:id/loop assignedTo updates', () => {
     expect(loop.currentStep).toBe(0);
     expect(loop.isActive).toBe(true);
     expect(notifyAssignment).toHaveBeenCalledTimes(2);
-    expect(notifyAssignment).toHaveBeenCalledWith([newUser], { _id: taskId, organizationId: orgId });
-    expect(notifyAssignment).toHaveBeenCalledWith([oldUser], { _id: taskId, organizationId: orgId });
+    expect(notifyAssignment).toHaveBeenCalledWith(
+      [newUser],
+      { _id: taskId, organizationId: orgId },
+      'step'
+    );
+    expect(notifyAssignment).toHaveBeenCalledWith(
+      [oldUser],
+      { _id: taskId, organizationId: orgId },
+      'step'
+    );
+    expect(notifyFlowAdvanced).toHaveBeenCalledWith(
+      [newUser],
+      { _id: taskId, organizationId: orgId },
+      'step'
+    );
   });
 });
