@@ -18,7 +18,7 @@ import type {
   TaskStepPayload,
 } from '@/types/api/task';
 
-const stepSchema = z
+const stepSchema: z.ZodType<TaskStepPayload> = z
   .object({
     title: z.string(),
     ownerId: z.string(),
@@ -26,10 +26,9 @@ const stepSchema = z
     dueAt: z.coerce.date().optional(),
     status: z.enum(['OPEN', 'DONE']).optional(),
     completedAt: z.coerce.date().optional(),
-  })
-  satisfies z.ZodType<TaskStepPayload>;
+  });
 
-const createTaskSchema = z
+const createTaskSchema: z.ZodType<TaskPayload> = z
   .object({
     title: z.string(),
     description: z.string().optional(),
@@ -42,8 +41,7 @@ const createTaskSchema = z
     visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
     dueDate: z.coerce.date().optional(),
     steps: z.array(stepSchema).optional(),
-  })
-  satisfies z.ZodType<TaskPayload>;
+  });
 
 export const POST = withOrganization(async (req, session) => {
   let body: TaskPayload;
@@ -138,7 +136,7 @@ export const POST = withOrganization(async (req, session) => {
   return NextResponse.json<TaskResponse>(task, { status: 201 });
 });
 
-const listQuerySchema = z
+const listQuerySchema: z.ZodType<TaskListQuery> = z
   .object({
     ownerId: z.string().optional(),
     createdBy: z.string().optional(),
@@ -165,8 +163,7 @@ const listQuerySchema = z
     sort: z.enum(['dueDate', 'priority', 'createdAt', 'title']).optional(),
     limit: z.coerce.number().int().positive().optional(),
     page: z.coerce.number().int().positive().optional(),
-  })
-  satisfies z.ZodType<TaskListQuery>;
+  });
 
 export const GET = withOrganization(async (req, session) => {
   const url = new URL(req.url);
