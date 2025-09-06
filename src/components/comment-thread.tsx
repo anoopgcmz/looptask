@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useSession } from 'next-auth/react';
 import useTyping from '@/hooks/useTyping';
+import useRealtime from '@/hooks/useRealtime';
 
 interface Comment {
   _id: string;
@@ -28,6 +29,7 @@ export default function CommentThread({
   const { data: session } = useSession();
   const { typingUsers, emit } = useTyping(taskId, session?.userId, !parentId);
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+  const { enqueue } = useRealtime();
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ taskId });
@@ -48,12 +50,12 @@ export default function CommentThread({
 
   const handleCreate = async (pid?: string | null) => {
     const content = pid ? replyContent : newContent;
-    const res = await fetch('/api/comments', {
+    const res: any = await enqueue('/api/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ taskId, content, parentId: pid ?? undefined }),
     });
-    if (res.ok) {
+    if (res?.ok) {
       if (pid) {
         setReplyContent('');
         setReplyingTo(null);

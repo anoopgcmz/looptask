@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
 import LoopVisualizer, { StepWithStatus, UserMap } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
-import useTaskChannel from "@/hooks/useTaskChannel";
+import useRealtime from "@/hooks/useRealtime";
 import usePresence from "@/hooks/usePresence";
 import { Avatar } from "@/components/ui/avatar";
 
@@ -97,7 +97,24 @@ export default function TaskDetail({ id }: { id: string }) {
     void refreshLoop();
   }, [refreshLoop]);
 
-  useTaskChannel(id, { refreshTask, refreshLoop });
+  const handleMessage = useCallback(
+    (data: any) => {
+      if (data.taskId !== id) return;
+      switch (data.event) {
+        case "task.updated":
+        case "task.transitioned":
+          refreshTask();
+          break;
+        case "loop.updated":
+          refreshLoop();
+          break;
+        default:
+          break;
+      }
+    },
+    [id, refreshTask, refreshLoop]
+  );
+  const { status } = useRealtime({ onMessage: handleMessage });
 
   const updateField = async (field: keyof Task, value: string) => {
     if (!task) return;
@@ -115,6 +132,11 @@ export default function TaskDetail({ id }: { id: string }) {
 
   return (
     <div className="p-4 flex flex-col gap-4">
+      {status !== "connected" && (
+        <div className="bg-red-500 text-white text-center p-1 text-xs">
+          Offline
+        </div>
+      )}
       <div className="flex items-center justify-between gap-2">
         <input
           className="border p-2 flex-1"
