@@ -65,28 +65,38 @@ export default function NotificationsPage() {
     },
   });
 
-  const markRead = async (id: string) => {
-    const res = await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+  const updateReadState = async (id: string, read: boolean) => {
+    const res = await fetch(`/api/notifications/${id}/read`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ read }),
+    });
     if (res.ok) {
-      if (filters.read === 'false') {
+      if ((read && filters.read === 'false') || (!read && filters.read === 'true')) {
         setItems((items) => items.filter((n) => n._id !== id));
       } else {
         setItems((items) =>
           items.map((n) =>
             n._id === id
-              ? { ...n, read: true, readAt: new Date().toISOString() }
+              ? { ...n, read, readAt: read ? new Date().toISOString() : null }
               : n
           )
         );
       }
-      window.dispatchEvent(new CustomEvent('notification-read'));
+      window.dispatchEvent(new CustomEvent(read ? 'notification-read' : 'notification-unread'));
     }
   };
 
   const markAllRead = async () => {
     const unread = items.filter((n) => !n.read);
     await Promise.all(
-      unread.map((n) => fetch(`/api/notifications/${n._id}/read`, { method: 'POST' }))
+      unread.map((n) =>
+        fetch(`/api/notifications/${n._id}/read`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ read: true }),
+        })
+      )
     );
     if (unread.length > 0) {
       if (filters.read === 'false') {
@@ -151,10 +161,21 @@ export default function NotificationsPage() {
         {items.map((n) => (
           <li
             key={n._id}
-            onClick={() => !n.read && markRead(n._id)}
+            onClick={() => !n.read && updateReadState(n._id, true)}
             className={`cursor-pointer p-2 rounded ${n.read ? 'text-gray-500' : 'font-bold'}`}
           >
             {n.message}
+            {n.read && (
+              <button
+                className="ml-2 text-xs underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void updateReadState(n._id, false);
+                }}
+              >
+                Mark as unread
+              </button>
+            )}
           </li>
         ))}
       </ul>

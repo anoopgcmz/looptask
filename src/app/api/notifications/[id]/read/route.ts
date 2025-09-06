@@ -19,10 +19,22 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
+  let read = true;
+  try {
+    const body = await request.json();
+    if (typeof body.read === 'boolean') {
+      read = body.read;
+    }
+  } catch {
+    // ignore invalid json and default to true
+  }
+
   await dbConnect();
+  const update: any = { read };
+  update.readAt = read ? new Date() : null;
   const notification = await Notification.findOneAndUpdate(
     { _id: id, userId: session.userId },
-    { read: true, readAt: new Date() },
+    update,
     { new: true }
   );
 
