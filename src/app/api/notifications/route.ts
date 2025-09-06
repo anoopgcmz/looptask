@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import Notification from '@/models/Notification';
+import Notification, { type INotification } from '@/models/Notification';
 import { auth } from '@/lib/auth';
+import { Types, type FilterQuery } from 'mongoose';
 
 const querySchema = z.object({
   type: z.string().optional(),
@@ -23,26 +24,30 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
-  const raw: Record<string, any> = {};
+  const raw: Record<string, string> = {};
   url.searchParams.forEach((value, key) => {
     raw[key] = value;
   });
   let query: z.infer<typeof querySchema>;
   try {
     query = querySchema.parse(raw);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Invalid request';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   await dbConnect();
 
-  const filter: Record<string, any> = { userId: session.userId };
+  const filter: FilterQuery<INotification> = {
+    userId: new Types.ObjectId(session.userId),
+  };
   if (query.type) filter.type = query.type;
   if (typeof query.read === 'boolean') filter.read = query.read;
   if (query.startDate || query.endDate) {
     filter.createdAt = {};
-    if (query.startDate) filter.createdAt.$gte = query.startDate;
-    if (query.endDate) filter.createdAt.$lte = query.endDate;
+    const createdAt = filter.createdAt as Record<string, Date>;
+    if (query.startDate) createdAt.$gte = query.startDate;
+    if (query.endDate) createdAt.$lte = query.endDate;
   }
 
   const page = query.page ?? 1;

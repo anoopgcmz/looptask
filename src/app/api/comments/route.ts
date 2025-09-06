@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { Types } from 'mongoose';
+import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { canReadTask } from '@/lib/access';
-import Comment from '@/models/Comment';
+import Comment, { type IComment } from '@/models/Comment';
 import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import { emitCommentCreated } from '@/lib/ws';
@@ -31,8 +31,9 @@ export async function POST(req: Request) {
   let body: z.infer<typeof postSchema>;
   try {
     body = postSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Invalid request';
+    return problem(400, 'Invalid request', message);
   }
   await dbConnect();
   const task = await Task.findById(body.taskId);
@@ -67,15 +68,16 @@ export async function GET(req: Request) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   const url = new URL(req.url);
-  const raw: Record<string, any> = {};
+  const raw: Record<string, string> = {};
   url.searchParams.forEach((value, key) => {
     raw[key] = value;
   });
   let query: z.infer<typeof listQuerySchema>;
   try {
     query = listQuerySchema.parse(raw);
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Invalid request';
+    return problem(400, 'Invalid request', message);
   }
   await dbConnect();
   const task = await Task.findById(query.taskId);
@@ -90,7 +92,7 @@ export async function GET(req: Request) {
   }
   const page = query.page ?? 1;
   const limit = query.limit ?? 20;
-  const filter: any = {
+  const filter: FilterQuery<IComment> = {
     taskId: new Types.ObjectId(query.taskId),
     parentId: query.parentId ? new Types.ObjectId(query.parentId) : null,
   };
