@@ -1,7 +1,18 @@
 import { useEffect } from 'react';
 
+export interface NotificationPayload {
+  _id: string;
+  userId: string;
+  type: string;
+  message: string;
+  taskId?: string;
+  read: boolean;
+  readAt: string | null;
+  createdAt: string;
+}
+
 interface Options {
-  onNotification?: (notification: any) => void;
+  onNotification?: (notification: NotificationPayload) => void;
 }
 
 export default function useNotificationsChannel({ onNotification }: Options = {}) {
@@ -10,7 +21,10 @@ export default function useNotificationsChannel({ onNotification }: Options = {}
     const ws = new WebSocket(url);
     ws.addEventListener('message', (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const data = JSON.parse(event.data) as {
+          event: string;
+          notification: NotificationPayload;
+        };
         if (data.event === 'notification.created') {
           onNotification?.(data.notification);
         }
