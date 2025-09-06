@@ -43,18 +43,22 @@ export function addClient(ws: MetaWebSocket) {
       }
     });
   }
-  ws.addEventListener('message', (event) => {
-    try {
-      const data = JSON.parse(event.data.toString());
+    ws.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data.toString());
       if (data.event === 'comment.typing' && data.taskId) {
         if (ws.taskIds?.includes(data.taskId) && ws.userId) {
           emitTyping({ taskId: data.taskId, userId: ws.userId }, ws);
         }
+      } else if (data.event === 'ping') {
+        try {
+          ws.send('pong');
+        } catch {}
       }
-    } catch {
-      // ignore
-    }
-  });
+      } catch {
+        // ignore
+      }
+    });
   ws.addEventListener('close', () => {
     if (ws.userId) {
       const set = userClients.get(ws.userId);
