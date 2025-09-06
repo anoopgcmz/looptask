@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -17,7 +18,7 @@ export const GET = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     const url = new URL(req.url);
     const raw: Record<string, any> = {};

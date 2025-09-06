@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -66,7 +67,7 @@ export const GET = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
   const { id } = await params;
   await dbConnect();
@@ -87,7 +88,7 @@ export const PATCH = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
   let body: Partial<TaskPayload>;
   try {
@@ -170,7 +171,7 @@ export const DELETE = withOrganization(
   async (
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     const { id } = await params;
     await dbConnect();
@@ -199,7 +200,7 @@ export const PUT = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     let body: TaskPayload;
     try {
