@@ -97,7 +97,7 @@ export const POST = withOrganization(
     if (!errors.length && userIds.size) {
       const users = await User.find({
         _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
-      }).lean<LeanUser>();
+      }).lean<LeanUser[]>();
       const userMap = new Map(users.map((u) => [u._id.toString(), u]));
       steps.forEach((s, idx) => {
         const u = userMap.get(s.assignedTo);
@@ -229,7 +229,7 @@ export const PATCH = withOrganization(
       if (!errors.length && userIds.size) {
         const users = await User.find({
           _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
-        }).lean<LeanUser>();
+        }).lean<LeanUser[]>();
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
         steps.forEach((s, idx) => {
           if (s.assignedTo !== undefined) {
