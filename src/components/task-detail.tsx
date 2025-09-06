@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
-import LoopTimeline, { StepWithStatus } from "@/components/loop-timeline";
+import LoopVisualizer, { StepWithStatus } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
 
 interface Task {
@@ -33,6 +33,8 @@ interface TaskLoop {
 export default function TaskDetail({ id }: { id: string }) {
   const [task, setTask] = useState<Task | null>(null);
   const [loop, setLoop] = useState<TaskLoop | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loopLoading, setLoopLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -46,11 +48,23 @@ export default function TaskDetail({ id }: { id: string }) {
 
   useEffect(() => {
     const loadLoop = async () => {
-      const res = await fetch(`/api/tasks/${id}/loop`);
-      if (res.ok) setLoop(await res.json());
+      try {
+        const res = await fetch(`/api/tasks/${id}/loop`);
+        if (res.ok) setLoop(await res.json());
+      } finally {
+        setLoopLoading(false);
+      }
     };
     void loadLoop();
   }, [id]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const res = await fetch('/api/users', { credentials: 'include' });
+      if (res.ok) setUsers(await res.json());
+    };
+    void loadUsers();
+  }, []);
 
   const updateField = async (field: keyof Task, value: string) => {
     if (!task) return;
@@ -96,15 +110,16 @@ export default function TaskDetail({ id }: { id: string }) {
       <div>Owner: {task.ownerId}</div>
       <div>Tags: {task.tags?.join(", ")}</div>
       <div>Status: {task.status}</div>
-      {loop && (
+      {loopLoading ? (
+        <div>Loading loop...</div>
+      ) : loop ? (
         <div className="flex flex-col gap-2">
           <LoopProgress
             total={loop.sequence.length}
             completed={loop.sequence.filter((s) => s.status === "COMPLETED").length}
           />
           <div className="font-semibold">Loop Steps</div>
-          <LoopTimeline
-            currentStep={loop.currentStep}
+          <LoopVisualizer
             steps={
               loop.sequence.map((s, idx) => ({
                 id: String(idx),
@@ -112,15 +127,15 @@ export default function TaskDetail({ id }: { id: string }) {
                 description: s.description,
                 estimatedTime: s.estimatedTime,
                 dependencies: s.dependencies ?? [],
-                comments: s.comments,
                 index: idx,
                 status: s.status,
               })) as StepWithStatus[]
             }
-            users={[]}
-            taskId={id}
+            users={users}
           />
         </div>
+      ) : (
+        <div className="text-sm text-gray-500">No loop defined yet.</div>
       )}
       <Button
         onClick={() => openLoopBuilder(id)}
