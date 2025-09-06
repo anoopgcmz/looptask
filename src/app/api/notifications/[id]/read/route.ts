@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server';
+import { Types } from 'mongoose';
+import dbConnect from '@/lib/db';
+import Notification from '@/models/Notification';
+import { auth } from '@/lib/auth';
+
+interface Params {
+  params: { id: string };
+}
+
+export async function POST(request: Request, { params }: Params) {
+  const session = await auth();
+  if (!session?.userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = params;
+  if (!Types.ObjectId.isValid(id)) {
+    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+  }
+
+  await dbConnect();
+  const notification = await Notification.findOneAndUpdate(
+    { _id: id, userId: session.userId },
+    { read: true, readAt: new Date() },
+    { new: true }
+  );
+
+  if (!notification) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(notification);
+}
