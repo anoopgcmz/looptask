@@ -7,8 +7,8 @@ import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
 import { Types } from 'mongoose';
 import type { Job } from 'agenda';
 
-agenda.define('task.dueSoon', async (job: Job) => {
-  const { taskId, stepId } = job.attrs.data as { taskId: string; stepId?: string };
+agenda.define('task.dueSoon', async (job: Job<{ taskId: string; stepId?: string }>) => {
+  const { taskId, stepId } = job.attrs.data;
   const task = await Task.findById(taskId).lean<ITask>();
   if (!task) return;
   let recipients: Types.ObjectId[] = [];
@@ -22,8 +22,8 @@ agenda.define('task.dueSoon', async (job: Job) => {
   if (recipients.length) await notifyDueSoon(recipients, task);
 });
 
-agenda.define('task.dueNow', async (job: Job) => {
-  const { taskId, stepId } = job.attrs.data as { taskId: string; stepId?: string };
+agenda.define('task.dueNow', async (job: Job<{ taskId: string; stepId?: string }>) => {
+  const { taskId, stepId } = job.attrs.data;
   const task = await Task.findById(taskId).lean<ITask>();
   if (!task) return;
   let recipients: Types.ObjectId[] = [];
