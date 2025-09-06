@@ -4,9 +4,9 @@ export interface TaskStepPayload {
   title: string;
   ownerId: string;
   description?: string;
-  dueAt?: string;
+  dueAt?: Date;
   status?: 'OPEN' | 'DONE';
-  completedAt?: string;
+  completedAt?: Date;
 }
 
 export interface TaskPayload {
@@ -20,7 +20,7 @@ export interface TaskPayload {
   priority?: TaskPriority;
   tags?: string[];
   visibility?: TaskVisibility;
-  dueDate?: string;
+  dueDate?: Date;
   steps?: TaskStepPayload[];
   currentStepIndex?: number;
 }
@@ -29,8 +29,8 @@ export interface TaskListQuery {
   ownerId?: string;
   createdBy?: string;
   status?: TaskStatus[];
-  dueFrom?: string;
-  dueTo?: string;
+  dueFrom?: Date;
+  dueTo?: Date;
   priority?: TaskPriority[];
   tag?: string[];
   visibility?: TaskVisibility;
