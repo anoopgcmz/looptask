@@ -19,6 +19,7 @@ type StepStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
 
 export interface StepWithStatus extends LoopStep {
   status?: StepStatus;
+  comments?: string;
 }
 
 export default function LoopTimeline({
@@ -79,6 +80,9 @@ export default function LoopTimeline({
   const selectedUser = selected
     ? users.find((u) => u._id === selected.assignedTo)
     : null;
+  const selectedDependencies = selected?.dependencies?.map(
+    (d) => localSteps.find((s) => s.id === d)?.description || d
+  );
 
   const statusStyles: Record<StepStatus, string> = {
     PENDING: 'border-gray-300 bg-gray-100 text-gray-700',
@@ -181,6 +185,14 @@ export default function LoopTimeline({
               <p className="text-sm">Status: {selected.status ?? 'PENDING'}</p>
               {selected.estimatedTime && (
                 <p className="text-sm">Estimated: {selected.estimatedTime}h</p>
+              )}
+              {selectedDependencies && selectedDependencies.length > 0 && (
+                <p className="text-sm">
+                  Dependencies: {selectedDependencies.join(', ')}
+                </p>
+              )}
+              {selected.comments && (
+                <p className="text-sm">Comments: {selected.comments}</p>
               )}
               {selectedUser && (
                 <p className="text-sm">Assigned to: {selectedUser.name}</p>

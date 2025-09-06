@@ -17,7 +17,11 @@ interface Task {
 }
 
 interface LoopStep {
+  assignedTo?: string;
   description: string;
+  estimatedTime?: number;
+  dependencies?: string[];
+  comments?: string;
   status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
 }
 
@@ -104,9 +108,11 @@ export default function TaskDetail({ id }: { id: string }) {
             steps={
               loop.sequence.map((s, idx) => ({
                 id: String(idx),
-                assignedTo: "",
+                assignedTo: s.assignedTo ?? "",
                 description: s.description,
-                dependencies: [],
+                estimatedTime: s.estimatedTime,
+                dependencies: s.dependencies ?? [],
+                comments: s.comments,
                 index: idx,
                 status: s.status,
               })) as StepWithStatus[]
