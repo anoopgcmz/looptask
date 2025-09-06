@@ -3,6 +3,7 @@
 import { LoopStep } from '@/hooks/useLoopBuilder';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface User {
   _id: string;
@@ -34,11 +35,22 @@ export function LoopVisualizer({ steps, users }: { steps: StepWithStatus[]; user
           .join(', ');
         return (
           <div key={step.id} className="flex items-center">
-            <div
+            <motion.div
               className={cn(
                 'flex flex-col items-center p-2 min-w-[120px] rounded border bg-white',
                 invalid && 'border-red-500 bg-red-50'
               )}
+              initial={false}
+              animate={{
+                scale:
+                  step.status === 'ACTIVE'
+                    ? 1.05
+                    : step.status === 'COMPLETED'
+                    ? 0.95
+                    : 1,
+                opacity: step.status === 'COMPLETED' ? 0.7 : 1,
+              }}
+              transition={{ duration: 0.3 }}
             >
               <Avatar
                 src={user?.avatar}
@@ -56,9 +68,14 @@ export function LoopVisualizer({ steps, users }: { steps: StepWithStatus[]; user
                   Depends on: {dependencyIndexes}
                 </span>
               )}
-            </div>
+            </motion.div>
             {idx < ordered.length - 1 && (
-              <div className="mx-2 h-0.5 w-8 bg-gray-300" />
+              <motion.div
+                className="mx-2 h-0.5 bg-gray-300"
+                initial={false}
+                animate={{ width: step.status === 'COMPLETED' ? 32 : 0 }}
+                transition={{ duration: 0.3 }}
+              />
             )}
           </div>
         );
