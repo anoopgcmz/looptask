@@ -21,7 +21,7 @@ export interface IUser extends Document {
     digestFrequency: 'daily' | 'weekly';
     types: {
       ASSIGNMENT: boolean;
-      FLOW_ADVANCED: boolean;
+      LOOP_STEP_READY: boolean;
       TASK_CLOSED: boolean;
       OVERDUE: boolean;
     };
@@ -63,7 +63,7 @@ const userSchema = new Schema<IUser>(
       },
       types: {
         ASSIGNMENT: { type: Boolean, default: true },
-        FLOW_ADVANCED: { type: Boolean, default: true },
+        LOOP_STEP_READY: { type: Boolean, default: true },
         TASK_CLOSED: { type: Boolean, default: true },
         OVERDUE: { type: Boolean, default: true },
       },

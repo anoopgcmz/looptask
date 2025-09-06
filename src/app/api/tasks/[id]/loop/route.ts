@@ -9,7 +9,7 @@ import User from '@/models/User';
 import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
-import { notifyAssignment, notifyFlowAdvanced } from '@/lib/notify';
+import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 import { emitLoopUpdated } from '@/lib/ws';
 
 const loopStepSchema = z.object({
@@ -304,7 +304,7 @@ export const PATCH = withOrganization(
     for (const a of newAssignments) {
       const uid = new Types.ObjectId(a.userId);
       await notifyAssignment([uid], task, a.description);
-      await notifyFlowAdvanced([uid], task, a.description);
+      await notifyLoopStepReady([uid], task, a.description);
     }
   for (const a of oldAssignments) {
     const uid = new Types.ObjectId(a.userId);

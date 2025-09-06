@@ -4,6 +4,7 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
+import { NotificationType } from '@/lib/notify';
 
 export async function GET() {
   const session = await auth();
@@ -24,10 +25,10 @@ export async function GET() {
       push: true,
       digestFrequency: 'daily',
       types: {
-        ASSIGNMENT: true,
-        FLOW_ADVANCED: true,
-        TASK_CLOSED: true,
-        OVERDUE: true,
+        [NotificationType.ASSIGNMENT]: true,
+        [NotificationType.LOOP_STEP_READY]: true,
+        [NotificationType.TASK_CLOSED]: true,
+        [NotificationType.OVERDUE]: true,
       },
     };
   return NextResponse.json(prefs);
@@ -39,10 +40,10 @@ const updateSchema = z.object({
   digestFrequency: z.enum(['daily', 'weekly']).optional(),
   types: z
     .object({
-      ASSIGNMENT: z.boolean().optional(),
-      FLOW_ADVANCED: z.boolean().optional(),
-      TASK_CLOSED: z.boolean().optional(),
-      OVERDUE: z.boolean().optional(),
+      [NotificationType.ASSIGNMENT]: z.boolean().optional(),
+      [NotificationType.LOOP_STEP_READY]: z.boolean().optional(),
+      [NotificationType.TASK_CLOSED]: z.boolean().optional(),
+      [NotificationType.OVERDUE]: z.boolean().optional(),
     })
     .optional(),
 });

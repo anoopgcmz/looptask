@@ -14,7 +14,7 @@ vi.mock('mongoose', async () => {
   };
 });
 import mongoose from 'mongoose';
-import { notifyTaskClosed, notifyFlowAdvanced, notifyAssignment } from '@/lib/notify';
+import { notifyTaskClosed, notifyLoopStepReady, notifyAssignment } from '@/lib/notify';
 
 // mocks
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
@@ -48,7 +48,7 @@ vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => ({ userId: currentUserId,
 vi.mock('@/lib/ws', () => ({ emitTaskTransition: vi.fn() }));
 vi.mock('@/lib/notify', () => ({
   notifyStatusChange: vi.fn(),
-  notifyFlowAdvanced: vi.fn(),
+  notifyLoopStepReady: vi.fn(),
   notifyTaskClosed: vi.fn(),
   notifyAssignment: vi.fn(),
 }));
@@ -98,7 +98,7 @@ describe('task flow with steps', () => {
       expect.objectContaining({ _id: taskId }),
       'Step 2'
     );
-    expect(notifyFlowAdvanced).toHaveBeenCalledWith(
+    expect(notifyLoopStepReady).toHaveBeenCalledWith(
       [u2],
       expect.objectContaining({ _id: taskId }),
       'Step 2'
@@ -121,7 +121,7 @@ describe('task flow with steps', () => {
       expect.objectContaining({ _id: taskId }),
       'Step 3'
     );
-    expect(notifyFlowAdvanced).toHaveBeenCalledWith(
+    expect(notifyLoopStepReady).toHaveBeenCalledWith(
       [u3],
       expect.objectContaining({ _id: taskId }),
       'Step 3'
