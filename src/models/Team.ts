@@ -1,6 +1,7 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Types } from 'mongoose';
 
-export interface ITeam extends Document {
+export interface ITeam {
+  _id: Types.ObjectId;
   name: string;
   timezone: string;
 }
