@@ -20,6 +20,8 @@ export interface TaskCardProps {
 }
 
 export default function TaskCard({ task, onChange }: TaskCardProps) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+
   const handleMarkComplete = async () => {
     await fetch(`/api/tasks/${task._id}/transition`, {
       method: 'POST',
@@ -65,31 +67,99 @@ export default function TaskCard({ task, onChange }: TaskCardProps) {
           </div>
         </div>
       </div>
-      <div className="flex gap-2 mt-2">
-        <Button onClick={() => void handleMarkComplete()} className="text-xs">
-          Mark Complete
-        </Button>
-        <Button
-          onClick={() => void handleEdit()}
-          variant="outline"
-          className="text-xs"
-        >
-          Edit
-        </Button>
-        <Button
-          onClick={() => void handleDelete()}
-          variant="outline"
-          className="text-xs"
-        >
-          Delete
-        </Button>
-        <Button
-          onClick={() => openLoopBuilder(task._id)}
-          variant="outline"
-          className="text-xs"
-        >
-          Add to Loop
-        </Button>
+      <div className="mt-2">
+        <div className="hidden sm:flex gap-2">
+          <Button onClick={() => void handleMarkComplete()} className="text-xs">
+            Mark Complete
+          </Button>
+          <Button
+            onClick={() => void handleEdit()}
+            variant="outline"
+            className="text-xs"
+          >
+            Edit
+          </Button>
+          <Button
+            onClick={() => void handleDelete()}
+            variant="outline"
+            className="text-xs"
+          >
+            Delete
+          </Button>
+          <Button
+            onClick={() => openLoopBuilder(task._id)}
+            variant="outline"
+            className="text-xs"
+          >
+            Add to Loop
+          </Button>
+        </div>
+        <div className="relative sm:hidden">
+          <Button
+            onClick={() => setMenuOpen((o) => !o)}
+            variant="outline"
+            className="p-2"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label="More actions"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
+              <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6-2a2 2 0 100 4 2 2 0 000-4zm6 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </Button>
+          {menuOpen && (
+            <div
+              className="absolute right-0 z-10 mt-2 w-40 rounded border bg-white shadow-md"
+              role="menu"
+            >
+              <button
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                onClick={() => {
+                  setMenuOpen(false);
+                  void handleMarkComplete();
+                }}
+                role="menuitem"
+              >
+                Mark Complete
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                onClick={() => {
+                  setMenuOpen(false);
+                  void handleEdit();
+                }}
+                role="menuitem"
+              >
+                Edit
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                onClick={() => {
+                  setMenuOpen(false);
+                  void handleDelete();
+                }}
+                role="menuitem"
+              >
+                Delete
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                onClick={() => {
+                  setMenuOpen(false);
+                  openLoopBuilder(task._id);
+                }}
+                role="menuitem"
+              >
+                Add to Loop
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
