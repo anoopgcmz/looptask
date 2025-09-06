@@ -17,7 +17,7 @@ agenda.define('task.dueSoon', async (job: Job<{ taskId: string; stepId?: string 
     const step = task.steps?.[idx];
     if (step?.ownerId) recipients = [step.ownerId];
   } else {
-    recipients = (task.participantIds || []) as Types.ObjectId[];
+    recipients = task.participantIds ?? [];
   }
   if (recipients.length) await notifyDueSoon(recipients, task);
 });
@@ -32,7 +32,7 @@ agenda.define('task.dueNow', async (job: Job<{ taskId: string; stepId?: string }
     const step = task.steps?.[idx];
     if (step?.ownerId) recipients = [step.ownerId];
   } else {
-    recipients = (task.participantIds || []) as Types.ObjectId[];
+    recipients = task.participantIds ?? [];
   }
   if (recipients.length) {
     await notifyDueNow(recipients, task);
