@@ -3,6 +3,7 @@ import { z } from 'zod';
 import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
+import type { ITask } from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
 import LoopHistory from '@/models/LoopHistory';
 import User from '@/models/User';
@@ -68,7 +69,7 @@ export const POST = withOrganization(
 
     const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(id).lean();
+    const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -151,7 +152,7 @@ export const GET = withOrganization(
   ) => {
     const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(id).lean();
+    const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -182,7 +183,7 @@ export const PATCH = withOrganization(
 
     const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(id).lean();
+    const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -334,7 +335,7 @@ export const DELETE = withOrganization(
   ) => {
     const { id } = await params;
     await dbConnect();
-      const task = await Task.findById(id).lean();
+      const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(

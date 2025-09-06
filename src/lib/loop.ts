@@ -1,6 +1,7 @@
 import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
+import type { ITask } from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
 import LoopHistory from '@/models/LoopHistory';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
@@ -95,7 +96,7 @@ export async function completeStep(
   if (!updatedLoop) return null;
 
   if (newlyActiveIndexes.length) {
-    const task = await Task.findById(taskId).lean();
+    const task = await Task.findById(taskId).lean<Pick<ITask, '_id' | 'title' | 'status'>>();
     if (task) {
       for (const idx of newlyActiveIndexes) {
         const s = updatedLoop.sequence[idx];

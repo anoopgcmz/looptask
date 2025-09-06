@@ -8,16 +8,13 @@ import { emitNotification } from '@/lib/ws';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { sendPushToUser } from '@/lib/push';
+import type { ITask } from '@/models/Task';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const THROTTLE_SECONDS = 60;
 
-interface Task {
-  _id: Types.ObjectId;
-  title: string;
-  status?: string;
-}
+type Task = Pick<ITask, '_id' | 'title' | 'status'>;
 
 interface EntityRef {
   taskId?: Types.ObjectId;
