@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
@@ -8,6 +8,7 @@ import User from '@/models/User';
 import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
+import { notifyAssignment } from '@/lib/notify';
 
 const loopStepSchema = z.object({
   assignedTo: z.string(),
@@ -227,33 +228,56 @@ export const PATCH = withOrganization(
           .join('; ');
         return problem(400, 'Invalid request', detail);
       }
+    }
 
-      const newSequence = steps.map((s) => {
-        const current = loop.sequence[s.index];
-        return {
-          taskId: new Types.ObjectId(params.id),
-          assignedTo: s.assignedTo
-            ? new Types.ObjectId(s.assignedTo)
-            : current.assignedTo,
-          description: s.description ?? current.description,
-          status: s.status ?? current.status,
-          estimatedTime: current.estimatedTime,
-          actualTime: current.actualTime,
-          completedAt: current.completedAt,
-          comments: current.comments,
-          dependencies: current.dependencies,
-        };
+    const sessionDb = await mongoose.startSession();
+    const newAssignees = new Set<string>();
+    const oldAssignees = new Set<string>();
+    let updatedLoop: any = null;
+    try {
+      await sessionDb.withTransaction(async () => {
+        const loopDoc = await TaskLoop.findOne({ taskId: params.id }).session(sessionDb);
+        if (!loopDoc) return;
+        if (steps) {
+          steps.forEach((s) => {
+            const current = loopDoc.sequence[s.index];
+            if (s.assignedTo !== undefined && s.assignedTo !== current.assignedTo.toString()) {
+              oldAssignees.add(current.assignedTo.toString());
+              newAssignees.add(s.assignedTo);
+              current.assignedTo = new Types.ObjectId(s.assignedTo);
+              if (current.status !== 'PENDING' && s.status === undefined) {
+                current.status = 'PENDING';
+                loopDoc.isActive = true;
+                if (loopDoc.currentStep === -1 || s.index < loopDoc.currentStep) {
+                  loopDoc.currentStep = s.index;
+                }
+              }
+            }
+            if (s.description !== undefined) {
+              current.description = s.description;
+            }
+            if (s.status !== undefined) {
+              current.status = s.status;
+            }
+          });
+        }
+        if (parallel !== undefined) {
+          loopDoc.parallel = parallel;
+        }
+        await loopDoc.save({ session: sessionDb });
+        updatedLoop = loopDoc;
       });
-
-      loop.sequence = newSequence;
+    } finally {
+      await sessionDb.endSession();
     }
+    if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
 
-    if (parallel !== undefined) {
-      loop.parallel = parallel;
-    }
+    const newIds = Array.from(newAssignees).map((id) => new Types.ObjectId(id));
+    const oldIds = Array.from(oldAssignees).map((id) => new Types.ObjectId(id));
+    await notifyAssignment(newIds, task);
+    if (oldIds.length) await notifyAssignment(oldIds, task);
 
-    await loop.save();
-    return NextResponse.json(loop);
+    return NextResponse.json(updatedLoop);
   }
 );
 
