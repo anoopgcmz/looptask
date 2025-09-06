@@ -9,6 +9,14 @@ import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;
 
+export interface PushSubscription {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
 export interface IUser {
   name: string;
   email: string;
@@ -33,7 +41,7 @@ export interface IUser {
       OVERDUE: boolean;
     };
   };
-  pushSubscriptions: any[];
+  pushSubscriptions: PushSubscription[];
 }
 
 export type UserDocument = HydratedDocument<IUser>;
@@ -78,7 +86,18 @@ const userSchema = new Schema<IUser>(
         OVERDUE: { type: Boolean, default: true },
       },
     },
-    pushSubscriptions: { type: [Schema.Types.Mixed], default: [] },
+    pushSubscriptions: {
+      type: [
+        {
+          endpoint: { type: String, required: true },
+          keys: {
+            p256dh: { type: String, required: true },
+            auth: { type: String, required: true },
+          },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );
