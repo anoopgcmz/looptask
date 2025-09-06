@@ -1,19 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Objective from '@/models/Objective';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.userId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   await dbConnect();
-  const objective = await Objective.findById(params.id);
+  const { id } = await params;
+  const objective = await Objective.findById(id);
   if (!objective) {
     return problem(404, 'Not Found', 'Objective not found');
   }
