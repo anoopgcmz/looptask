@@ -4,6 +4,7 @@ import Notification from '@/models/Notification';
 import User from '@/models/User';
 import dbConnect from '@/lib/db';
 import RateLimit from '@/models/RateLimit';
+import { emitNotification } from '@/lib/ws';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -37,7 +38,12 @@ async function createAndEmail(
     }
   }
   if (!recipients.length) return;
-  await Notification.insertMany(recipients.map((userId) => ({ userId, type, entityRef })));
+  const notifications = await Notification.insertMany(
+    recipients.map((userId) => ({ userId, type, entityRef }))
+  );
+  notifications.forEach((n) =>
+    emitNotification(n.toObject(), n.userId.toString())
+  );
   if (resend) {
     const users = await User.find({ _id: { $in: recipients } });
     await Promise.all(

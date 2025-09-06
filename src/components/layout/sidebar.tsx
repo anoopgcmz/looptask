@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import NotificationsBadge from '@/components/notifications-badge';
 
 export default function Sidebar() {
   const navItems = [
@@ -14,9 +15,10 @@ export default function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className="block rounded px-2 py-1 text-[var(--color-text)] hover:bg-[var(--color-primary)]/10 transition"
+            className="flex items-center justify-between rounded px-2 py-1 text-[var(--color-text)] hover:bg-[var(--color-primary)]/10 transition"
           >
             {item.label}
+            {item.href === '/notifications' && <NotificationsBadge />}
           </Link>
         ))}
       </nav>
