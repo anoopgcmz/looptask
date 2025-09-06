@@ -84,7 +84,7 @@ export const DELETE = withOrganization(
     try {
       const filePath = path.join(process.cwd(), 'public', attachment.url);
       await fs.unlink(filePath);
-    } catch (_) {}
+    } catch {}
     await Attachment.findByIdAndDelete(attachmentId);
     return NextResponse.json({ success: true });
   }

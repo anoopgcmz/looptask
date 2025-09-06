@@ -105,7 +105,7 @@ describe('objectives api', () => {
         }),
       })
     );
-    const obj2 = await res.json();
+    await res.json();
 
     res = await listObjectives(
       new Request(

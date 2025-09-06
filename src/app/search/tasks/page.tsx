@@ -277,7 +277,7 @@ export default function TaskSearchPage() {
       </form>
       {data?.verification && (
         <p className="mb-2 text-sm text-gray-600">
-          Search for "{data.verification.q}" with filters applied
+          Search for &quot;{data.verification.q}&quot; with filters applied
         </p>
       )}
       <ul>
