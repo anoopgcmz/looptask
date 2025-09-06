@@ -22,9 +22,11 @@ export interface StepWithStatus extends LoopStep {
 export default function LoopTimeline({
   steps,
   users,
+  currentStep,
 }: {
   steps: StepWithStatus[];
   users: User[];
+  currentStep?: number;
 }) {
   const [selected, setSelected] = useState<StepWithStatus | null>(null);
 
@@ -49,32 +51,43 @@ export default function LoopTimeline({
       <div className="flex flex-col md:flex-row items-stretch md:items-center overflow-auto py-2">
         {ordered.map((step, idx) => {
           const user = users.find((u) => u._id === step.assignedTo);
+          const isCurrent = idx === currentStep;
           return (
             <div key={step.id} className="flex flex-col md:flex-row items-center">
-              <motion.button
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.05 }}
-                onClick={() => setSelected(step)}
-                className={cn(
-                  'flex flex-col items-center p-3 min-w-[120px] rounded border cursor-pointer',
-                  statusStyles[step.status ?? 'PENDING']
+              <div className="relative">
+                {isCurrent && (
+                  <motion.span
+                    layoutId="current-step"
+                    className="absolute -inset-1 rounded ring-2 ring-blue-500 shadow-md pointer-events-none"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
                 )}
-                title={step.description}
-              >
-                <Avatar
-                  src={user?.avatar}
-                  fallback={user?.name?.[0] || '?'}
-                  className="w-10 h-10 mb-2"
-                />
-                <span className="text-sm text-center">
-                  {step.description || 'Untitled Step'}
-                </span>
-                <span className="mt-1 text-xs font-medium">
-                  {step.status ?? 'PENDING'}
-                </span>
-              </motion.button>
+                <motion.button
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: isCurrent ? 1.05 : 1 }}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => setSelected(step)}
+                  className={cn(
+                    'relative flex flex-col items-center p-3 min-w-[120px] rounded border cursor-pointer z-10',
+                    statusStyles[step.status ?? 'PENDING']
+                  )}
+                  title={step.description}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  <Avatar
+                    src={user?.avatar}
+                    fallback={user?.name?.[0] || '?'}
+                    className="w-10 h-10 mb-2"
+                  />
+                  <span className="text-sm text-center">
+                    {step.description || 'Untitled Step'}
+                  </span>
+                  <span className="mt-1 text-xs font-medium">
+                    {step.status ?? 'PENDING'}
+                  </span>
+                </motion.button>
+              </div>
               {idx < ordered.length - 1 && (
                 <>
                   <div className="hidden md:block mx-2 h-0.5 w-8 bg-gray-300" />

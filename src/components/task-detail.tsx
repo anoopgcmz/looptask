@@ -23,6 +23,7 @@ interface LoopStep {
 
 interface TaskLoop {
   sequence: LoopStep[];
+  currentStep: number;
 }
 
 export default function TaskDetail({ id }: { id: string }) {
@@ -99,14 +100,17 @@ export default function TaskDetail({ id }: { id: string }) {
           />
           <div className="font-semibold">Loop Steps</div>
           <LoopTimeline
-            steps={loop.sequence.map((s, idx) => ({
-              id: String(idx),
-              assignedTo: "",
-              description: s.description,
-              dependencies: [],
-              index: idx,
-              status: s.status,
-            })) as StepWithStatus[]}
+            currentStep={loop.currentStep}
+            steps={
+              loop.sequence.map((s, idx) => ({
+                id: String(idx),
+                assignedTo: "",
+                description: s.description,
+                dependencies: [],
+                index: idx,
+                status: s.status,
+              })) as StepWithStatus[]
+            }
             users={[]}
           />
         </div>
