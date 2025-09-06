@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import useNotificationsChannel from '@/hooks/useNotificationsChannel';
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -12,6 +13,10 @@ export default function NotificationsPage() {
     };
     load();
   }, []);
+
+  useNotificationsChannel({
+    onNotification: (n) => setItems((items) => [n, ...items]),
+  });
   return (
     <div className="p-4">
       <h1 className="text-xl mb-2">Notifications</h1>
