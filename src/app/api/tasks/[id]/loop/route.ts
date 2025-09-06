@@ -253,11 +253,11 @@ export const PATCH = withOrganization(
       }
     }
 
-  const sessionDb = await mongoose.startSession();
-  const newAssignments: { userId: string; description: string }[] = [];
-  const oldAssignments: { userId: string; description: string }[] = [];
-  const history: { stepIndex: number; action: 'UPDATE' | 'COMPLETE' | 'REASSIGN' }[] = [];
-  let updatedLoop: any = null;
+    const sessionDb = await mongoose.startSession();
+    const newAssignments: { userId: string; description: string }[] = [];
+    const oldAssignments: { userId: string; description: string }[] = [];
+    const history: { stepIndex: number; action: 'UPDATE' | 'COMPLETE' | 'REASSIGN' }[] = [];
+    let updatedLoop: any = null;
   try {
     await sessionDb.withTransaction(async () => {
       const loopDoc = await TaskLoop.findOne({ taskId: id }).session(sessionDb);
@@ -313,15 +313,17 @@ export const PATCH = withOrganization(
   }
     if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
 
+    const notifyTask = task as Pick<ITask, '_id' | 'title' | 'status'>;
+
     for (const a of newAssignments) {
       const uid = new Types.ObjectId(a.userId);
-      await notifyAssignment([uid], task, a.description);
-      await notifyLoopStepReady([uid], task, a.description);
+      await notifyAssignment([uid], notifyTask, a.description);
+      await notifyLoopStepReady([uid], notifyTask, a.description);
     }
-  for (const a of oldAssignments) {
-    const uid = new Types.ObjectId(a.userId);
-    await notifyAssignment([uid], task, a.description);
-  }
+    for (const a of oldAssignments) {
+      const uid = new Types.ObjectId(a.userId);
+      await notifyAssignment([uid], notifyTask, a.description);
+    }
     emitLoopUpdated({ taskId: id, patch: body, updatedAt: updatedLoop.updatedAt });
     return NextResponse.json(updatedLoop);
   }
