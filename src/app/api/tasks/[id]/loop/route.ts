@@ -5,7 +5,7 @@ import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
-import TaskLoop from '@/models/TaskLoop';
+import TaskLoop, { type ITaskLoop } from '@/models/TaskLoop';
 import LoopHistory from '@/models/LoopHistory';
 import User, { type IUser } from '@/models/User';
 import { canWriteTask } from '@/lib/access';
@@ -165,7 +165,7 @@ export const GET = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot access this loop');
     }
-      const loop = await TaskLoop.findOne({ taskId: id }).lean();
+      const loop = await TaskLoop.findOne({ taskId: id }).lean<ITaskLoop>();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
     return NextResponse.json(loop);
   }
@@ -196,7 +196,7 @@ export const PATCH = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot modify this loop');
     }
-      const loop = await TaskLoop.findOne({ taskId: id }).lean();
+      const loop = await TaskLoop.findOne({ taskId: id }).lean<ITaskLoop>();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
 
     const { sequence: steps, parallel } = body;
