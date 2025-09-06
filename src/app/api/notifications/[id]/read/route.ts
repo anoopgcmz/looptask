@@ -1,20 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Notification from '@/models/Notification';
 import { auth } from '@/lib/auth';
 
-interface Params {
-  params: { id: string };
-}
-
-export async function POST(request: Request, { params }: Params) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
