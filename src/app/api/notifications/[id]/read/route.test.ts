@@ -1,5 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Types } from 'mongoose';
+
+vi.mock('mongoose', () => ({
+  Types: { ObjectId: { isValid: () => true } },
+}));
+
+vi.mock('next/server', () => ({
+  NextResponse: {
+    json: (data: any, init?: ResponseInit) =>
+      new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        ...init,
+      }),
+  },
+}));
 
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
@@ -12,8 +26,8 @@ vi.mock('@/models/Notification', () => ({ default: { findOneAndUpdate } }));
 import { POST } from './route';
 
 describe('POST /notifications/:id/read', () => {
-  const id = new Types.ObjectId().toString();
-  const session = { userId: new Types.ObjectId().toString() } as any;
+  const id = '507f1f77bcf86cd799439011';
+  const session = { userId: '507f1f77bcf86cd799439012' } as any;
 
   beforeEach(() => {
     auth.mockResolvedValue(session);
@@ -22,7 +36,10 @@ describe('POST /notifications/:id/read', () => {
   });
 
   it('marks notification read by default', async () => {
-    const res = await POST(new Request('http://test', { method: 'POST' }), { params: { id } });
+    const res = await POST(
+      new Request('http://test', { method: 'POST' }) as any,
+      { params: Promise.resolve({ id }) }
+    );
     expect(res.status).toBe(200);
     expect(findOneAndUpdate).toHaveBeenCalledWith(
       { _id: id, userId: session.userId },
@@ -37,7 +54,7 @@ describe('POST /notifications/:id/read', () => {
       body: JSON.stringify({ read: false }),
       headers: { 'Content-Type': 'application/json' },
     });
-    const res = await POST(req, { params: { id } });
+    const res = await POST(req as any, { params: Promise.resolve({ id }) });
     expect(res.status).toBe(200);
     expect(findOneAndUpdate).toHaveBeenCalledWith(
       { _id: id, userId: session.userId },
