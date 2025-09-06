@@ -19,6 +19,7 @@ import type {
   TaskResponse,
 } from '@/types/api/task';
 import { stepSchema } from '@/lib/schemas/taskStep';
+import { serializeTask } from '@/lib/serializeTask';
 
 const patchSchema: z.ZodType<Partial<TaskPayload>> = z
   .object({
@@ -81,7 +82,7 @@ export const GET = withOrganization(
   ) {
     return problem(404, 'Not Found', 'Task not found');
   }
-  return NextResponse.json<TaskResponse>(task);
+  return NextResponse.json<TaskResponse>(serializeTask(task));
 });
 
 export const PATCH = withOrganization(
@@ -164,7 +165,7 @@ export const PATCH = withOrganization(
   });
   await scheduleTaskJobs(task);
   emitTaskUpdated({ taskId: task._id, patch: body, updatedAt: task.updatedAt });
-  return NextResponse.json<TaskResponse>(task);
+  return NextResponse.json<TaskResponse>(serializeTask(task));
 });
 
 export const DELETE = withOrganization(
@@ -279,7 +280,7 @@ export const PUT = withOrganization(
     await scheduleTaskJobs(task);
     const patch = diff(oldTask, task.toObject());
     emitTaskUpdated({ taskId: task._id, patch, updatedAt: task.updatedAt });
-    return NextResponse.json<TaskResponse>(task);
+    return NextResponse.json<TaskResponse>(serializeTask(task));
   }
 );
 

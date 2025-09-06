@@ -15,6 +15,8 @@ import {
 } from '@/lib/notify';
 import { problem } from '@/lib/http';
 import type { TaskResponse } from '@/types/api/task';
+import { serializeTask } from '@/lib/serializeTask';
+import type { ITask } from '@/models/Task';
 
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
@@ -37,7 +39,7 @@ export async function POST(
 
   await dbConnect();
   const { id } = await params;
-  const task = await Task.findById(id).lean();
+  const task = await Task.findById(id).lean<ITask>();
   if (!task || task.organizationId.toString() !== session.organizationId)
     return problem(404, 'Not Found', 'Task not found');
 
@@ -58,7 +60,7 @@ export async function POST(
     }
 
     const mongoSession = await startSession();
-    let updated: any;
+    let updated: ITask | null = null;
     await mongoSession.withTransaction(async () => {
       const t = await Task.findById(task._id).session(mongoSession);
       if (!t) throw new Error('Task not found');
@@ -114,7 +116,7 @@ export async function POST(
       patch,
       updatedAt: updated.updatedAt,
     });
-    return NextResponse.json<TaskResponse>(updated);
+    return NextResponse.json<TaskResponse>(serializeTask(updated));
   } else {
     let newStatus = task.status;
     switch (body.action) {
@@ -140,7 +142,7 @@ export async function POST(
     }
 
     const mongoSession = await startSession();
-    let updated: any;
+    let updated: ITask | null = null;
     await mongoSession.withTransaction(async () => {
       const t = await Task.findById(task._id).session(mongoSession);
       if (!t) throw new Error('Task not found');
@@ -173,7 +175,7 @@ export async function POST(
       patch,
       updatedAt: updated.updatedAt,
     });
-    return NextResponse.json<TaskResponse>(updated);
+    return NextResponse.json<TaskResponse>(serializeTask(updated));
   }
 }
 
