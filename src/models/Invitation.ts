@@ -1,6 +1,6 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import { Schema, model, models, type Model, type Types } from 'mongoose';
 
-export interface IInvitation extends Document {
+export interface IInvitation {
   email: string;
   organizationId: Types.ObjectId;
   tokenHash: string;
@@ -27,4 +27,7 @@ const invitationSchema = new Schema<IInvitation>(
 
 invitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export default models.Invitation || model<IInvitation>('Invitation', invitationSchema);
+const Invitation: Model<IInvitation> =
+  models.Invitation || model<IInvitation>('Invitation', invitationSchema);
+
+export default Invitation;
