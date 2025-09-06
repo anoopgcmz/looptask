@@ -94,8 +94,9 @@ export const PATCH = withOrganization(
   let body: Partial<TaskPayload>;
   try {
     body = patchSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   const { id } = await params;
   await dbConnect();
@@ -206,8 +207,9 @@ export const PUT = withOrganization(
     let body: TaskPayload;
     try {
       body = putSchema.parse(await req.json());
-    } catch (e: any) {
-      return problem(400, 'Invalid request', e.message);
+    } catch (e: unknown) {
+      const err = e as Error;
+      return problem(400, 'Invalid request', err.message);
     }
     const { id } = await params;
     await dbConnect();

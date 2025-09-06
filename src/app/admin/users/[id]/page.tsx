@@ -45,7 +45,7 @@ export default function EditUserPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form };
-    if (!payload.password) delete (payload as any).password;
+    if (!payload.password) delete (payload as unknown).password;
     setStatus({});
     try {
       const res = await fetch('/api/users/' + id, {
@@ -58,8 +58,9 @@ export default function EditUserPage() {
         throw new Error(err?.detail || 'Failed to save');
       }
       setStatus({ success: 'Saved' });
-    } catch (e: any) {
-      setStatus({ error: e.message || 'Failed to save' });
+    } catch (e: unknown) {
+      const err = e as Error;
+      setStatus({ error: err.message || 'Failed to save' });
     }
   };
 

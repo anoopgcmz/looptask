@@ -46,20 +46,24 @@ export async function GET(req: NextRequest) {
   let rows: string[][];
   if (data.results?.[0]?.type) {
     headersRow = ['id', 'type', 'title', 'excerpt'];
-    rows = data.results.map((r: any) => [
-      r._id,
-      r.type,
-      '"' + String(r.title ?? '').replace(/"/g, '""') + '"',
-      '"' + String(r.excerpt ?? '').replace(/"/g, '""') + '"',
-    ]);
+    rows = data.results.map(
+      (r: { _id: string; type: string; title?: string; excerpt?: string }) => [
+        r._id,
+        r.type,
+        '"' + String(r.title ?? '').replace(/"/g, '""') + '"',
+        '"' + String(r.excerpt ?? '').replace(/"/g, '""') + '"',
+      ]
+    );
   } else {
     headersRow = ['id', 'title', 'status', 'dueDate'];
-    rows = data.results.map((t: any) => [
-      t._id,
-      '"' + String(t.title ?? '').replace(/"/g, '""') + '"',
-      t.status ?? '',
-      t.dueDate ? new Date(t.dueDate).toISOString() : '',
-    ]);
+    rows = data.results.map(
+      (t: { _id: string; title?: string; status?: string; dueDate?: string }) => [
+        t._id,
+        '"' + String(t.title ?? '').replace(/"/g, '""') + '"',
+        t.status ?? '',
+        t.dueDate ? new Date(t.dueDate).toISOString() : '',
+      ]
+    );
   }
   const csv = [headersRow.join(','), ...rows.map((r) => r.join(','))].join('\n');
   return new NextResponse(csv, {

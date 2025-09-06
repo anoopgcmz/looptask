@@ -66,8 +66,9 @@ export const POST = withOrganization(
     let body: z.infer<typeof loopSchema>;
     try {
       body = loopSchema.parse(await req.json().catch(() => ({})));
-    } catch (e: any) {
-      return problem(400, 'Invalid request', e.message);
+    } catch (e: unknown) {
+      const err = e as Error;
+      return problem(400, 'Invalid request', err.message);
     }
 
     const { id } = await params;
@@ -180,8 +181,9 @@ export const PATCH = withOrganization(
     let body: z.infer<typeof loopPatchSchema>;
     try {
       body = loopPatchSchema.parse(await req.json());
-    } catch (e: any) {
-      return problem(400, 'Invalid request', e.message);
+    } catch (e: unknown) {
+      const err = e as Error;
+      return problem(400, 'Invalid request', err.message);
     }
 
     const { id } = await params;
@@ -260,7 +262,7 @@ export const PATCH = withOrganization(
     const newAssignments: { userId: string; description: string }[] = [];
     const oldAssignments: { userId: string; description: string }[] = [];
     const history: { stepIndex: number; action: 'UPDATE' | 'COMPLETE' | 'REASSIGN' }[] = [];
-    let updatedLoop: any = null;
+    let updatedLoop: unknown = null;
   try {
     await sessionDb.withTransaction(async () => {
       const loopDoc = await TaskLoop.findOne({ taskId: id }).session(sessionDb);

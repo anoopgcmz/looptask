@@ -35,8 +35,9 @@ export default function InvitePage() {
       }
       setSuccess('Invitation sent');
       reset({ email: '', role: data.role });
-    } catch (e: any) {
-      setError('root', { message: e.message || 'Failed to send' });
+    } catch (e: unknown) {
+      const err = e as Error;
+      setError('root', { message: err.message || 'Failed to send' });
     }
   };
 

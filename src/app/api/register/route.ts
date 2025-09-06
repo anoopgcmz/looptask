@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
   let body: z.infer<typeof registerSchema>;
   try {
     body = registerSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
 
   await dbConnect();
@@ -40,12 +41,13 @@ export async function POST(req: NextRequest) {
     try {
       const org = await Organization.create({ name: body.organizationName, domain });
       organizationId = org._id;
-    } catch (e: any) {
-      if (e.code === 11000) {
+    } catch (e: unknown) {
+      const err = e as Error & { code?: number };
+      if (err.code === 11000) {
         return problem(409, 'Conflict', 'Organization already exists');
       }
-      if (e.name === 'ValidationError') {
-        return problem(400, 'Invalid request', e.message);
+      if (err.name === 'ValidationError') {
+        return problem(400, 'Invalid request', err.message);
       }
       return problem(500, 'Internal Server Error', 'Unexpected error');
     }
@@ -64,12 +66,13 @@ export async function POST(req: NextRequest) {
       organizationId,
     });
     return NextResponse.json({ id: user._id }, { status: 201 });
-  } catch (e: any) {
-    if (e.code === 11000) {
+  } catch (e: unknown) {
+    const err = e as Error & { code?: number };
+    if (err.code === 11000) {
       return problem(409, 'Conflict', 'User already exists');
     }
-    if (e.name === 'ValidationError') {
-      return problem(400, 'Invalid request', e.message);
+    if (err.name === 'ValidationError') {
+      return problem(400, 'Invalid request', err.message);
     }
     return problem(500, 'Internal Server Error', 'Unexpected error');
   }

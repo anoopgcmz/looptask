@@ -45,8 +45,9 @@ function MemberRow({ user, onUpdated }: MemberRowProps) {
       const updated = await res.json();
       onUpdated(updated);
       setSuccess('Saved');
-    } catch (e: any) {
-      setError(e.message || 'Failed to update');
+    } catch (e: unknown) {
+      const err = e as Error;
+      setError(err.message || 'Failed to update');
     }
   };
 
@@ -86,8 +87,9 @@ export default function MembersPage() {
         }
         const data = await res.json();
         setMembers(data);
-      } catch (e: any) {
-        setError(e.message || 'Failed to load');
+      } catch (e: unknown) {
+        const err = e as Error;
+        setError(err.message || 'Failed to load');
       } finally {
         setLoading(false);
       }

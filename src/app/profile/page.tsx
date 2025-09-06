@@ -58,8 +58,9 @@ export default function ProfilePage() {
         throw new Error(err?.detail || 'Failed to update');
       }
       setSuccess('Profile updated successfully');
-    } catch (e: any) {
-      setError(e.message || 'Failed to update');
+    } catch (e: unknown) {
+      const err = e as Error;
+      setError(err.message || 'Failed to update');
     }
   };
 

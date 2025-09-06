@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
   let body: z.infer<typeof inviteSchema>;
   try {
     body = inviteSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
 
   const token = crypto.randomBytes(20).toString('hex');

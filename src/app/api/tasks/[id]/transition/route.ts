@@ -33,8 +33,9 @@ export async function POST(
   let body: z.infer<typeof bodySchema>;
   try {
     body = bodySchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
 
   await dbConnect();

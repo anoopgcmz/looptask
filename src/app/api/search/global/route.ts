@@ -30,8 +30,9 @@ export async function GET(req: NextRequest) {
   let query: z.infer<typeof querySchema>;
   try {
     query = querySchema.parse(raw);
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
 
   await dbConnect();
@@ -55,39 +56,46 @@ export async function GET(req: NextRequest) {
       (end < text.length ? '...' : '');
   };
 
-  const access: any[] = [
+  const access: Array<Record<string, unknown>> = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
     access.push({ visibility: 'TEAM', teamId: new Types.ObjectId(session.teamId) });
   }
 
-  const taskFilter: any = { $or: access };
+  const taskFilter: Record<string, unknown> = { $or: access };
   if (regex) {
     taskFilter.$and = [{ $or: access }, { $or: [{ title: regex }, { description: regex }] }];
   }
 
   const tasks = await Task.find(taskFilter)
     .select('title description createdAt')
-    .lean();
+    .lean<{ _id: Types.ObjectId; title: string; description?: string; createdAt: Date }>();
 
   const accessibleTaskIds = tasks.map((t) => t._id);
 
-  const loopFilter: any = { taskId: { $in: accessibleTaskIds } };
+  const loopFilter: Record<string, unknown> = { taskId: { $in: accessibleTaskIds } };
   if (regex) loopFilter['sequence.description'] = regex;
   const loops = await TaskLoop.find(loopFilter)
     .select('taskId sequence createdAt')
-    .lean();
+    .lean<{ _id: Types.ObjectId; taskId: Types.ObjectId; sequence: { description: string }[]; createdAt: Date }>();
 
-  const commentFilter: any = { taskId: { $in: accessibleTaskIds } };
+  const commentFilter: Record<string, unknown> = { taskId: { $in: accessibleTaskIds } };
   if (regex) commentFilter.content = regex;
   const comments = await Comment.find(commentFilter)
     .select('taskId content createdAt')
-    .lean();
+    .lean<{ _id: Types.ObjectId; taskId: Types.ObjectId; content: string; createdAt: Date }>();
 
-  const results: any[] = [];
+  const results: Array<{
+    _id: Types.ObjectId;
+    type: string;
+    taskId: Types.ObjectId;
+    title: string;
+    excerpt: string;
+    createdAt: Date;
+  }> = [];
 
-  tasks.forEach((t: any) => {
+  tasks.forEach((t) => {
     results.push({
       _id: t._id,
       type: 'task',
@@ -98,8 +106,8 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  loops.forEach((l: any) => {
-    const step = l.sequence.find((s: any) => (regex ? regex.test(s.description) : true));
+  loops.forEach((l) => {
+    const step = l.sequence.find((s) => (regex ? regex.test(s.description) : true));
     const desc = step?.description || '';
     results.push({
       _id: l._id,
@@ -111,7 +119,7 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  comments.forEach((c: any) => {
+  comments.forEach((c) => {
     results.push({
       _id: c._id,
       type: 'comment',

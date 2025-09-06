@@ -23,7 +23,7 @@ describe('completeStep', () => {
   const userA = new Types.ObjectId();
   const userB = new Types.ObjectId();
   const userC = new Types.ObjectId();
-  let loop: any;
+  let loop: unknown;
 
   beforeEach(() => {
     notifyLoopStepReady.mockReset();

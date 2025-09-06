@@ -61,10 +61,10 @@ const uploadSchema = z.object({
 });
 
 function createResolver<T>(schema: z.ZodSchema<T>) {
-  return (values: any) => {
+  return (values: unknown) => {
     const result = schema.safeParse(values);
     if (result.success) return { values: result.data, errors: {} };
-    const errors = result.error.issues.reduce<Record<string, any>>(
+    const errors = result.error.issues.reduce<Record<string, unknown>>(
       (acc, issue) => {
         const path = issue.path[0] as string;
         acc[path] = { type: issue.code, message: issue.message };
