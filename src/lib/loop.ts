@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
@@ -11,71 +11,94 @@ export async function completeStep(
   userId?: string
 ) {
   await dbConnect();
-  const loop = await TaskLoop.findOne({ taskId });
-  if (!loop) return null;
-  if (stepIndex < 0 || stepIndex >= loop.sequence.length) return loop;
-
-  const step = loop.sequence[stepIndex];
-  if (step.status === 'COMPLETED') return loop;
-
-  step.status = 'COMPLETED';
-  step.completedAt = new Date();
-
-  const newlyActiveIndexes: number[] = [];
-  let activated = false;
-  loop.sequence.forEach((s, idx) => {
-    if (s.status === 'COMPLETED') return;
-    const deps = (s.dependencies as any[]) || [];
-    const depsMet = deps.every((d) => {
-      if (typeof d === 'number') {
-        return loop.sequence[d]?.status === 'COMPLETED';
+  const sessionDb = await mongoose.startSession();
+  let updatedLoop: any = null;
+  let newlyActiveIndexes: number[] = [];
+  try {
+    await sessionDb.withTransaction(async () => {
+      const loop = await TaskLoop.findOne({ taskId }).session(sessionDb);
+      if (!loop) return;
+      if (stepIndex < 0 || stepIndex >= loop.sequence.length) {
+        updatedLoop = loop;
+        return;
       }
-      if (d instanceof Types.ObjectId) {
-        const depIdx = loop.sequence.findIndex((st: any) => st._id && st._id.equals(d));
-        return depIdx === -1 || loop.sequence[depIdx].status === 'COMPLETED';
+
+      const step = loop.sequence[stepIndex];
+      if (step.status === 'COMPLETED') {
+        updatedLoop = loop;
+        return;
       }
-      return false;
+
+      step.status = 'COMPLETED';
+      step.completedAt = new Date();
+
+      const newActives: number[] = [];
+      let activated = false;
+      loop.sequence.forEach((s, idx) => {
+        if (s.status === 'COMPLETED') return;
+        const deps = (s.dependencies as any[]) || [];
+        const depsMet = deps.every((d) => {
+          if (typeof d === 'number') {
+            return loop.sequence[d]?.status === 'COMPLETED';
+          }
+          if (d instanceof Types.ObjectId) {
+            const depIdx = loop.sequence.findIndex((st: any) => st._id && st._id.equals(d));
+            return depIdx === -1 || loop.sequence[depIdx].status === 'COMPLETED';
+          }
+          return false;
+        });
+        if (!depsMet) {
+          s.status = 'BLOCKED';
+          return;
+        }
+
+        if (loop.parallel || !activated) {
+          if (s.status !== 'ACTIVE') newActives.push(idx);
+          s.status = 'ACTIVE';
+          activated = activated || !loop.parallel;
+        } else {
+          s.status = 'PENDING';
+        }
+      });
+
+      if (newActives.length) {
+        loop.currentStep = Math.min(...newActives);
+      } else {
+        const activeIdx = loop.sequence.findIndex((s) => s.status === 'ACTIVE');
+        loop.currentStep = activeIdx; // -1 if none
+        if (activeIdx === -1 && loop.sequence.every((s) => s.status === 'COMPLETED')) {
+          loop.isActive = false;
+        }
+      }
+
+      await loop.save({ session: sessionDb });
+
+      if (userId) {
+        await LoopHistory.create(
+          {
+            taskId: loop.taskId,
+            stepIndex,
+            action: 'COMPLETE',
+            userId: new Types.ObjectId(userId),
+          },
+          { session: sessionDb }
+        );
+      }
+
+      newlyActiveIndexes = newActives;
+      updatedLoop = loop;
     });
-    if (!depsMet) {
-      s.status = 'BLOCKED';
-      return;
-    }
-
-    if (loop.parallel || !activated) {
-      if (s.status !== 'ACTIVE') newlyActiveIndexes.push(idx);
-      s.status = 'ACTIVE';
-      activated = activated || !loop.parallel;
-    } else {
-      s.status = 'PENDING';
-    }
-  });
-
-  if (newlyActiveIndexes.length) {
-    loop.currentStep = Math.min(...newlyActiveIndexes);
-  } else {
-    const activeIdx = loop.sequence.findIndex((s) => s.status === 'ACTIVE');
-    loop.currentStep = activeIdx; // -1 if none
-    if (activeIdx === -1 && loop.sequence.every((s) => s.status === 'COMPLETED')) {
-      loop.isActive = false;
-    }
+  } finally {
+    await sessionDb.endSession();
   }
 
-  await loop.save();
-
-  if (userId) {
-    await LoopHistory.create({
-      taskId: loop.taskId,
-      stepIndex,
-      action: 'COMPLETE',
-      userId: new Types.ObjectId(userId),
-    });
-  }
+  if (!updatedLoop) return null;
 
   if (newlyActiveIndexes.length) {
-    const task = await Task.findById(taskId);
+    const task = await Task.findById(taskId).lean();
     if (task) {
       for (const idx of newlyActiveIndexes) {
-        const s = loop.sequence[idx];
+        const s = updatedLoop.sequence[idx];
         const assignee = s.assignedTo as Types.ObjectId;
         await notifyAssignment([assignee], task, s.description);
         await notifyFlowAdvanced([assignee], task, s.description);
@@ -83,7 +106,7 @@ export async function completeStep(
     }
   }
 
-  return loop;
+  return updatedLoop;
 }
 
 export default { completeStep };

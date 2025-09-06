@@ -66,7 +66,7 @@ export const POST = withOrganization(
     }
 
     await dbConnect();
-    const task = await Task.findById(params.id);
+    const task = await Task.findById(params.id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -88,11 +88,11 @@ export const POST = withOrganization(
       }
     });
 
-    if (!errors.length && userIds.size) {
-      const users = await User.find({
-        _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
-      });
-      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+        if (!errors.length && userIds.size) {
+          const users = await User.find({
+            _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
+          }).lean();
+          const userMap = new Map(users.map((u) => [u._id.toString(), u]));
       steps.forEach((s, idx) => {
         const u = userMap.get(s.assignedTo);
         if (!u) {
@@ -144,7 +144,7 @@ export const POST = withOrganization(
 export const GET = withOrganization(
   async (_req: Request, { params }: { params: { id: string } }, session) => {
     await dbConnect();
-    const task = await Task.findById(params.id);
+    const task = await Task.findById(params.id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -154,7 +154,7 @@ export const GET = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot access this loop');
     }
-    const loop = await TaskLoop.findOne({ taskId: params.id });
+      const loop = await TaskLoop.findOne({ taskId: params.id }).lean();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
     return NextResponse.json(loop);
   }
@@ -170,7 +170,7 @@ export const PATCH = withOrganization(
     }
 
     await dbConnect();
-    const task = await Task.findById(params.id);
+    const task = await Task.findById(params.id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -180,7 +180,7 @@ export const PATCH = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot modify this loop');
     }
-    const loop = await TaskLoop.findOne({ taskId: params.id });
+      const loop = await TaskLoop.findOne({ taskId: params.id }).lean();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
 
     const { sequence: steps, parallel } = body;
@@ -213,7 +213,7 @@ export const PATCH = withOrganization(
       if (!errors.length && userIds.size) {
         const users = await User.find({
           _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
-        });
+        }).lean();
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
         steps.forEach((s, idx) => {
           if (s.assignedTo !== undefined) {
@@ -317,7 +317,7 @@ export const PATCH = withOrganization(
 export const DELETE = withOrganization(
   async (_req: Request, { params }: { params: { id: string } }, session) => {
     await dbConnect();
-    const task = await Task.findById(params.id);
+      const task = await Task.findById(params.id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -327,7 +327,7 @@ export const DELETE = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot delete this loop');
     }
-    const loop = await TaskLoop.findOneAndDelete({ taskId: params.id });
+      const loop = await TaskLoop.findOneAndDelete({ taskId: params.id }).lean();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
     return NextResponse.json({ success: true });
   }

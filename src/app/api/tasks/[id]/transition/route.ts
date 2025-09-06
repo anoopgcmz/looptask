@@ -32,7 +32,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   await dbConnect();
-  const task = await Task.findById(params.id);
+  const task = await Task.findById(params.id).lean();
   if (!task || task.organizationId.toString() !== session.organizationId)
     return problem(404, 'Not Found', 'Task not found');
 
@@ -128,26 +128,37 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         newStatus = 'DONE';
         break;
     }
-    task.status = newStatus;
-    await task.save();
-    await ActivityLog.create({
-      taskId: task._id,
-      actorId: new Types.ObjectId(actorId),
-      type: 'TRANSITIONED',
-      payload: { action: body.action },
+
+    const mongoSession = await startSession();
+    let updated: any;
+    await mongoSession.withTransaction(async () => {
+      const t = await Task.findById(task._id).session(mongoSession);
+      if (!t) throw new Error('Task not found');
+      t.status = newStatus;
+      await t.save({ session: mongoSession });
+      await ActivityLog.create(
+        {
+          taskId: t._id,
+          actorId: new Types.ObjectId(actorId),
+          type: 'TRANSITIONED',
+          payload: { action: body.action },
+        },
+        { session: mongoSession }
+      );
+      updated = t;
     });
-    const recipients = (task.participantIds || []).filter(
-      (id) => id.toString() !== actorId
+    const recipients = (updated.participantIds || []).filter(
+      (id: Types.ObjectId) => id.toString() !== actorId
     );
     if (recipients.length) {
       if (newStatus === 'DONE') {
-        await notifyTaskClosed(recipients as Types.ObjectId[], task);
+        await notifyTaskClosed(recipients as Types.ObjectId[], updated);
       } else {
-        await notifyStatusChange(recipients as Types.ObjectId[], task);
+        await notifyStatusChange(recipients as Types.ObjectId[], updated);
       }
     }
-    emitTaskTransition(task);
-    return NextResponse.json<TaskResponse>(task);
+    emitTaskTransition(updated);
+    return NextResponse.json<TaskResponse>(updated);
   }
 }
 
