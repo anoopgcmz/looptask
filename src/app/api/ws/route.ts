@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
   const interval = setInterval(() => {
     try {
-      // @ts-ignore
+      // @ts-expect-error Node's WebSocket supports ping
       server.ping();
     } catch {
       try {
