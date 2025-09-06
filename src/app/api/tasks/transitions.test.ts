@@ -14,6 +14,7 @@ vi.mock('mongoose', async () => {
   };
 });
 import mongoose from 'mongoose';
+import { notifyTaskClosed } from '@/lib/notify';
 
 // mocks
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
@@ -56,6 +57,7 @@ const { Types } = mongoose;
 describe('task flow with steps', () => {
   beforeEach(() => {
     tasks.clear();
+    vi.clearAllMocks();
   });
 
   it('advances through steps and completes', async () => {
@@ -115,6 +117,41 @@ describe('task flow with steps', () => {
     t = tasks.get(taskId.toString());
     expect(t.status).toBe('DONE');
     expect(t.currentStepIndex).toBe(2);
+  });
+
+  it('completes task when last open step finishes and notifies', async () => {
+    const u1 = new Types.ObjectId();
+    const u2 = new Types.ObjectId();
+    const u3 = new Types.ObjectId();
+    const taskId = new Types.ObjectId();
+    tasks.set(taskId.toString(), {
+      _id: taskId,
+      title: 'Test',
+      createdBy: u1,
+      ownerId: u2,
+      organizationId: orgId,
+      status: 'FLOW_IN_PROGRESS',
+      steps: [
+        { title: 'Step 1', ownerId: u1, status: 'DONE' },
+        { title: 'Step 2', ownerId: u2, status: 'OPEN' },
+        { title: 'Step 3', ownerId: u3, status: 'DONE' },
+      ],
+      currentStepIndex: 1,
+      participantIds: [u1, u2, u3],
+    });
+
+    currentUserId = u2.toString();
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'DONE' }),
+      }),
+      { params: { id: taskId.toString() } }
+    );
+
+    const t = tasks.get(taskId.toString());
+    expect(t.status).toBe('DONE');
+    expect(notifyTaskClosed).toHaveBeenCalledTimes(1);
   });
 });
 
