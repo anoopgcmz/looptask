@@ -86,7 +86,7 @@ async function createAndEmail(
     }))
   );
   notifications.forEach((n) =>
-    emitNotification(n.toObject(), n.userId.toString())
+    emitNotification({ notification: n.toObject(), userId: n.userId.toString() })
   );
   const users = await User.find({ _id: { $in: recipients } });
   const pushUsers = users.filter((u) => {
