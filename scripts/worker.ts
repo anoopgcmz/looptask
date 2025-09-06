@@ -1,6 +1,6 @@
 import agenda, { initAgenda, DEFAULT_TZ } from '@/lib/agenda';
 import User from '@/models/User';
-import Team from '@/models/Team';
+import Team, { type ITeam } from '@/models/Team';
 import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
@@ -64,9 +64,9 @@ agenda.define('dashboard.dailySnapshot', async (job: Job) => {
       }
     );
   }
-  const teams = await Team.find({});
+  const teams: ITeam[] = await Team.find({});
   for (const team of teams) {
-    const tz = (team as any).timezone || DEFAULT_TZ;
+    const tz = team.timezone || DEFAULT_TZ;
     await agenda.every(
       '0 18 * * *',
       'dashboard.dailySnapshot',
