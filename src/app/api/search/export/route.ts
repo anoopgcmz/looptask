@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { GET as searchTasks } from '../tasks/route';
 import { GET as searchGlobal } from '../global/route';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const format = url.searchParams.get('format') || 'csv';
   url.searchParams.delete('format');

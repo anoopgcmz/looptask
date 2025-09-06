@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
@@ -8,16 +8,17 @@ import { canReadTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
 
+  const { id } = await params;
   await dbConnect();
-  const task = await Task.findById(params.id);
+  const task = await Task.findById(id);
   if (
     !task ||
     !canReadTask(
@@ -28,7 +29,7 @@ export async function GET(
     return problem(404, 'Not Found', 'Task not found');
   }
 
-  const logs = await ActivityLog.find({ taskId: new Types.ObjectId(params.id) })
+  const logs = await ActivityLog.find({ taskId: new Types.ObjectId(id) })
     .sort({ createdAt: 1 })
     .populate('actorId', 'name');
 

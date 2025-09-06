@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -16,7 +16,7 @@ const upsertSchema = z.object({
   status: z.enum(['OPEN', 'DONE']).optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.userId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
@@ -64,7 +64,7 @@ const listQuery = z.object({
   teamId: z.string(),
 });
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.userId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');

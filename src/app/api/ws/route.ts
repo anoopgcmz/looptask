@@ -1,7 +1,8 @@
 import { addClient } from '@/lib/ws';
 import { auth } from '@/lib/auth';
+import { type NextRequest } from 'next/server';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const upgrade = request.headers.get('upgrade');
   if (upgrade?.toLowerCase() !== 'websocket') {
     return new Response('Expected websocket', { status: 400 });

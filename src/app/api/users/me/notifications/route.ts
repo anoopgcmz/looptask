@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
@@ -48,7 +48,7 @@ const updateSchema = z.object({
     .optional(),
 });
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.userId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');

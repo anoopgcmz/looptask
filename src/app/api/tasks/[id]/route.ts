@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -63,9 +63,14 @@ const putSchema: z.ZodType<TaskPayload> = z
   });
 
 export const GET = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
+  const { id } = await params;
   await dbConnect();
-  const task: ITask | null = await Task.findById(params.id);
+  const task: ITask | null = await Task.findById(id);
   if (
     !task ||
     !canReadTask(
@@ -79,15 +84,20 @@ export const GET = withOrganization(
 });
 
 export const PATCH = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
   let body: Partial<TaskPayload>;
   try {
     body = patchSchema.parse(await req.json());
   } catch (e: any) {
     return problem(400, 'Invalid request', e.message);
   }
+  const { id } = await params;
   await dbConnect();
-  const task: ITask | null = await Task.findById(params.id);
+  const task: ITask | null = await Task.findById(id);
   if (!task) return problem(404, 'Not Found', 'Task not found');
   if (
     !canWriteTask(
@@ -157,9 +167,14 @@ export const PATCH = withOrganization(
 });
 
 export const DELETE = withOrganization(
-  async (_req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
+    const { id } = await params;
     await dbConnect();
-    const task: ITask | null = await Task.findById(params.id);
+    const task: ITask | null = await Task.findById(id);
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -181,15 +196,20 @@ export const DELETE = withOrganization(
 );
 
 export const PUT = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
     let body: TaskPayload;
     try {
       body = putSchema.parse(await req.json());
     } catch (e: any) {
       return problem(400, 'Invalid request', e.message);
     }
+    const { id } = await params;
     await dbConnect();
-    const task: ITask | null = await Task.findById(params.id);
+    const task: ITask | null = await Task.findById(id);
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(

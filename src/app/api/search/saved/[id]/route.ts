@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
@@ -6,7 +6,7 @@ import SavedSearch from '@/models/SavedSearch';
 import { auth } from '@/lib/auth';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 const bodySchema = z.object({
@@ -14,13 +14,13 @@ const bodySchema = z.object({
   query: z.string().optional(),
 });
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
@@ -33,13 +33,13 @@ export async function GET(_req: Request, { params }: Params) {
   return NextResponse.json(search);
 }
 
-export async function PUT(req: Request, { params }: Params) {
+export async function PUT(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
@@ -63,13 +63,13 @@ export async function PUT(req: Request, { params }: Params) {
   return NextResponse.json(search);
 }
 
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(_req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }

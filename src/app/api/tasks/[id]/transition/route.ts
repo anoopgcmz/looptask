@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, startSession } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -20,7 +20,10 @@ const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
 });
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await auth();
   if (!session?.userId || !session.organizationId)
     return problem(401, 'Unauthorized', 'You must be signed in.');
@@ -33,7 +36,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   await dbConnect();
-  const task = await Task.findById(params.id).lean();
+  const { id } = await params;
+  const task = await Task.findById(id).lean();
   if (!task || task.organizationId.toString() !== session.organizationId)
     return problem(404, 'Not Found', 'Task not found');
 
