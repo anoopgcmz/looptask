@@ -68,5 +68,6 @@ const taskLoopSchema = new Schema<ITaskLoop>(
 
 taskLoopSchema.index({ taskId: 1 });
 taskLoopSchema.index({ 'sequence.status': 1 });
+taskLoopSchema.index({ 'sequence.description': 'text' });
 
 export default models.TaskLoop || model<ITaskLoop>('TaskLoop', taskLoopSchema);
