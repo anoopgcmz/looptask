@@ -4,6 +4,7 @@ import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
+import LoopHistory from '@/models/LoopHistory';
 import User from '@/models/User';
 import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
@@ -127,6 +128,15 @@ export const POST = withOrganization(
       sequence,
     });
 
+    await LoopHistory.create(
+      sequence.map((_, idx) => ({
+        taskId: loop.taskId,
+        stepIndex: idx,
+        action: 'CREATE',
+        userId: new Types.ObjectId(session.userId),
+      }))
+    );
+
     return NextResponse.json(loop);
   }
 );
@@ -230,46 +240,64 @@ export const PATCH = withOrganization(
       }
     }
 
-    const sessionDb = await mongoose.startSession();
-    const newAssignees = new Set<string>();
-    const oldAssignees = new Set<string>();
-    let updatedLoop: any = null;
-    try {
-      await sessionDb.withTransaction(async () => {
-        const loopDoc = await TaskLoop.findOne({ taskId: params.id }).session(sessionDb);
-        if (!loopDoc) return;
-        if (steps) {
-          steps.forEach((s) => {
-            const current = loopDoc.sequence[s.index];
-            if (s.assignedTo !== undefined && s.assignedTo !== current.assignedTo.toString()) {
-              oldAssignees.add(current.assignedTo.toString());
-              newAssignees.add(s.assignedTo);
-              current.assignedTo = new Types.ObjectId(s.assignedTo);
-              if (current.status !== 'PENDING' && s.status === undefined) {
-                current.status = 'PENDING';
-                loopDoc.isActive = true;
-                if (loopDoc.currentStep === -1 || s.index < loopDoc.currentStep) {
-                  loopDoc.currentStep = s.index;
-                }
+  const sessionDb = await mongoose.startSession();
+  const newAssignees = new Set<string>();
+  const oldAssignees = new Set<string>();
+  const history: { stepIndex: number; action: 'UPDATE' | 'COMPLETE' | 'REASSIGN' }[] = [];
+  let updatedLoop: any = null;
+  try {
+    await sessionDb.withTransaction(async () => {
+      const loopDoc = await TaskLoop.findOne({ taskId: params.id }).session(sessionDb);
+      if (!loopDoc) return;
+      if (steps) {
+        steps.forEach((s) => {
+          const current = loopDoc.sequence[s.index];
+          if (s.assignedTo !== undefined && s.assignedTo !== current.assignedTo.toString()) {
+            oldAssignees.add(current.assignedTo.toString());
+            newAssignees.add(s.assignedTo);
+            current.assignedTo = new Types.ObjectId(s.assignedTo);
+            if (current.status !== 'PENDING' && s.status === undefined) {
+              current.status = 'PENDING';
+              loopDoc.isActive = true;
+              if (loopDoc.currentStep === -1 || s.index < loopDoc.currentStep) {
+                loopDoc.currentStep = s.index;
               }
             }
-            if (s.description !== undefined) {
-              current.description = s.description;
-            }
-            if (s.status !== undefined) {
-              current.status = s.status;
-            }
-          });
-        }
-        if (parallel !== undefined) {
-          loopDoc.parallel = parallel;
-        }
-        await loopDoc.save({ session: sessionDb });
-        updatedLoop = loopDoc;
-      });
-    } finally {
-      await sessionDb.endSession();
-    }
+            history.push({ stepIndex: s.index, action: 'REASSIGN' });
+          }
+          if (s.description !== undefined && s.description !== current.description) {
+            current.description = s.description;
+            history.push({ stepIndex: s.index, action: 'UPDATE' });
+          }
+          if (s.status !== undefined && s.status !== current.status) {
+            current.status = s.status;
+            history.push({
+              stepIndex: s.index,
+              action: s.status === 'COMPLETED' ? 'COMPLETE' : 'UPDATE',
+            });
+          }
+        });
+      }
+      if (parallel !== undefined) {
+        loopDoc.parallel = parallel;
+      }
+      await loopDoc.save({ session: sessionDb });
+      if (history.length) {
+        await LoopHistory.create(
+          history.map((h) => ({
+            taskId: loopDoc.taskId,
+            stepIndex: h.stepIndex,
+            action: h.action,
+            userId: new Types.ObjectId(session.userId),
+          })),
+          { session: sessionDb }
+        );
+      }
+      updatedLoop = loopDoc;
+    });
+  } finally {
+    await sessionDb.endSession();
+  }
     if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
 
     const newIds = Array.from(newAssignees).map((id) => new Types.ObjectId(id));
