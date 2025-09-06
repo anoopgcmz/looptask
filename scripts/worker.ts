@@ -7,6 +7,11 @@ import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
 import { Types } from 'mongoose';
 import type { Job } from 'agenda';
 
+type EveryOptions = Parameters<typeof agenda.every>[3];
+interface EveryOptionsWithUnique extends EveryOptions {
+  unique?: Record<string, unknown>;
+}
+
 agenda.define('task.dueSoon', async (job: Job<{ taskId: string; stepId?: string }>) => {
   const { taskId, stepId } = job.attrs.data;
   const task = await Task.findById(taskId).lean<ITask>();
@@ -61,7 +66,7 @@ agenda.define('dashboard.dailySnapshot', async (job: Job) => {
         timezone: user.timezone || DEFAULT_TZ,
         unique: { name: 'task.overdueDigest', 'data.userId': user._id.toString() },
         skipImmediate: true,
-      }
+      } as EveryOptionsWithUnique
     );
   }
   const teams: ITeam[] = await Team.find({});
@@ -75,7 +80,7 @@ agenda.define('dashboard.dailySnapshot', async (job: Job) => {
         timezone: tz,
         unique: { name: 'dashboard.dailySnapshot', 'data.teamId': team._id.toString() },
         skipImmediate: true,
-      }
+      } as EveryOptionsWithUnique
     );
   }
   console.log('Worker started');
