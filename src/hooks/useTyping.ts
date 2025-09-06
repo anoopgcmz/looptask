@@ -60,9 +60,14 @@ export default function useTyping(
     if (!userId) return;
     const ws = wsRef.current;
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({ event: 'comment.typing', taskId, userId })
-      );
+      try {
+        ws.send(
+          JSON.stringify({ event: 'comment.typing', taskId, userId })
+        );
+      } catch (err) {
+        console.error('WebSocket send failed', err);
+        ws.dispatchEvent(new Event('error'));
+      }
     }
   }, [taskId, userId]);
 
