@@ -11,12 +11,20 @@ export default function NotificationsBadge() {
       .then((res) => (res.ok ? res.json() : { count: 0 }))
       .then((data) => setCount(data.count))
       .catch(() => {});
-    const handler = (e: Event) => {
+    const readHandler = (e: Event) => {
       const detail = (e as CustomEvent<{ count?: number }>).detail;
       setCount((c) => Math.max(0, c - (detail?.count ?? 1)));
     };
-    window.addEventListener('notification-read', handler);
-    return () => window.removeEventListener('notification-read', handler);
+    const unreadHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ count?: number }>).detail;
+      setCount((c) => c + (detail?.count ?? 1));
+    };
+    window.addEventListener('notification-read', readHandler);
+    window.addEventListener('notification-unread', unreadHandler);
+    return () => {
+      window.removeEventListener('notification-read', readHandler);
+      window.removeEventListener('notification-unread', unreadHandler);
+    };
   }, []);
 
   useNotificationsChannel({
