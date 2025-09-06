@@ -114,7 +114,7 @@ export default function LoopTimeline({
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setSelected(step)}
                   className={cn(
-                    'relative flex flex-col items-center p-3 min-w-[120px] rounded border cursor-pointer z-10',
+                    'relative flex flex-col items-center p-2 sm:p-3 md:p-4 min-w-24 sm:min-w-28 md:min-w-32 rounded border cursor-pointer z-10',
                     statusStyles[step.status ?? 'PENDING']
                   )}
                   title={step.description}
@@ -123,7 +123,7 @@ export default function LoopTimeline({
                   <Avatar
                     src={user?.avatar}
                     fallback={user?.name?.[0] || '?'}
-                    className="w-10 h-10 mb-2"
+                    className="mb-2 sm:w-10 sm:h-10 md:w-12 md:h-12"
                   />
                   <span className="text-sm text-center">
                     {step.description || 'Untitled Step'}

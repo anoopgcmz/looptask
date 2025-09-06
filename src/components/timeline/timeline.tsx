@@ -24,7 +24,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
             key={index}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative pl-8 pb-8 text-gray-700"
+            className="relative pl-4 sm:pl-6 md:pl-8 pb-6 sm:pb-8 text-gray-700"
           >
             {index > 0 && (
               <motion.span
@@ -39,6 +39,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
               <Avatar
                 src={event.user.avatar}
                 fallback={event.user.name.charAt(0)}
+                className="sm:w-9 sm:h-9 md:w-10 md:h-10"
               />
               <div>
                 <div className="font-medium">{event.user.name}</div>
