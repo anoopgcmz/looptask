@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { LoopStep } from '@/hooks/useLoopBuilder';
 import { Avatar } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import CommentThread from '@/components/comment-thread';
 import { cn } from '@/lib/utils';
 
 interface User {
@@ -23,18 +25,57 @@ export default function LoopTimeline({
   steps,
   users,
   currentStep,
+  taskId,
 }: {
   steps: StepWithStatus[];
   users: User[];
   currentStep?: number;
+  taskId?: string;
 }) {
   const [selected, setSelected] = useState<StepWithStatus | null>(null);
+  const [localSteps, setLocalSteps] = useState<StepWithStatus[]>(steps);
+  const [reassign, setReassign] = useState<StepWithStatus | null>(null);
+  const [assignee, setAssignee] = useState('');
+  const [comment, setComment] = useState<StepWithStatus | null>(null);
 
-  if (!steps.length) {
+  const handleComplete = async (s: StepWithStatus) => {
+    if (!taskId) return;
+    await fetch(`/api/tasks/${taskId}/loop`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sequence: [{ index: s.index, status: 'COMPLETED' }] }),
+    });
+    setLocalSteps((prev) =>
+      prev.map((step) =>
+        step.index === s.index ? { ...step, status: 'COMPLETED' } : step
+      )
+    );
+  };
+
+  const handleReassign = async () => {
+    if (!taskId || !reassign || !assignee) return;
+    await fetch(`/api/tasks/${taskId}/loop`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sequence: [{ index: reassign.index, assignedTo: assignee }] }),
+    });
+    setLocalSteps((prev) =>
+      prev.map((step) =>
+        step.index === reassign.index ? { ...step, assignedTo: assignee } : step
+      )
+    );
+    setReassign(null);
+  };
+
+  useEffect(() => {
+    setLocalSteps(steps);
+  }, [steps]);
+
+  if (!localSteps.length) {
     return <div className="text-sm text-gray-500">No steps defined yet.</div>;
   }
 
-  const ordered = [...steps].sort((a, b) => a.index - b.index);
+  const ordered = [...localSteps].sort((a, b) => a.index - b.index);
   const selectedUser = selected
     ? users.find((u) => u._id === selected.assignedTo)
     : null;
@@ -86,6 +127,38 @@ export default function LoopTimeline({
                   <span className="mt-1 text-xs font-medium">
                     {step.status ?? 'PENDING'}
                   </span>
+                  {taskId && (
+                    <div className="absolute top-1 right-1 flex gap-1">
+                      <button
+                        className="text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleComplete(step);
+                        }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        className="text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReassign(step);
+                          setAssignee(step.assignedTo);
+                        }}
+                      >
+                        ↺
+                      </button>
+                      <button
+                        className="text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setComment(step);
+                        }}
+                      >
+                        💬
+                      </button>
+                    </div>
+                  )}
                 </motion.button>
               </div>
               {idx < ordered.length - 1 && (
@@ -116,6 +189,37 @@ export default function LoopTimeline({
           )}
         </DialogContent>
       </Dialog>
+      <Dialog open={!!reassign} onOpenChange={() => setReassign(null)}>
+        <DialogContent>
+          {reassign && (
+            <div className="space-y-2">
+              <h2 className="text-lg font-medium">Reassign Step</h2>
+              <select
+                className="w-full border rounded p-2 text-sm"
+                value={assignee}
+                onChange={(e) => setAssignee(e.target.value)}
+              >
+                <option value="">Select user</option>
+                {users.map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                disabled={!assignee}
+                onClick={() => void handleReassign()}
+              >
+                Save
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!comment} onOpenChange={() => setComment(null)}>
+        <DialogContent>
+          {comment && taskId && <CommentThread taskId={taskId} />}
+        </DialogContent>
+      </Dialog>
     </>
   );
-}

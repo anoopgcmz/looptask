@@ -112,6 +112,7 @@ export default function TaskDetail({ id }: { id: string }) {
               })) as StepWithStatus[]
             }
             users={[]}
+            taskId={id}
           />
         </div>
       )}
