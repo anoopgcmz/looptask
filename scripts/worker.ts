@@ -24,7 +24,10 @@ agenda.define('task.dueSoon', async (job: Job<{ taskId: string; stepId?: string 
   } else {
     recipients = task.participantIds ?? [];
   }
-  if (recipients.length) await notifyDueSoon(recipients, task);
+  if (recipients.length) {
+    const t = task as Pick<ITask, '_id' | 'title' | 'status'>;
+    await notifyDueSoon(recipients, t);
+  }
 });
 
 agenda.define('task.dueNow', async (job: Job<{ taskId: string; stepId?: string }>) => {
@@ -40,8 +43,9 @@ agenda.define('task.dueNow', async (job: Job<{ taskId: string; stepId?: string }
     recipients = task.participantIds ?? [];
   }
   if (recipients.length) {
-    await notifyDueNow(recipients, task);
-    await notifyOverdue(recipients, task);
+    const t = task as Pick<ITask, '_id' | 'title' | 'status'>;
+    await notifyDueNow(recipients, t);
+    await notifyOverdue(recipients, t);
   }
 });
 
