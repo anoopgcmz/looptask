@@ -4,8 +4,9 @@ import Team from '@/models/Team';
 import Task from '@/models/Task';
 import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
 import { Types } from 'mongoose';
+import type { Job } from 'agenda';
 
-agenda.define('task.dueSoon', async (job) => {
+agenda.define('task.dueSoon', async (job: Job) => {
   const { taskId, stepId } = job.attrs.data as { taskId: string; stepId?: string };
   const task = await Task.findById(taskId).lean();
   if (!task) return;
@@ -20,7 +21,7 @@ agenda.define('task.dueSoon', async (job) => {
   if (recipients.length) await notifyDueSoon(recipients, task);
 });
 
-agenda.define('task.dueNow', async (job) => {
+agenda.define('task.dueNow', async (job: Job) => {
   const { taskId, stepId } = job.attrs.data as { taskId: string; stepId?: string };
   const task = await Task.findById(taskId).lean();
   if (!task) return;
@@ -38,11 +39,11 @@ agenda.define('task.dueNow', async (job) => {
   }
 });
 
-agenda.define('task.overdueDigest', async (job) => {
+agenda.define('task.overdueDigest', async (job: Job) => {
   console.log('task.overdueDigest', job.attrs.data);
 });
 
-agenda.define('dashboard.dailySnapshot', async (job) => {
+agenda.define('dashboard.dailySnapshot', async (job: Job) => {
   console.log('dashboard.dailySnapshot', job.attrs.data);
 });
 
