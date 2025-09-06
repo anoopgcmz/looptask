@@ -55,13 +55,15 @@ export default function CommentThread({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ taskId, content, parentId: pid ?? undefined }),
     });
-    if (res?.ok) {
+    if (res?.ok || res?.offline) {
       if (pid) {
         setReplyContent('');
         setReplyingTo(null);
       } else {
         setNewContent('');
       }
+    }
+    if (res?.ok) {
       await load();
     }
   };

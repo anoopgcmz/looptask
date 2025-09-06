@@ -21,6 +21,21 @@ const LONG_LIMITS: Record<string, { limit: number; windowSeconds: number }> = {
   'comment.typing': { limit: 20, windowSeconds: 10 },
 };
 
+function safeSend(ws: WebSocket, data: string): boolean {
+  try {
+    ws.send(data);
+    return true;
+  } catch (err) {
+    console.error('WebSocket send failed', err);
+    try {
+      ws.send(
+        JSON.stringify({ event: 'error', message: 'send failed' })
+      );
+    } catch {}
+    return false;
+  }
+}
+
 function isThrottled(userId: string, event: string): boolean {
   const key = `${userId}:${event}`;
   const now = Date.now();
@@ -52,9 +67,7 @@ async function checkRateLimit(userId: string, event: string): Promise<boolean> {
 }
 
 function notifyLimited(ws: WebSocket, event: string) {
-  try {
-    ws.send(JSON.stringify({ event: 'rate.limited', type: event }));
-  } catch {}
+  safeSend(ws, JSON.stringify({ event: 'rate.limited', type: event }));
 }
 
 export function addClient(ws: MetaWebSocket) {
@@ -69,7 +82,8 @@ export function addClient(ws: MetaWebSocket) {
       const presence = taskPresence.get(taskId) ?? new Map<string, number>();
       // Inform the connecting client about existing viewers.
       presence.forEach((_, uid) => {
-        ws.send(
+        safeSend(
+          ws,
           JSON.stringify({ event: 'user.joined', taskId, userId: uid })
         );
       });
@@ -104,9 +118,7 @@ export function addClient(ws: MetaWebSocket) {
           emitTyping({ taskId: data.taskId, userId: ws.userId }, ws);
         }
       } else if (evt === 'ping') {
-        try {
-          ws.send('pong');
-        } catch {}
+        safeSend(ws, 'pong');
       }
     } catch {
       // ignore
@@ -156,9 +168,7 @@ function broadcast(
   if (!set) return;
   set.forEach((ws) => {
     if (exclude && ws === exclude) return;
-    try {
-      ws.send(message);
-    } catch {
+    if (!safeSend(ws, message)) {
       set.delete(ws);
     }
   });

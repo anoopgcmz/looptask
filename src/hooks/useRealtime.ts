@@ -53,15 +53,20 @@ function flushQueue() {
 function startHeartbeat() {
   clearHeartbeat();
   heartbeatInterval = setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ event: 'ping' }));
-      if (heartbeatTimeout) clearTimeout(heartbeatTimeout);
-      heartbeatTimeout = setTimeout(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
         try {
-          ws?.close();
-        } catch {}
-      }, HEARTBEAT_TIMEOUT);
-    }
+          ws.send(JSON.stringify({ event: 'ping' }));
+        } catch (err) {
+          console.error('WebSocket ping failed', err);
+          ws.dispatchEvent(new Event('error'));
+        }
+        if (heartbeatTimeout) clearTimeout(heartbeatTimeout);
+        heartbeatTimeout = setTimeout(() => {
+          try {
+            ws?.close();
+          } catch {}
+        }, HEARTBEAT_TIMEOUT);
+      }
   }, HEARTBEAT_INTERVAL);
 }
 
@@ -142,6 +147,19 @@ function fallbackToSse() {
     };
   } catch {
     reconnect();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    flushQueue();
+    if (!ws && !es) connect();
+  });
+  window.addEventListener('offline', () => {
+    notifyStatus('offline');
+  });
+  if (!navigator.onLine) {
+    notifyStatus('offline');
   }
 }
 
