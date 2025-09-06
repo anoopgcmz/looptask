@@ -6,6 +6,8 @@ import { openLoopBuilder } from "@/lib/loopBuilder";
 import LoopVisualizer, { StepWithStatus, UserMap } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
 import useTaskChannel from "@/hooks/useTaskChannel";
+import usePresence from "@/hooks/usePresence";
+import { Avatar } from "@/components/ui/avatar";
 
 interface Task {
   title?: string;
@@ -36,6 +38,7 @@ export default function TaskDetail({ id }: { id: string }) {
   const [loop, setLoop] = useState<TaskLoop | null>(null);
   const [users, setUsers] = useState<UserMap>({});
   const [loopLoading, setLoopLoading] = useState(true);
+  const viewers = usePresence(id);
 
   const refreshTask = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
@@ -112,12 +115,26 @@ export default function TaskDetail({ id }: { id: string }) {
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <input
-        className="border p-2"
-        value={task.title ?? ""}
-        onChange={(e) => setTask({ ...task, title: e.target.value })}
-        onBlur={(e) => void updateField("title", e.target.value)}
-      />
+      <div className="flex items-center justify-between gap-2">
+        <input
+          className="border p-2 flex-1"
+          value={task.title ?? ""}
+          onChange={(e) => setTask({ ...task, title: e.target.value })}
+          onBlur={(e) => void updateField("title", e.target.value)}
+        />
+        {viewers.length > 0 && (
+          <div className="flex -space-x-2 ml-2">
+            {viewers.map((u) => (
+              <Avatar
+                key={u._id}
+                src={u.avatar}
+                fallback={u.name?.[0] || "?"}
+                className="w-8 h-8 border-2 border-white"
+              />
+            ))}
+          </div>
+        )}
+      </div>
       <textarea
         className="border p-2"
         value={task.description ?? ""}
