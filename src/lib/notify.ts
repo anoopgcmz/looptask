@@ -7,6 +7,7 @@ import RateLimit from '@/models/RateLimit';
 import { emitNotification } from '@/lib/ws';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { sendPushToUser } from '@/lib/push';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -71,8 +72,16 @@ async function createAndEmail(
   notifications.forEach((n) =>
     emitNotification(n.toObject(), n.userId.toString())
   );
+  const users = await User.find({ _id: { $in: recipients } });
+  const pushUsers = users.filter((u) => {
+    const settings = u.notificationSettings;
+    if (!settings || settings.push === false) return false;
+    const perType = settings.types?.[type];
+    return perType !== false;
+  });
+  const pushPayload = { title: subject, body: text, type };
+  await Promise.all(pushUsers.map((u) => sendPushToUser(u, pushPayload)));
   if (resend) {
-    const users = await User.find({ _id: { $in: recipients } });
     const html = await renderTemplate(type, { subject, text });
     const emailUsers = users.filter((u) => {
       const settings = u.notificationSettings;
