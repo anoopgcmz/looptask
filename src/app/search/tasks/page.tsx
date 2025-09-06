@@ -87,6 +87,12 @@ export default function TaskSearchPage() {
         <button onClick={saveCurrent} className="border rounded px-2 py-1">
           Save Search
         </button>
+        <a
+          href={`/api/search/export?${params.toString()}`}
+          className="border rounded px-2 py-1"
+        >
+          Export
+        </a>
         {saved.length > 0 && (
           <ul className="flex flex-wrap gap-2">
             {saved.map((s) => (
