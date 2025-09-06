@@ -12,13 +12,18 @@ export function Avatar({ src, fallback, className, ...props }: AvatarProps) {
   return (
     <div
       className={cn(
-        'inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm',
+        'relative inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm',
         className
       )}
       {...props}
     >
       {src ? (
-        <Image src={src} alt={fallback || 'avatar'} width={32} height={32} />
+        <Image
+          src={src}
+          alt={fallback || 'avatar'}
+          fill
+          className="object-cover"
+        />
       ) : (
         <span>{fallback}</span>
       )}
