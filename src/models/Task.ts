@@ -85,6 +85,12 @@ taskSchema.index({ ownerId: 1 });
 taskSchema.index({ helpers: 1 });
 taskSchema.index({ 'custom.$**': 1 });
 taskSchema.index({ updatedAt: -1 });
+taskSchema.index({ createdAt: -1 });
+taskSchema.index({ dueDate: 1 });
+taskSchema.index({ createdBy: 1 });
+taskSchema.index({ teamId: 1 });
+taskSchema.index({ tags: 1 });
+taskSchema.index({ visibility: 1 });
 taskSchema.index({ title: 'text', description: 'text' });
 
 taskSchema.pre('save', function (next) {

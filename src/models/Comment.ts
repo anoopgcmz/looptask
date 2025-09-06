@@ -18,6 +18,8 @@ const commentSchema = new Schema<IComment>(
 );
 
 commentSchema.index({ taskId: 1, parentId: 1, createdAt: -1 });
+commentSchema.index({ updatedAt: -1 });
+commentSchema.index({ userId: 1 });
 commentSchema.index({ content: 'text' });
 
 export default models.Comment || model<IComment>('Comment', commentSchema);
