@@ -3,11 +3,12 @@ import { useEffect } from 'react';
 interface Options {
   refreshTask?: () => void;
   insertComment?: (comment: any) => void;
+  refreshLoop?: () => void;
 }
 
 export default function useTaskChannel(
   taskId: string,
-  { refreshTask, insertComment }: Options
+  { refreshTask, insertComment, refreshLoop }: Options
 ) {
   useEffect(() => {
     if (!taskId) return;
@@ -25,6 +26,9 @@ export default function useTaskChannel(
             case 'comment.created':
               insertComment?.(data.comment);
               break;
+            case 'loop.updated':
+              refreshLoop?.();
+              break;
             default:
               break;
           }
@@ -36,5 +40,5 @@ export default function useTaskChannel(
     return () => {
       ws.close();
     };
-  }, [taskId, refreshTask, insertComment]);
+  }, [taskId, refreshTask, insertComment, refreshLoop]);
 }

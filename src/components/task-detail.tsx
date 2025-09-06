@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
 import LoopVisualizer, { StepWithStatus, UserMap } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
+import useTaskChannel from "@/hooks/useTaskChannel";
 
 interface Task {
   title?: string;
@@ -36,57 +37,64 @@ export default function TaskDetail({ id }: { id: string }) {
   const [users, setUsers] = useState<UserMap>({});
   const [loopLoading, setLoopLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      const res = await fetch(`/api/tasks/${id}`);
-      if (res.ok) {
-        setTask(await res.json());
-      }
-    };
-    void load();
+  const refreshTask = useCallback(async () => {
+    const res = await fetch(`/api/tasks/${id}`);
+    if (res.ok) {
+      setTask(await res.json());
+    }
   }, [id]);
 
-  useEffect(() => {
-    const loadLoop = async () => {
-      try {
-        const res = await fetch(`/api/tasks/${id}/loop`);
-        if (res.ok) {
-          const loopData = await res.json();
-          setLoop(loopData);
+  const refreshLoop = useCallback(async () => {
+    setLoopLoading(true);
+    try {
+      const res = await fetch(`/api/tasks/${id}/loop`);
+      if (res.ok) {
+        const loopData = await res.json();
+        setLoop(loopData);
 
-          const ids = Array.from(
-            new Set(
-              (loopData.sequence || [])
-                .map((s: LoopStep) => s.assignedTo)
-                .filter((v: string | undefined): v is string => !!v)
-            )
+        const ids = Array.from(
+          new Set(
+            (loopData.sequence || [])
+              .map((s: LoopStep) => s.assignedTo)
+              .filter((v: string | undefined): v is string => !!v)
+          )
+        );
+        if (ids.length) {
+          const userRes = await fetch(
+            `/api/users?${ids.map((u) => `id=${u}`).join('&')}`,
+            { credentials: 'include' }
           );
-          if (ids.length) {
-            const userRes = await fetch(
-              `/api/users?${ids.map((u) => `id=${u}`).join('&')}`,
-              { credentials: 'include' }
-            );
-            if (userRes.ok) {
-              const data = await userRes.json();
-              const map: UserMap = Array.isArray(data)
-                ? data.reduce(
-                    (acc: UserMap, u: any) => {
-                      acc[u._id] = u;
-                      return acc;
-                    },
-                    {}
-                  )
-                : data;
-              setUsers(map);
-            }
+          if (userRes.ok) {
+            const data = await userRes.json();
+            const map: UserMap = Array.isArray(data)
+              ? data.reduce(
+                  (acc: UserMap, u: any) => {
+                    acc[u._id] = u;
+                    return acc;
+                  },
+                  {}
+                )
+              : data;
+            setUsers(map);
           }
         }
-      } finally {
-        setLoopLoading(false);
+      } else {
+        setLoop(null);
       }
-    };
-    void loadLoop();
+    } finally {
+      setLoopLoading(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    void refreshTask();
+  }, [refreshTask]);
+
+  useEffect(() => {
+    void refreshLoop();
+  }, [refreshLoop]);
+
+  useTaskChannel(id, { refreshTask, refreshLoop });
 
   const updateField = async (field: keyof Task, value: string) => {
     if (!task) return;
