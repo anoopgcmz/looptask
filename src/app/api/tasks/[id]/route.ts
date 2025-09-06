@@ -19,7 +19,7 @@ import type {
   TaskStepPayload,
 } from '@/types/api/task';
 
-const stepSchema = z
+const stepSchema: z.ZodType<TaskStepPayload> = z
   .object({
     title: z.string(),
     ownerId: z.string(),
@@ -27,10 +27,9 @@ const stepSchema = z
     dueAt: z.coerce.date().optional(),
     status: z.enum(['OPEN', 'DONE']).optional(),
     completedAt: z.coerce.date().optional(),
-  })
-  satisfies z.ZodType<TaskStepPayload>;
+  });
 
-const patchSchema = z
+const patchSchema: z.ZodType<Partial<TaskPayload>> = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
@@ -47,10 +46,9 @@ const patchSchema = z
     dueDate: z.coerce.date().optional(),
     steps: z.array(stepSchema).optional(),
     currentStepIndex: z.number().int().optional(),
-  })
-  satisfies z.ZodType<Partial<TaskPayload>>;
+  });
 
-const putSchema = z
+const putSchema: z.ZodType<TaskPayload> = z
   .object({
     title: z.string(),
     description: z.string().optional(),
@@ -72,8 +70,7 @@ const putSchema = z
     dueDate: z.coerce.date().optional(),
     steps: z.array(stepSchema),
     currentStepIndex: z.number().int().optional(),
-  })
-  satisfies z.ZodType<TaskPayload>;
+  });
 
 export const GET = withOrganization(
   async (req: Request, { params }: { params: { id: string } }, session) => {
