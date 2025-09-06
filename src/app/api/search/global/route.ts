@@ -11,7 +11,7 @@ import { problem } from '@/lib/http';
 const querySchema = z.object({
   q: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(20),
-  skip: z.coerce.number().min(0).default(0),
+  page: z.coerce.number().min(1).default(1),
   sort: z.enum(['recent', 'oldest']).optional(),
 });
 
@@ -132,7 +132,8 @@ export async function GET(req: Request) {
     );
   }
 
-  const paged = results.slice(query.skip, query.skip + query.limit);
+  const skip = (query.page - 1) * query.limit;
+  const paged = results.slice(skip, skip + query.limit);
 
   return NextResponse.json({ results: paged, total: results.length });
 }

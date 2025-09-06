@@ -41,6 +41,8 @@ const querySchema = z.object({
   teamId: z.string().optional(),
   visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
   sort: z.enum(['relevance', 'updatedAt', 'dueDate']).optional(),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(20),
 });
 
 export async function GET(req: Request) {
@@ -76,6 +78,9 @@ export async function GET(req: Request) {
   }
 
   await dbConnect();
+
+  const limit = query.limit;
+  const skip = (query.page - 1) * limit;
 
   const filters: any[] = [];
   if (query.ownerId?.length)
@@ -306,7 +311,9 @@ export async function GET(req: Request) {
     }
   }
 
-  const output = results.map((t: any) => {
+  const total = results.length;
+  const paged = results.slice(skip, skip + limit);
+  const output = paged.map((t: any) => {
     let excerpt = '';
     if (useAtlas && t.highlights) {
       excerpt = t.highlights
@@ -320,6 +327,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     results: output,
+    total,
     verification: {
       q: query.q,
       filters: {
