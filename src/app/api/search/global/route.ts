@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
 
   const tasks = await Task.find(taskFilter)
     .select('title description createdAt')
-    .lean<{ _id: Types.ObjectId; title: string; description?: string; createdAt: Date }>();
+    .lean<{ _id: Types.ObjectId; title: string; description?: string; createdAt: Date }[]>();
 
   const accessibleTaskIds = tasks.map((t) => t._id);
 
