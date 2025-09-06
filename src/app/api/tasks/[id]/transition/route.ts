@@ -61,12 +61,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       if (!step || step.status === 'DONE') return;
       step.status = 'DONE';
       step.completedAt = new Date();
-      if (idx + 1 < t.steps.length) {
-        t.currentStepIndex = idx + 1;
-        t.ownerId = t.steps[idx + 1].ownerId;
-        t.status = 'FLOW_IN_PROGRESS';
-      } else {
+
+      const allDone = t.steps.every((s) => s.status === 'DONE');
+      if (allDone) {
         t.status = 'DONE';
+      } else {
+        const nextIdx = t.steps.findIndex((s) => s.status !== 'DONE');
+        t.currentStepIndex = nextIdx;
+        t.ownerId = t.steps[nextIdx].ownerId;
+        t.status = 'FLOW_IN_PROGRESS';
       }
       await t.save({ session: mongoSession });
       await ActivityLog.create(
