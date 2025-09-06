@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
-import LoopVisualizer, { StepWithStatus } from "@/components/loop-visualizer";
+import LoopVisualizer, { StepWithStatus, UserMap } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
 
 interface Task {
@@ -33,7 +33,7 @@ interface TaskLoop {
 export default function TaskDetail({ id }: { id: string }) {
   const [task, setTask] = useState<Task | null>(null);
   const [loop, setLoop] = useState<TaskLoop | null>(null);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserMap>({});
   const [loopLoading, setLoopLoading] = useState(true);
 
   useEffect(() => {
@@ -50,21 +50,43 @@ export default function TaskDetail({ id }: { id: string }) {
     const loadLoop = async () => {
       try {
         const res = await fetch(`/api/tasks/${id}/loop`);
-        if (res.ok) setLoop(await res.json());
+        if (res.ok) {
+          const loopData = await res.json();
+          setLoop(loopData);
+
+          const ids = Array.from(
+            new Set(
+              (loopData.sequence || [])
+                .map((s: LoopStep) => s.assignedTo)
+                .filter((v: string | undefined): v is string => !!v)
+            )
+          );
+          if (ids.length) {
+            const userRes = await fetch(
+              `/api/users?${ids.map((u) => `id=${u}`).join('&')}`,
+              { credentials: 'include' }
+            );
+            if (userRes.ok) {
+              const data = await userRes.json();
+              const map: UserMap = Array.isArray(data)
+                ? data.reduce(
+                    (acc: UserMap, u: any) => {
+                      acc[u._id] = u;
+                      return acc;
+                    },
+                    {}
+                  )
+                : data;
+              setUsers(map);
+            }
+          }
+        }
       } finally {
         setLoopLoading(false);
       }
     };
     void loadLoop();
   }, [id]);
-
-  useEffect(() => {
-    const loadUsers = async () => {
-      const res = await fetch('/api/users', { credentials: 'include' });
-      if (res.ok) setUsers(await res.json());
-    };
-    void loadUsers();
-  }, []);
 
   const updateField = async (field: keyof Task, value: string) => {
     if (!task) return;

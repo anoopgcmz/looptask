@@ -5,17 +5,19 @@ import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
-interface User {
+export interface User {
   _id: string;
   name: string;
   avatar?: string;
 }
 
+export type UserMap = Record<string, User>;
+
 export interface StepWithStatus extends LoopStep {
   status?: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
 }
 
-export function LoopVisualizer({ steps, users }: { steps: StepWithStatus[]; users: User[] }) {
+export function LoopVisualizer({ steps, users }: { steps: StepWithStatus[]; users: UserMap }) {
   if (!steps.length) {
     return (
       <div className="text-sm text-gray-500">No steps defined yet.</div>
@@ -27,7 +29,7 @@ export function LoopVisualizer({ steps, users }: { steps: StepWithStatus[]; user
   return (
     <div className="flex items-center overflow-x-auto py-2">
       {ordered.map((step, idx) => {
-        const user = users.find((u) => u._id === step.assignedTo);
+        const user = step.assignedTo ? users[step.assignedTo] : undefined;
         const invalid = !step.assignedTo || !step.description;
         const dependencyIndexes = step.dependencies
           .map((id) => ordered.find((s) => s.id === id)?.index + 1)
