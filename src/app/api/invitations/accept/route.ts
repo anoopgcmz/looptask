@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 import dbConnect from '@/lib/db';
-import Invitation from '@/models/Invitation';
+import Invitation, { type IInvitation } from '@/models/Invitation';
 import User from '@/models/User';
 import { problem } from '@/lib/http';
 import { Types } from 'mongoose';
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   const tokenHash = crypto.createHash('sha256').update(body.token).digest('hex');
   await dbConnect();
-  const invite = await Invitation.findOne({ tokenHash }).lean();
+  const invite = await Invitation.findOne({ tokenHash }).lean<IInvitation>();
   if (!invite || invite.used || invite.expiresAt < new Date()) {
     return problem(400, 'Invalid request', 'Invalid or expired token');
   }
