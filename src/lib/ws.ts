@@ -43,6 +43,18 @@ export function addClient(ws: MetaWebSocket) {
       }
     });
   }
+  ws.addEventListener('message', (event) => {
+    try {
+      const data = JSON.parse(event.data.toString());
+      if (data.event === 'comment.typing' && data.taskId) {
+        if (ws.taskIds?.includes(data.taskId) && ws.userId) {
+          emitTyping({ taskId: data.taskId, userId: ws.userId }, ws);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  });
   ws.addEventListener('close', () => {
     if (ws.userId) {
       const set = userClients.get(ws.userId);
@@ -67,7 +79,7 @@ export function addClient(ws: MetaWebSocket) {
                   event: 'user.left',
                   taskId,
                   userId: ws.userId,
-                })
+})
               );
             } else {
               presence.set(ws.userId, count - 1);
@@ -79,9 +91,14 @@ export function addClient(ws: MetaWebSocket) {
   });
 }
 
-function broadcast(set: Set<WebSocket> | undefined, message: string) {
+function broadcast(
+  set: Set<WebSocket> | undefined,
+  message: string,
+  exclude?: WebSocket
+) {
   if (!set) return;
   set.forEach((ws) => {
+    if (exclude && ws === exclude) return;
     try {
       ws.send(message);
     } catch {
@@ -147,11 +164,11 @@ export function emitPresence(payload: any) {
   if (taskId) broadcast(taskClients.get(taskId), message);
 }
 
-export function emitTyping(payload: any) {
+export function emitTyping(payload: any, exclude?: WebSocket) {
   const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
-    event: 'typing',
+    event: 'comment.typing',
     ...payload,
   });
-  if (taskId) broadcast(taskClients.get(taskId), message);
+  if (taskId) broadcast(taskClients.get(taskId), message, exclude);
 }

@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { useSession } from 'next-auth/react';
+import useTyping from '@/hooks/useTyping';
 
 interface Comment {
   _id: string;
@@ -23,6 +25,10 @@ export default function CommentThread({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
 
+  const { data: session } = useSession();
+  const { typingUsers, emit } = useTyping(taskId, session?.userId, !parentId);
+  const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const load = useCallback(async () => {
     const params = new URLSearchParams({ taskId });
     if (parentId) params.set('parentId', parentId);
@@ -33,6 +39,12 @@ export default function CommentThread({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    };
+  }, []);
 
   const handleCreate = async (pid?: string | null) => {
     const content = pid ? replyContent : newContent;
@@ -58,9 +70,20 @@ export default function CommentThread({
         <div className="mb-4">
           <Textarea
             value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
+            onChange={(e) => {
+              setNewContent(e.target.value);
+              if (typingTimeout.current) clearTimeout(typingTimeout.current);
+              typingTimeout.current = setTimeout(() => {
+                emit();
+              }, 300);
+            }}
             placeholder="Add a comment..."
           />
+          {typingUsers.map((u) => (
+            <p key={u._id} className="mt-1 text-xs text-gray-500">
+              {`${u.name ?? 'Someone'} is typing...`}
+            </p>
+          ))}
           <Button className="mt-1 text-xs" onClick={() => void handleCreate(null)}>
             Comment
           </Button>
