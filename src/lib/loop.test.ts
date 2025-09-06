@@ -12,6 +12,9 @@ vi.mock('@/models/TaskLoop', () => ({ default: { findOne } }));
 const findTaskById = vi.fn();
 vi.mock('@/models/Task', () => ({ default: { findById: findTaskById } }));
 
+const createHistory = vi.fn();
+vi.mock('@/models/LoopHistory', () => ({ default: { create: createHistory } }));
+
 import { completeStep } from './loop';
 
 describe('completeStep', () => {
@@ -24,6 +27,7 @@ describe('completeStep', () => {
   beforeEach(() => {
     notifyFlowAdvanced.mockReset();
     findTaskById.mockReset();
+    createHistory.mockReset();
     loop = {
       taskId,
       parallel: true,
@@ -40,7 +44,7 @@ describe('completeStep', () => {
   });
 
   it('blocks steps with unmet dependencies and activates when ready', async () => {
-    let res = await completeStep(taskId.toString(), 0);
+    let res = await completeStep(taskId.toString(), 0, userA.toString());
     expect(res).toBe(loop);
     expect(loop.sequence[0].status).toBe('COMPLETED');
     expect(loop.sequence[1].status).toBe('ACTIVE');
@@ -48,12 +52,20 @@ describe('completeStep', () => {
     expect(loop.currentStep).toBe(1);
     expect(notifyFlowAdvanced).toHaveBeenCalledWith([userB], { _id: taskId });
 
+    expect(createHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ stepIndex: 0 })
+    );
+
     notifyFlowAdvanced.mockClear();
-    res = await completeStep(taskId.toString(), 1);
+    res = await completeStep(taskId.toString(), 1, userB.toString());
     expect(loop.sequence[1].status).toBe('COMPLETED');
     expect(loop.sequence[2].status).toBe('ACTIVE');
     expect(loop.currentStep).toBe(2);
     expect(notifyFlowAdvanced).toHaveBeenCalledWith([userC], { _id: taskId });
+    expect(createHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ stepIndex: 1 })
+    );
+    expect(createHistory).toHaveBeenCalledTimes(2);
   });
 });
 

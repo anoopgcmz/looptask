@@ -2,9 +2,14 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
+import LoopHistory from '@/models/LoopHistory';
 import { notifyFlowAdvanced } from '@/lib/notify';
 
-export async function completeStep(taskId: string, stepIndex: number) {
+export async function completeStep(
+  taskId: string,
+  stepIndex: number,
+  userId?: string
+) {
   await dbConnect();
   const loop = await TaskLoop.findOne({ taskId });
   if (!loop) return null;
@@ -56,6 +61,15 @@ export async function completeStep(taskId: string, stepIndex: number) {
   }
 
   await loop.save();
+
+  if (userId) {
+    await LoopHistory.create({
+      taskId: loop.taskId,
+      stepIndex,
+      action: 'COMPLETE',
+      userId: new Types.ObjectId(userId),
+    });
+  }
 
   if (newlyActiveIndexes.length) {
     const task = await Task.findById(taskId);
