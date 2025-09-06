@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import LoopBuilder from '@/components/loop-builder';
+import PushNotificationInitializer from '@/components/PushNotificationInitializer';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,6 +29,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--color-background)]`}>
         {children}
         <LoopBuilder />
+        <PushNotificationInitializer />
       </body>
     </html>
   );

@@ -26,6 +26,7 @@ export interface IUser extends Document {
       OVERDUE: boolean;
     };
   };
+  pushSubscriptions: any[];
 }
 
 const userSchema = new Schema<IUser>(
@@ -67,6 +68,7 @@ const userSchema = new Schema<IUser>(
         OVERDUE: { type: Boolean, default: true },
       },
     },
+    pushSubscriptions: { type: [Schema.Types.Mixed], default: [] },
   },
   { timestamps: true }
 );
