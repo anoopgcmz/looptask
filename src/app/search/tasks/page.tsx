@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import FilterBuilder from '@/components/filter-builder';
 
 interface SearchResult {
   _id: string;
@@ -84,6 +85,7 @@ export default function TaskSearchPage() {
         )}
       </div>
       <form method="GET" className="flex flex-wrap gap-2 mb-4">
+        <FilterBuilder />
         <input
           type="text"
           name="q"

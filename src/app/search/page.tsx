@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import FilterBuilder from '@/components/filter-builder';
 
 interface SearchItem {
   _id: string;
@@ -86,6 +87,7 @@ export default function GlobalSearchPage() {
         )}
       </div>
       <form method="GET" className="flex flex-wrap gap-2 mb-4">
+        <FilterBuilder />
         <div className="relative">
           <input
             type="text"

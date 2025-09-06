@@ -113,6 +113,59 @@ export async function GET(req: Request) {
   });
   if (customFilters.length) filters.push(...customFilters);
 
+  let logicOp: '$and' | '$or' = '$and';
+  if (typeof raw.logic === 'string' && raw.logic.toUpperCase() === 'OR') {
+    logicOp = '$or';
+  }
+  if (typeof raw.filters === 'string') {
+    try {
+      const parsed = JSON.parse(raw.filters as string);
+      if (Array.isArray(parsed)) {
+        const dynamic: any[] = [];
+        parsed.forEach((f: any) => {
+          if (!f?.field || !f?.op) return;
+          const val = f.value;
+          let condition: any;
+          switch (f.op) {
+            case 'eq':
+              condition = { [f.field]: val };
+              break;
+            case 'ne':
+              condition = { [f.field]: { $ne: val } };
+              break;
+            case 'gt':
+              condition = { [f.field]: { $gt: val } };
+              break;
+            case 'gte':
+              condition = { [f.field]: { $gte: val } };
+              break;
+            case 'lt':
+              condition = { [f.field]: { $lt: val } };
+              break;
+            case 'lte':
+              condition = { [f.field]: { $lte: val } };
+              break;
+            case 'regex':
+              condition = { [f.field]: { $regex: val, $options: 'i' } };
+              break;
+            default:
+              return;
+          }
+          dynamic.push(condition);
+        });
+        if (dynamic.length) {
+          if (logicOp === '$or') {
+            filters.push({ $or: dynamic });
+          } else {
+            filters.push(...dynamic);
+          }
+        }
+      }
+    } catch (e) {
+      // ignore invalid JSON
+    }
+  }
+
   const access: any[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
