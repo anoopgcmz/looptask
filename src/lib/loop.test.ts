@@ -4,7 +4,8 @@ import { Types } from 'mongoose';
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
 const notifyFlowAdvanced = vi.fn();
-vi.mock('@/lib/notify', () => ({ notifyFlowAdvanced }));
+const notifyAssignment = vi.fn();
+vi.mock('@/lib/notify', () => ({ notifyFlowAdvanced, notifyAssignment }));
 
 const findOne = vi.fn();
 vi.mock('@/models/TaskLoop', () => ({ default: { findOne } }));
@@ -26,6 +27,7 @@ describe('completeStep', () => {
 
   beforeEach(() => {
     notifyFlowAdvanced.mockReset();
+    notifyAssignment.mockReset();
     findTaskById.mockReset();
     createHistory.mockReset();
     loop = {
@@ -50,7 +52,8 @@ describe('completeStep', () => {
     expect(loop.sequence[1].status).toBe('ACTIVE');
     expect(loop.sequence[2].status).toBe('BLOCKED');
     expect(loop.currentStep).toBe(1);
-    expect(notifyFlowAdvanced).toHaveBeenCalledWith([userB], { _id: taskId });
+    expect(notifyAssignment).toHaveBeenCalledWith([userB], { _id: taskId }, undefined);
+    expect(notifyFlowAdvanced).toHaveBeenCalledWith([userB], { _id: taskId }, undefined);
 
     expect(createHistory).toHaveBeenCalledWith(
       expect.objectContaining({ stepIndex: 0 })
@@ -61,7 +64,8 @@ describe('completeStep', () => {
     expect(loop.sequence[1].status).toBe('COMPLETED');
     expect(loop.sequence[2].status).toBe('ACTIVE');
     expect(loop.currentStep).toBe(2);
-    expect(notifyFlowAdvanced).toHaveBeenCalledWith([userC], { _id: taskId });
+    expect(notifyAssignment).toHaveBeenCalledWith([userC], { _id: taskId }, undefined);
+    expect(notifyFlowAdvanced).toHaveBeenCalledWith([userC], { _id: taskId }, undefined);
     expect(createHistory).toHaveBeenCalledWith(
       expect.objectContaining({ stepIndex: 1 })
     );

@@ -2,8 +2,22 @@ import { Types } from 'mongoose';
 import { Resend } from 'resend';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
+import dbConnect from '@/lib/db';
+import RateLimit from '@/models/RateLimit';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+const THROTTLE_SECONDS = 60;
+
+async function shouldSend(key: string): Promise<boolean> {
+  await dbConnect();
+  const now = new Date();
+  const record = await RateLimit.findOne({ key });
+  if (record && record.windowEndsAt > now) return false;
+  const windowEndsAt = new Date(now.getTime() + THROTTLE_SECONDS * 1000);
+  await RateLimit.updateOne({ key }, { count: 1, windowEndsAt }, { upsert: true });
+  return true;
+}
 
 async function createAndEmail(
   userIds: Types.ObjectId[],
@@ -13,9 +27,19 @@ async function createAndEmail(
   text: string
 ) {
   if (!userIds.length) return;
-  await Notification.insertMany(userIds.map((userId) => ({ userId, type, entityRef })));
+  const recipients: Types.ObjectId[] = [];
+  for (const userId of userIds) {
+    const key = `notify:${userId.toString()}:${type}:${entityRef.taskId?.toString() || ''}:${
+      entityRef.step || ''
+    }`;
+    if (await shouldSend(key)) {
+      recipients.push(userId);
+    }
+  }
+  if (!recipients.length) return;
+  await Notification.insertMany(recipients.map((userId) => ({ userId, type, entityRef })));
   if (resend) {
-    const users = await User.find({ _id: { $in: userIds } });
+    const users = await User.find({ _id: { $in: recipients } });
     await Promise.all(
       users.map((u) =>
         resend.emails.send({
@@ -29,13 +53,18 @@ async function createAndEmail(
   }
 }
 
-export async function notifyAssignment(userIds: Types.ObjectId[], task: any) {
+export async function notifyAssignment(
+  userIds: Types.ObjectId[],
+  task: any,
+  step?: string
+) {
+  const stepText = step ? `step "${step}" of ` : '';
   await createAndEmail(
     userIds,
     'ASSIGNMENT',
-    { taskId: task._id },
+    { taskId: task._id, step },
     `Task assigned: ${task.title}`,
-    `You have been assigned to task "${task.title}".`
+    `You have been assigned to ${stepText}task "${task.title}" (#${task._id}).`
   );
 }
 
@@ -93,13 +122,17 @@ export async function notifyOverdue(userIds: Types.ObjectId[], task: any) {
   );
 }
 
-export async function notifyFlowAdvanced(userIds: Types.ObjectId[], task: any) {
+export async function notifyFlowAdvanced(
+  userIds: Types.ObjectId[],
+  task: any,
+  step?: string
+) {
   await createAndEmail(
     userIds,
     'FLOW_ADVANCED',
-    { taskId: task._id },
-    'Task flow advanced',
-    `Task "${task.title}" advanced to the next step.`
+    { taskId: task._id, step },
+    `Task flow advanced: ${task.title}`,
+    `Task "${task.title}" (#${task._id}) advanced to ${step ? `step "${step}"` : 'the next step'}.`
   );
 }
 
