@@ -6,12 +6,12 @@ import { GET as dailyDashboard } from '../dashboard/daily/route';
 
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
-const objectives = new Map<string, any>();
-const tasks = new Map<string, any>();
+const objectives = new Map<string, unknown>();
+const tasks = new Map<string, unknown>();
 
 vi.mock('@/models/Objective', () => ({
   default: {
-    create: vi.fn(async (doc: any) => {
+    create: vi.fn(async (doc: unknown) => {
       const _id = doc._id || new Types.ObjectId();
       const objective = { ...doc, _id };
       objective.save = async () => {
@@ -20,7 +20,7 @@ vi.mock('@/models/Objective', () => ({
       objectives.set(_id.toString(), objective);
       return objective;
     }),
-    find: vi.fn(async (filter: any) => {
+    find: vi.fn(async (filter: unknown) => {
       return Array.from(objectives.values()).filter(
         (o) =>
           o.date === filter.date &&
@@ -40,14 +40,14 @@ vi.mock('@/models/Objective', () => ({
 
 vi.mock('@/models/Task', () => ({
   default: {
-    find: vi.fn(async (filter: any) => {
+    find: vi.fn(async (filter: unknown) => {
       return Array.from(tasks.values()).filter((t) => {
         const due =
           t.dueDate >= filter.dueDate.$gte && t.dueDate < filter.dueDate.$lt;
-        const accessible = filter.$or.some((c: any) => {
+        const accessible = filter.$or.some((c: unknown) => {
           if (c.participantIds) {
             return t.participantIds.some(
-              (p: any) => p.toString() === c.participantIds.toString()
+              (p: unknown) => p.toString() === c.participantIds.toString()
             );
           }
           if (c.visibility) {
@@ -64,7 +64,7 @@ vi.mock('@/models/Task', () => ({
   },
 }));
 
-let session: any = {};
+let session: unknown = {};
 vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => session) }));
 
 const { Types } = mongoose;
@@ -144,8 +144,8 @@ describe('objectives api', () => {
       )
     );
     const dash = await res.json();
-    const s1 = dash.summary.find((s: any) => s.ownerId === u1.toString());
-    const s2 = dash.summary.find((s: any) => s.ownerId === u2.toString());
+    const s1 = dash.summary.find((s: unknown) => s.ownerId === u1.toString());
+    const s2 = dash.summary.find((s: unknown) => s.ownerId === u2.toString());
     expect(s1.completed).toBe(1);
     expect(s1.total).toBe(1);
     expect(s2.completed).toBe(0);

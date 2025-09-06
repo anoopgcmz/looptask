@@ -24,8 +24,9 @@ export async function GET(req: NextRequest) {
       date: url.searchParams.get('date'),
       teamId: url.searchParams.get('teamId'),
     });
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   if (session.teamId && session.teamId !== query.teamId) {
     return problem(403, 'Forbidden', 'Wrong team');
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     teamId: new Types.ObjectId(query.teamId),
   });
   const summaryMap = new Map<string, { ownerId: string; completed: number; total: number }>();
-  const pending: any[] = [];
+  const pending: unknown[] = [];
   objectives.forEach((o) => {
     const key = o.ownerId.toString();
     if (!summaryMap.has(key)) {
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
   const start = new Date(query.date);
   const end = new Date(start);
   end.setDate(start.getDate() + 1);
-  const access: any[] = [
+  const access: unknown[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
     dueDate: { $gte: start, $lt: end },
     $or: access,
   });
-  const taskMap = new Map<string, any[]>();
+  const taskMap = new Map<string, unknown[]>();
   tasks.forEach((t) => {
     const key = t.ownerId.toString();
     if (!taskMap.has(key)) taskMap.set(key, []);

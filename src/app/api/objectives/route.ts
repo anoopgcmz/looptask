@@ -24,8 +24,9 @@ export async function POST(req: NextRequest) {
   let body: z.infer<typeof upsertSchema>;
   try {
     body = upsertSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   if (session.teamId && session.teamId !== body.teamId) {
     return problem(403, 'Forbidden', 'Wrong team');
@@ -76,8 +77,9 @@ export async function GET(req: NextRequest) {
       date: url.searchParams.get('date'),
       teamId: url.searchParams.get('teamId'),
     });
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   if (session.teamId && session.teamId !== query.teamId) {
     return problem(403, 'Forbidden', 'Wrong team');

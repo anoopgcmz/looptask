@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   await dbConnect();
 
-  const access: any[] = [
+  const access: unknown[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const suggestions = new Set<string>();
 
   if (useAtlas) {
-    const titlePipeline: any[] = [
+    const titlePipeline: unknown[] = [
       {
         $search: {
           index: 'tasks',
@@ -42,11 +42,11 @@ export async function GET(req: NextRequest) {
       { $project: { title: 1 } },
     ];
     const titleResults = await Task.aggregate(titlePipeline);
-    titleResults.forEach((t: any) => {
+    titleResults.forEach((t: { title?: string }) => {
       if (t.title) suggestions.add(t.title);
     });
 
-    const tagPipeline: any[] = [
+    const tagPipeline: unknown[] = [
       {
         $search: {
           index: 'tasks',
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       { $project: { tags: 1 } },
     ];
     const tagResults = await Task.aggregate(tagPipeline);
-    tagResults.forEach((t: any) => {
+    tagResults.forEach((t: { tags?: string[] }) => {
       t.tags?.forEach((tag: string) => suggestions.add(tag));
     });
   } else {
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     )
       .limit(10)
       .lean();
-    results.forEach((t: any) => {
+    results.forEach((t: { title?: string; tags?: string[] }) => {
       if (t.title && regex.test(t.title)) suggestions.add(t.title);
       t.tags?.forEach((tag: string) => {
         if (regex.test(tag)) suggestions.add(tag);

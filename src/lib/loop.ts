@@ -2,7 +2,7 @@ import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
-import TaskLoop from '@/models/TaskLoop';
+import TaskLoop, { type ILoopStep, type ITaskLoop } from '@/models/TaskLoop';
 import LoopHistory from '@/models/LoopHistory';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 
@@ -13,7 +13,7 @@ export async function completeStep(
 ) {
   await dbConnect();
   const sessionDb = await mongoose.startSession();
-  let updatedLoop: any = null;
+  let updatedLoop: ITaskLoop | null = null;
   let newlyActiveIndexes: number[] = [];
   try {
     await sessionDb.withTransaction(async () => {
@@ -37,13 +37,15 @@ export async function completeStep(
       let activated = false;
       loop.sequence.forEach((s, idx) => {
         if (s.status === 'COMPLETED') return;
-        const deps = (s.dependencies as any[]) || [];
+        const deps: Array<number | Types.ObjectId> = s.dependencies ?? [];
         const depsMet = deps.every((d) => {
           if (typeof d === 'number') {
             return loop.sequence[d]?.status === 'COMPLETED';
           }
           if (d instanceof Types.ObjectId) {
-            const depIdx = loop.sequence.findIndex((st: any) => st._id && st._id.equals(d));
+            const depIdx = loop.sequence.findIndex(
+              (st: ILoopStep & { _id?: Types.ObjectId }) => st._id && st._id.equals(d)
+            );
             return depIdx === -1 || loop.sequence[depIdx].status === 'COMPLETED';
           }
           return false;

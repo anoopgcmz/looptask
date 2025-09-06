@@ -17,7 +17,7 @@ export default function TaskSearchPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const presets = getPresets(session?.userId);
-  const [data, setData] = useState<{ results: SearchResult[]; verification: any }>();
+  const [data, setData] = useState<{ results: SearchResult[]; verification: unknown }>();
   const [saved, setSaved] = useState<{ _id: string; name: string; query: string }[]>([]);
 
   const [ownerIds, setOwnerIds] = useState<string[]>(() => {

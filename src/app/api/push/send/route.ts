@@ -20,8 +20,9 @@ export async function POST(req: NextRequest) {
   let data: z.infer<typeof bodySchema>;
   try {
     data = bodySchema.parse(await req.json());
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+  } catch (e: unknown) {
+    const err = e as Error;
+    return NextResponse.json({ error: err.message }, { status: 400 });
   }
 
   await dbConnect();

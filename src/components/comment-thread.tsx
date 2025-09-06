@@ -7,6 +7,11 @@ import { useSession } from 'next-auth/react';
 import useTyping from '@/hooks/useTyping';
 import useRealtime from '@/hooks/useRealtime';
 
+interface EnqueueResponse {
+  ok?: boolean;
+  offline?: boolean;
+}
+
 interface Comment {
   _id: string;
   content: string;
@@ -50,12 +55,12 @@ export default function CommentThread({
 
   const handleCreate = async (pid?: string | null) => {
     const content = pid ? replyContent : newContent;
-    const res: any = await enqueue('/api/comments', {
+    const res: EnqueueResponse = await enqueue('/api/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ taskId, content, parentId: pid ?? undefined }),
     });
-    if (res?.ok || res?.offline) {
+    if (res.ok || res.offline) {
       if (pid) {
         setReplyContent('');
         setReplyingTo(null);
@@ -63,7 +68,7 @@ export default function CommentThread({
         setNewContent('');
       }
     }
-    if (res?.ok) {
+    if (res.ok) {
       await load();
     }
   };

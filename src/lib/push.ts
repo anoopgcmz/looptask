@@ -10,7 +10,7 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 
 export async function sendPush(
   subscription: PushSubscription,
-  data: Record<string, any>
+  data: Record<string, unknown>
 ) {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
   try {
@@ -22,7 +22,7 @@ export async function sendPush(
 
 export async function sendPushToUser(
   user: { pushSubscriptions?: PushSubscription[] },
-  data: Record<string, any>
+  data: Record<string, unknown>
 ) {
   const subs: PushSubscription[] = user.pushSubscriptions || [];
   await Promise.all(subs.map((s) => sendPush(s, data)));

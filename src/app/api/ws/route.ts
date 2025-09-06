@@ -2,6 +2,12 @@ import { addClient } from '@/lib/ws';
 import { auth } from '@/lib/auth';
 import { type NextRequest } from 'next/server';
 
+interface MetaWebSocket extends WebSocket {
+  userId?: string;
+  organizationId?: string;
+  taskIds?: string[];
+}
+
 export async function GET(request: NextRequest) {
   const upgrade = request.headers.get('upgrade');
   if (upgrade?.toLowerCase() !== 'websocket') {
@@ -16,15 +22,15 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const taskIds = searchParams.getAll('taskId');
 
-  const { 0: client, 1: server } = Object.values(new WebSocketPair()) as unknown as [
-    WebSocket,
-    WebSocket
+  const { 0: client, 1: server } = Object.values(new WebSocketPair()) as [
+    MetaWebSocket,
+    MetaWebSocket
   ];
   server.accept();
-  (server as any).userId = session.userId;
-  (server as any).organizationId = session.organizationId;
-  if (taskIds.length) (server as any).taskIds = taskIds;
-  addClient(server as any);
+  server.userId = session.userId;
+  server.organizationId = session.organizationId;
+  if (taskIds.length) server.taskIds = taskIds;
+  addClient(server);
 
   const interval = setInterval(() => {
     try {

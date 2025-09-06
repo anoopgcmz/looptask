@@ -37,7 +37,7 @@ export interface ITask extends Document {
   steps?: IStep[];
   currentStepIndex?: number;
   participantIds?: Types.ObjectId[];
-  custom?: Record<string, any>;
+  custom?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }

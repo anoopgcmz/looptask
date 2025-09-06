@@ -21,15 +21,16 @@ export const GET = withOrganization(
     session: Session
   ) => {
     const url = new URL(req.url);
-    const raw: Record<string, any> = {};
+    const raw: Record<string, unknown> = {};
     url.searchParams.forEach((value, key) => {
       raw[key] = value;
     });
     let query: z.infer<typeof querySchema>;
     try {
       query = querySchema.parse(raw);
-    } catch (e: any) {
-      return problem(400, 'Invalid request', e.message);
+    } catch (e: unknown) {
+      const err = e as Error;
+      return problem(400, 'Invalid request', err.message);
     }
 
     const { id } = await params;

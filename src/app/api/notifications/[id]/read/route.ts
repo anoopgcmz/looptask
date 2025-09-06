@@ -29,7 +29,7 @@ export async function POST(
   }
 
   await dbConnect();
-  const update: any = { read };
+  const update: { read: boolean; readAt?: Date | null } = { read };
   update.readAt = read ? new Date() : null;
   const notification = await Notification.findOneAndUpdate(
     { _id: id, userId: session.userId },

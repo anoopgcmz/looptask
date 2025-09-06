@@ -9,6 +9,11 @@ import useRealtime from "@/hooks/useRealtime";
 import usePresence from "@/hooks/usePresence";
 import { Avatar } from "@/components/ui/avatar";
 
+interface User {
+  _id: string;
+  name?: string;
+}
+
 interface Task {
   title?: string;
   description?: string;
@@ -79,11 +84,11 @@ export default function TaskDetail({ id }: { id: string }) {
             const data = await userRes.json();
             const map: UserMap = Array.isArray(data)
               ? data.reduce(
-                  (acc: UserMap, u: any) => {
+                  (acc: UserMap, u: User) => {
                     acc[u._id] = u;
                     return acc;
                   },
-                  {}
+                  {} as UserMap
                 )
               : data;
             setUsers(map);
@@ -106,7 +111,7 @@ export default function TaskDetail({ id }: { id: string }) {
   }, [refreshLoop]);
 
   const handleMessage = useCallback(
-    (data: any) => {
+    (data: unknown) => {
       if (data.taskId !== id) return;
       switch (data.event) {
         case "task.updated":
@@ -131,13 +136,13 @@ export default function TaskDetail({ id }: { id: string }) {
               const next: TaskLoop = { ...prev };
               if (Array.isArray(data.patch.sequence)) {
                 const seq = [...prev.sequence];
-                if (data.patch.sequence.every((s: any) => typeof s.index === "number")) {
-                  data.patch.sequence.forEach((s: any) => {
+                if (data.patch.sequence.every((s: unknown) => typeof s.index === "number")) {
+                  data.patch.sequence.forEach((s: unknown) => {
                     seq[s.index] = { ...seq[s.index], ...s };
                   });
                   next.sequence = seq;
                 } else {
-                  next.sequence = data.patch.sequence as any;
+                  next.sequence = data.patch.sequence as unknown;
                 }
               }
               if (data.patch.parallel !== undefined) next.parallel = data.patch.parallel;

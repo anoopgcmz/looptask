@@ -36,8 +36,9 @@ export async function PUT(req: NextRequest) {
   let body: z.infer<typeof updateSchema>;
   try {
     body = updateSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   await dbConnect();
   try {
@@ -51,7 +52,8 @@ export async function PUT(req: NextRequest) {
       return problem(404, 'Not found', 'User not found.');
     }
     return NextResponse.json(user);
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
 }

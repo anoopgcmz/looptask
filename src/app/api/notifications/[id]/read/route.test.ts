@@ -6,7 +6,7 @@ vi.mock('mongoose', () => ({
 
 vi.mock('next/server', () => ({
   NextResponse: {
-    json: (data: any, init?: ResponseInit) =>
+    json: (data: unknown, init?: ResponseInit) =>
       new Response(JSON.stringify(data), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -27,7 +27,7 @@ import { POST } from './route';
 
 describe('POST /notifications/:id/read', () => {
   const id = '507f1f77bcf86cd799439011';
-  const session = { userId: '507f1f77bcf86cd799439012' } as any;
+  const session = { userId: '507f1f77bcf86cd799439012' } as unknown;
 
   beforeEach(() => {
     auth.mockResolvedValue(session);
@@ -37,7 +37,7 @@ describe('POST /notifications/:id/read', () => {
 
   it('marks notification read by default', async () => {
     const res = await POST(
-      new Request('http://test', { method: 'POST' }) as any,
+      new Request('http://test', { method: 'POST' }) as unknown,
       { params: Promise.resolve({ id }) }
     );
     expect(res.status).toBe(200);
@@ -54,7 +54,7 @@ describe('POST /notifications/:id/read', () => {
       body: JSON.stringify({ read: false }),
       headers: { 'Content-Type': 'application/json' },
     });
-    const res = await POST(req as any, { params: Promise.resolve({ id }) });
+    const res = await POST(req as unknown, { params: Promise.resolve({ id }) });
     expect(res.status).toBe(200);
     expect(findOneAndUpdate).toHaveBeenCalledWith(
       { _id: id, userId: session.userId },

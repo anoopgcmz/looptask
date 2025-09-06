@@ -7,7 +7,7 @@ vi.mock('mongoose', async () => {
   return {
     ...actual,
     startSession: vi.fn(async () => ({
-      withTransaction: async (fn: any) => {
+      withTransaction: async (fn: unknown) => {
         await fn();
       },
     })),
@@ -19,7 +19,7 @@ import { notifyTaskClosed, notifyLoopStepReady, notifyAssignment } from '@/lib/n
 // mocks
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
-const tasks = new Map<string, any>();
+const tasks = new Map<string, unknown>();
 
 vi.mock('@/models/Task', () => ({
   default: {

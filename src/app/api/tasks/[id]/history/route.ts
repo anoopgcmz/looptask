@@ -35,13 +35,15 @@ export async function GET(
 
   const events = logs.map((log) => {
     let type = log.type;
-    if (log.type === 'TRANSITIONED' && (log as any).payload?.action) {
-      type = (log as any).payload.action;
+    const payload = (log as { payload?: { action?: string } }).payload;
+    if (log.type === 'TRANSITIONED' && payload?.action) {
+      type = payload.action;
     }
+    const actor = log.actorId as { name?: string };
     return {
       id: log._id.toString(),
       type,
-      user: { name: (log.actorId as any)?.name || 'Unknown' },
+      user: { name: actor?.name || 'Unknown' },
       date: log.createdAt,
     };
   });

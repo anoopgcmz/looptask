@@ -9,8 +9,10 @@ export function withOrganization(
 export function withOrganization<C>(
   handler: (req: NextRequest, ctx: C, session: Session) => Promise<Response>
 ): (req: NextRequest, ctx: C) => Promise<Response>;
-export function withOrganization(handler: any) {
-  return async (req: NextRequest, ctx?: any) => {
+export function withOrganization(
+  handler: (...args: unknown[]) => Promise<Response>
+) {
+  return async (req: NextRequest, ctx?: unknown) => {
     const session = await auth();
     if (!session?.userId || !session.organizationId) {
       return problem(401, 'Unauthorized', 'You must be signed in.');

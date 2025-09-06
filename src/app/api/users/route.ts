@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q') || '';
   await dbConnect();
-  const query: any = {
+  const query: unknown = {
     organizationId: new Types.ObjectId(session.organizationId),
   };
   if (q) {
@@ -56,8 +56,9 @@ export async function POST(req: NextRequest) {
   let body: z.infer<typeof createUserSchema>;
   try {
     body = createUserSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   if (body.organizationId && body.organizationId !== session.organizationId) {
     return problem(400, 'Invalid request', 'organizationId mismatch');
@@ -70,12 +71,13 @@ export async function POST(req: NextRequest) {
       teamId: body.teamId ? new Types.ObjectId(body.teamId) : undefined,
     });
     return NextResponse.json(user, { status: 201 });
-  } catch (e: any) {
-    if (e.code === 11000) {
+  } catch (e: unknown) {
+    const err = e as Error & { code?: number };
+    if (err.code === 11000) {
       return problem(409, 'Conflict', 'User already exists');
     }
-    if (e.name === 'ValidationError') {
-      return problem(400, 'Invalid request', e.message);
+    if (err.name === 'ValidationError') {
+      return problem(400, 'Invalid request', err.message);
     }
     return problem(500, 'Internal Server Error', 'Unexpected error');
   }

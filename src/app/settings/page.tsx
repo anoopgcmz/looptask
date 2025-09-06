@@ -101,8 +101,9 @@ export default function SettingsPage() {
       }
       resetPassword();
       setPasswordSuccess('Password updated');
-    } catch (e: any) {
-      setPasswordError(e.message || 'Failed to update password');
+    } catch (e: unknown) {
+      const err = e as Error;
+      setPasswordError(err.message || 'Failed to update password');
     }
   };
 
@@ -120,8 +121,9 @@ export default function SettingsPage() {
         throw new Error(err?.detail || 'Failed to update notifications');
       }
       setNotificationsSuccess('Preferences saved');
-    } catch (e: any) {
-      setNotificationsError(e.message || 'Failed to update notifications');
+    } catch (e: unknown) {
+      const err = e as Error;
+      setNotificationsError(err.message || 'Failed to update notifications');
     }
   };
 
@@ -139,8 +141,9 @@ export default function SettingsPage() {
         throw new Error(err?.detail || 'Failed to update timezone');
       }
       setTimezoneSuccess('Timezone updated');
-    } catch (e: any) {
-      setTimezoneError(e.message || 'Failed to update timezone');
+    } catch (e: unknown) {
+      const err = e as Error;
+      setTimezoneError(err.message || 'Failed to update timezone');
     }
   };
 

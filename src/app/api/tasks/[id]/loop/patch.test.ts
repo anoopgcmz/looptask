@@ -23,7 +23,7 @@ vi.mock('@/lib/access', () => ({ canWriteTask: () => true }));
 
 const startSession = vi.fn();
 vi.mock('mongoose', async () => {
-  const actual: any = await vi.importActual('mongoose');
+  const actual: unknown = await vi.importActual('mongoose');
   return { ...actual, startSession };
 });
 
@@ -38,9 +38,9 @@ describe('PATCH /tasks/:id/loop assignedTo updates', () => {
     userId: new Types.ObjectId().toString(),
     teamId: null,
     organizationId: orgId.toString(),
-  } as any;
+  } as unknown;
 
-  let loop: any;
+  let loop: unknown;
 
   beforeEach(() => {
     auth.mockResolvedValue(sessionData);
@@ -60,10 +60,10 @@ describe('PATCH /tasks/:id/loop assignedTo updates', () => {
     findLoop.mockReset();
     findLoop.mockReturnValue({
       session: vi.fn().mockReturnThis(),
-      then: (resolve: any) => resolve(loop),
+      then: (resolve: unknown) => resolve(loop),
     });
 
-    const withTransaction = vi.fn(async (fn: any) => {
+    const withTransaction = vi.fn(async (fn: unknown) => {
       await fn();
     });
     startSession.mockReset();

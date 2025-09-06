@@ -26,8 +26,9 @@ export async function POST(req: NextRequest) {
   let body: z.infer<typeof templateSchema>;
   try {
     body = templateSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   await dbConnect();
   const template = await LoopTemplate.create(body);
@@ -39,8 +40,9 @@ export async function PUT(req: NextRequest) {
   let body: z.infer<typeof schema>;
   try {
     body = schema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   await dbConnect();
   const template = await LoopTemplate.findByIdAndUpdate(
@@ -59,8 +61,9 @@ export async function DELETE(req: NextRequest) {
   let body: z.infer<typeof schema>;
   try {
     body = schema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   await dbConnect();
   const deleted = await LoopTemplate.findByIdAndDelete(body.id);

@@ -10,16 +10,16 @@ import {
 
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
-const tokens: any[] = [];
+const tokens: unknown[] = [];
 vi.mock('@/models/OtpToken', () => ({
   default: {
-    findOne: vi.fn(async (query: any) =>
+    findOne: vi.fn(async (query: unknown) =>
       tokens.filter((t) => t.email === query.email).sort((a, b) => b.createdAt - a.createdAt)[0] || null
     ),
-    create: vi.fn(async (doc: any) => {
+    create: vi.fn(async (doc: unknown) => {
       tokens.push({ ...doc, attempts: 0, createdAt: new Date() });
     }),
-    deleteMany: vi.fn(async (query: any) => {
+    deleteMany: vi.fn(async (query: unknown) => {
       for (let i = tokens.length - 1; i >= 0; i--) {
         if (tokens[i].email === query.email) tokens.splice(i, 1);
       }
@@ -27,11 +27,11 @@ vi.mock('@/models/OtpToken', () => ({
   },
 }));
 
-const rates = new Map<string, any>();
+const rates = new Map<string, unknown>();
 vi.mock('@/models/RateLimit', () => ({
   default: {
-    findOne: vi.fn(async ({ key }: any) => rates.get(key) || null),
-    updateOne: vi.fn(async ({ key }: any, update: any, opts?: any) => {
+    findOne: vi.fn(async ({ key }: unknown) => rates.get(key) || null),
+    updateOne: vi.fn(async ({ key }: unknown, update: unknown, opts?: unknown) => {
       const record = rates.get(key);
       if (opts?.upsert && (!record || record.windowEndsAt < new Date())) {
         rates.set(key, { key, ...(update.$set || {}) });

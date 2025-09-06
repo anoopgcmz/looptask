@@ -38,8 +38,9 @@ export const POST = withOrganization(async (req, session) => {
   let body: TaskPayload;
   try {
     body = createTaskSchema.parse(await req.json());
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   const createdBy = session.userId;
   let ownerId = body.ownerId;
@@ -171,11 +172,12 @@ export const GET = withOrganization(async (req, session) => {
   let query: TaskListQuery;
   try {
     query = listQuerySchema.parse(raw);
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
   await dbConnect();
-  const filter: any = { organizationId: new Types.ObjectId(session.organizationId) };
+  const filter: unknown = { organizationId: new Types.ObjectId(session.organizationId) };
   if (query.ownerId) filter.ownerId = new Types.ObjectId(query.ownerId);
   if (query.createdBy) filter.createdBy = new Types.ObjectId(query.createdBy);
   if (query.status && query.status.length) filter.status = { $in: query.status };
@@ -190,7 +192,7 @@ export const GET = withOrganization(async (req, session) => {
   if (query.teamId) filter.teamId = new Types.ObjectId(query.teamId);
   if (query.q) filter.$text = { $search: query.q };
 
-  const access: any[] = [
+  const access: unknown[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {

@@ -73,8 +73,9 @@ export async function GET(req: NextRequest) {
   let query: z.infer<typeof querySchema>;
   try {
     query = querySchema.parse(raw);
-  } catch (e: any) {
-    return problem(400, 'Invalid request', e.message);
+  } catch (e: unknown) {
+    const err = e as Error;
+    return problem(400, 'Invalid request', err.message);
   }
 
   await dbConnect();
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
   const limit = query.limit;
   const skip = (query.page - 1) * limit;
 
-  const filters: any[] = [];
+  const filters: unknown[] = [];
   if (query.ownerId?.length)
     filters.push({ ownerId: { $in: query.ownerId.map((id) => new Types.ObjectId(id)) } });
   if (query.createdBy?.length)
@@ -94,10 +95,10 @@ export async function GET(req: NextRequest) {
   if (query.visibility) filters.push({ visibility: query.visibility });
   if (query.teamId) filters.push({ teamId: new Types.ObjectId(query.teamId) });
 
-  const dueRanges: any[] = [];
+  const dueRanges: unknown[] = [];
   const maxRange = Math.max(query.dueFrom?.length ?? 0, query.dueTo?.length ?? 0);
   for (let i = 0; i < maxRange; i++) {
-    const range: any = {};
+    const range: unknown = {};
     if (query.dueFrom?.[i]) range.$gte = query.dueFrom[i];
     if (query.dueTo?.[i]) range.$lte = query.dueTo[i];
     if (Object.keys(range).length) dueRanges.push(range);
@@ -108,7 +109,7 @@ export async function GET(req: NextRequest) {
     filters.push({ $or: dueRanges.map((r) => ({ dueDate: r })) });
   }
 
-  const customFilters: any[] = [];
+  const customFilters: unknown[] = [];
   Object.entries(customRaw).forEach(([field, values]) => {
     if (values.length === 1) {
       customFilters.push({ [`custom.${field}`]: values[0] });
@@ -126,11 +127,11 @@ export async function GET(req: NextRequest) {
     try {
       const parsed = JSON.parse(raw.filters as string);
       if (Array.isArray(parsed)) {
-        const dynamic: any[] = [];
-        parsed.forEach((f: any) => {
+        const dynamic: unknown[] = [];
+        parsed.forEach((f: unknown) => {
           if (!f?.field || !f?.op) return;
           const val = f.value;
-          let condition: any;
+          let condition: unknown;
           switch (f.op) {
             case 'eq':
               condition = { [f.field]: val };
@@ -171,7 +172,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const access: any[] = [
+  const access: unknown[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
@@ -187,16 +188,16 @@ export async function GET(req: NextRequest) {
       Comment.find({ $text: { $search: query.q } }).distinct('taskId'),
       TaskLoop.find({ $text: { $search: query.q } }).distinct('taskId'),
     ]);
-    commentTaskIds = cIds.map((id: any) => new Types.ObjectId(id));
-    loopTaskIds = lIds.map((id: any) => new Types.ObjectId(id));
+    commentTaskIds = cIds.map((id: unknown) => new Types.ObjectId(id));
+    loopTaskIds = lIds.map((id: unknown) => new Types.ObjectId(id));
   }
 
   const baseFilter =
     filters.length ? { $and: [...filters, { $or: access }] } : { $or: access };
 
-  let results: any[] = [];
+  let results: unknown[] = [];
   if (useAtlas && query.q) {
-    const pipeline: any[] = [
+    const pipeline: unknown[] = [
       {
         $search: {
           index: 'tasks',
@@ -269,7 +270,7 @@ export async function GET(req: NextRequest) {
     }
     results = await Task.aggregate(pipeline);
   } else {
-    const sort: any = {};
+    const sort: unknown = {};
     if (query.sort === 'updatedAt') sort.updatedAt = -1;
     if (query.sort === 'dueDate') sort.dueDate = 1;
 
@@ -280,10 +281,10 @@ export async function GET(req: NextRequest) {
       );
 
       const extraIds = [...commentTaskIds, ...loopTaskIds].filter(
-        (id) => !taskResults.some((t: any) => t._id.equals(id))
+        (id) => !taskResults.some((t: unknown) => t._id.equals(id))
       );
 
-      let extraTasks: any[] = [];
+      let extraTasks: unknown[] = [];
       if (extraIds.length) {
         extraTasks = await Task.find({ ...baseFilter, _id: { $in: extraIds } });
       }
@@ -291,18 +292,18 @@ export async function GET(req: NextRequest) {
       results = taskResults.concat(extraTasks);
 
       if (query.sort === 'dueDate') {
-        results.sort((a: any, b: any) => {
+        results.sort((a: unknown, b: unknown) => {
           const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
           const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
           return ad - bd;
         });
       } else if (query.sort === 'updatedAt') {
         results.sort(
-          (a: any, b: any) =>
+          (a: unknown, b: unknown) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
       } else {
-        results.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
+        results.sort((a: unknown, b: unknown) => (b.score || 0) - (a.score || 0));
       }
     } else {
       results = await Task.find(baseFilter).sort(
@@ -313,11 +314,11 @@ export async function GET(req: NextRequest) {
 
   const total = results.length;
   const paged = results.slice(skip, skip + limit);
-  const output = paged.map((t: any) => {
+  const output = paged.map((t: unknown) => {
     let excerpt = '';
     if (useAtlas && t.highlights) {
       excerpt = t.highlights
-        .map((h: any) => h.texts.map((x: any) => x.value).join(''))
+        .map((h: unknown) => h.texts.map((x: unknown) => x.value).join(''))
         .join(' ... ');
     } else {
       excerpt = t.description ? t.description.slice(0, 120) : '';
