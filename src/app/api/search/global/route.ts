@@ -37,6 +37,23 @@ export async function GET(req: Request) {
   await dbConnect();
 
   const regex = query.q ? new RegExp(query.q, 'i') : null;
+  const hlRegex = query.q ? new RegExp(query.q, 'gi') : null;
+
+  const highlight = (text: string) =>
+    hlRegex ? text.replace(hlRegex, (m) => `<mark>${m}</mark>`) : text;
+
+  const snippet = (text: string, length = 120) => {
+    if (!text) return '';
+    if (!hlRegex) return text.slice(0, length);
+    const match = regex!.exec(text);
+    if (!match) return text.slice(0, length);
+    const start = Math.max(match.index - Math.floor(length / 2), 0);
+    const end = Math.min(start + length, text.length);
+    const seg = text.slice(start, end);
+    return (start > 0 ? '...' : '') +
+      highlight(seg) +
+      (end < text.length ? '...' : '');
+  };
 
   const access: any[] = [
     { participantIds: new Types.ObjectId(session.userId) },
@@ -75,8 +92,8 @@ export async function GET(req: Request) {
       _id: t._id,
       type: 'task',
       taskId: t._id,
-      title: t.title,
-      excerpt: t.description ? t.description.slice(0, 120) : '',
+      title: highlight(t.title),
+      excerpt: snippet(t.description || ''),
       createdAt: t.createdAt,
     });
   });
@@ -88,8 +105,8 @@ export async function GET(req: Request) {
       _id: l._id,
       type: 'loop',
       taskId: l.taskId,
-      title: desc.slice(0, 80) || 'Loop step',
-      excerpt: desc.slice(0, 120),
+      title: desc ? snippet(desc, 80) : 'Loop step',
+      excerpt: snippet(desc),
       createdAt: l.createdAt,
     });
   });
@@ -99,8 +116,8 @@ export async function GET(req: Request) {
       _id: c._id,
       type: 'comment',
       taskId: c.taskId,
-      title: c.content.slice(0, 80),
-      excerpt: c.content.slice(0, 120),
+      title: snippet(c.content, 80),
+      excerpt: snippet(c.content),
       createdAt: c.createdAt,
     });
   });

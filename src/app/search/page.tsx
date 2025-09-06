@@ -164,10 +164,15 @@ export default function GlobalSearchPage() {
               href={r.type === 'task' ? `/tasks/${r._id}` : `/tasks/${r.taskId}`}
               className="font-semibold text-blue-600"
             >
-              {r.title || '(no title)'}
+              <span
+                dangerouslySetInnerHTML={{ __html: r.title || '(no title)' }}
+              />
             </Link>
             {r.excerpt && (
-              <div className="text-sm text-gray-700">{r.excerpt}</div>
+              <div
+                className="text-sm text-gray-700"
+                dangerouslySetInnerHTML={{ __html: r.excerpt }}
+              />
             )}
           </li>
         ))}
