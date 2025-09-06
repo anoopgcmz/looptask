@@ -7,12 +7,14 @@ import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import TaskLoop from '@/models/TaskLoop';
 import LoopHistory from '@/models/LoopHistory';
-import User from '@/models/User';
+import User, { type IUser } from '@/models/User';
 import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 import { emitLoopUpdated } from '@/lib/ws';
+
+type LeanUser = Pick<IUser, 'organizationId' | 'teamId'> & { _id: Types.ObjectId };
 
 const loopStepSchema = z.object({
   assignedTo: z.string(),
@@ -92,11 +94,11 @@ export const POST = withOrganization(
       }
     });
 
-        if (!errors.length && userIds.size) {
-          const users = await User.find({
-            _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
-          }).lean();
-          const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+    if (!errors.length && userIds.size) {
+      const users = await User.find({
+        _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
+      }).lean<LeanUser>();
+      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
       steps.forEach((s, idx) => {
         const u = userMap.get(s.assignedTo);
         if (!u) {
@@ -227,7 +229,7 @@ export const PATCH = withOrganization(
       if (!errors.length && userIds.size) {
         const users = await User.find({
           _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
-        }).lean();
+        }).lean<LeanUser>();
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
         steps.forEach((s, idx) => {
           if (s.assignedTo !== undefined) {
