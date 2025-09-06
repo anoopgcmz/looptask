@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
+import Comment from '@/models/Comment';
+import TaskLoop from '@/models/TaskLoop';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -120,11 +122,19 @@ export async function GET(req: Request) {
 
   const useAtlas = process.env.ATLAS_SEARCH === 'true';
 
-  const textFilter = !useAtlas && query.q ? [{ $text: { $search: query.q } }] : [];
-  const mongoFilter =
-    filters.length || textFilter.length
-      ? { $and: [...textFilter, ...filters, { $or: access }] }
-      : { $or: access };
+  let commentTaskIds: Types.ObjectId[] = [];
+  let loopTaskIds: Types.ObjectId[] = [];
+  if (!useAtlas && query.q) {
+    const [cIds, lIds] = await Promise.all([
+      Comment.find({ $text: { $search: query.q } }).distinct('taskId'),
+      TaskLoop.find({ $text: { $search: query.q } }).distinct('taskId'),
+    ]);
+    commentTaskIds = cIds.map((id: any) => new Types.ObjectId(id));
+    loopTaskIds = lIds.map((id: any) => new Types.ObjectId(id));
+  }
+
+  const baseFilter =
+    filters.length ? { $and: [...filters, { $or: access }] } : { $or: access };
 
   let results: any[] = [];
   if (useAtlas && query.q) {
@@ -146,9 +156,17 @@ export async function GET(req: Request) {
                   path: 'comments.content',
                 },
               },
+              {
+                text: {
+                  query: query.q!,
+                  path: 'loops.sequence.description',
+                },
+              },
             ],
           },
-          highlight: { path: ['title', 'description', 'comments.content'] },
+          highlight: {
+            path: ['title', 'description', 'comments.content', 'loops.sequence.description'],
+          },
         },
       },
       {
@@ -159,7 +177,15 @@ export async function GET(req: Request) {
           as: 'comments',
         },
       },
-      { $match: mongoFilter },
+      {
+        $lookup: {
+          from: 'taskloops',
+          localField: '_id',
+          foreignField: 'taskId',
+          as: 'loops',
+        },
+      },
+      { $match: baseFilter },
       {
         $project: {
           title: 1,
@@ -186,13 +212,45 @@ export async function GET(req: Request) {
     results = await Task.aggregate(pipeline);
   } else {
     const sort: any = {};
-    if (query.q) sort.score = { $meta: 'textScore' };
     if (query.sort === 'updatedAt') sort.updatedAt = -1;
     if (query.sort === 'dueDate') sort.dueDate = 1;
-    results = await Task.find(
-      mongoFilter,
-      query.q ? { score: { $meta: 'textScore' } } : undefined
-    ).sort(Object.keys(sort).length ? sort : { updatedAt: -1 });
+
+    if (query.q) {
+      const taskResults = await Task.find(
+        { ...baseFilter, $text: { $search: query.q } },
+        { score: { $meta: 'textScore' } }
+      );
+
+      const extraIds = [...commentTaskIds, ...loopTaskIds].filter(
+        (id) => !taskResults.some((t: any) => t._id.equals(id))
+      );
+
+      let extraTasks: any[] = [];
+      if (extraIds.length) {
+        extraTasks = await Task.find({ ...baseFilter, _id: { $in: extraIds } });
+      }
+
+      results = taskResults.concat(extraTasks);
+
+      if (query.sort === 'dueDate') {
+        results.sort((a: any, b: any) => {
+          const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+          const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+          return ad - bd;
+        });
+      } else if (query.sort === 'updatedAt') {
+        results.sort(
+          (a: any, b: any) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+      } else {
+        results.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
+      }
+    } else {
+      results = await Task.find(baseFilter).sort(
+        Object.keys(sort).length ? sort : { updatedAt: -1 }
+      );
+    }
   }
 
   const output = results.map((t: any) => {
