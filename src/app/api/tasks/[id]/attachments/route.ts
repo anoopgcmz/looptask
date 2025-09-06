@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import type { Session } from 'next-auth';
 import { Types } from 'mongoose';
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -13,7 +14,7 @@ export const GET = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     const { id } = await params;
     await dbConnect();
@@ -36,7 +37,7 @@ export const POST = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     const form = await req.formData();
     const file = form.get('file');
@@ -75,7 +76,7 @@ export const DELETE = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     const url = new URL(req.url);
     const attachmentId = url.searchParams.get('id');

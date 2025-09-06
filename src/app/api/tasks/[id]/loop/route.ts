@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import type { Session } from 'next-auth';
 import { z } from 'zod';
 import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -58,7 +59,7 @@ export const POST = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     let body: z.infer<typeof loopSchema>;
     try {
@@ -148,7 +149,7 @@ export const GET = withOrganization(
   async (
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     const { id } = await params;
     await dbConnect();
@@ -172,7 +173,7 @@ export const PATCH = withOrganization(
   async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     let body: z.infer<typeof loopPatchSchema>;
     try {
@@ -333,7 +334,7 @@ export const DELETE = withOrganization(
   async (
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
-    session
+    session: Session
   ) => {
     const { id } = await params;
     await dbConnect();
