@@ -20,6 +20,7 @@ export interface IStep {
 }
 
 export interface ITask extends Document {
+  _id: Types.ObjectId;
   title: string;
   description?: string;
   createdBy: Types.ObjectId;
