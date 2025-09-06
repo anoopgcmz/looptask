@@ -1,10 +1,49 @@
 import dbConnect from '@/lib/db';
 import RateLimit from '@/models/RateLimit';
+import type { Types } from 'mongoose';
 
 interface MetaWebSocket extends WebSocket {
   userId?: string;
   organizationId?: string;
   taskIds?: string[];
+}
+
+export interface TaskTransitionPayload {
+  taskId: Types.ObjectId | string;
+  patch: Record<string, unknown>;
+  updatedAt: Date;
+}
+
+export interface TaskUpdatedPayload {
+  taskId: Types.ObjectId | string;
+  patch: Record<string, unknown>;
+  updatedAt: Date;
+}
+
+export interface CommentCreatedPayload {
+  taskId: Types.ObjectId | string;
+  [key: string]: unknown;
+}
+
+export interface LoopUpdatedPayload {
+  taskId: Types.ObjectId | string;
+  patch: Record<string, unknown>;
+  updatedAt: Date;
+}
+
+export interface NotificationCreatedPayload {
+  notification: Record<string, unknown>;
+  userId: string;
+}
+
+export interface PresencePayload {
+  taskId?: Types.ObjectId | string;
+  [key: string]: unknown;
+}
+
+export interface TypingPayload {
+  taskId: Types.ObjectId | string;
+  userId: string;
 }
 
 const userClients = new Map<string, Set<WebSocket>>();
@@ -105,7 +144,10 @@ export function addClient(ws: MetaWebSocket) {
   }
   ws.addEventListener('message', async (event) => {
     try {
-      const data = JSON.parse(event.data.toString());
+      const data = JSON.parse(event.data.toString()) as {
+        event?: string;
+        taskId?: string;
+      };
       const evt = data.event;
       if (ws.userId && evt) {
         if (isThrottled(ws.userId, evt) || !(await checkRateLimit(ws.userId, evt))) {
@@ -113,7 +155,7 @@ export function addClient(ws: MetaWebSocket) {
           return;
         }
       }
-      if (evt === 'comment.typing' && data.taskId) {
+      if (evt === 'comment.typing' && typeof data.taskId === 'string') {
         if (ws.taskIds?.includes(data.taskId) && ws.userId) {
           emitTyping({ taskId: data.taskId, userId: ws.userId }, ws);
         }
@@ -174,11 +216,7 @@ function broadcast(
   });
 }
 
-export function emitTaskTransition(payload: {
-  taskId: any;
-  patch: any;
-  updatedAt: any;
-}) {
+export function emitTaskTransition(payload: TaskTransitionPayload) {
   const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'task.transitioned',
@@ -189,11 +227,7 @@ export function emitTaskTransition(payload: {
   broadcast(taskClients.get(taskId), message);
 }
 
-export function emitTaskUpdated(payload: {
-  taskId: any;
-  patch: any;
-  updatedAt: any;
-}) {
+export function emitTaskUpdated(payload: TaskUpdatedPayload) {
   const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'task.updated',
@@ -204,7 +238,7 @@ export function emitTaskUpdated(payload: {
   broadcast(taskClients.get(taskId), message);
 }
 
-export function emitCommentCreated(comment: any) {
+export function emitCommentCreated(comment: CommentCreatedPayload) {
   const taskId = comment.taskId?.toString();
   const message = JSON.stringify({
     event: 'comment.created',
@@ -214,11 +248,7 @@ export function emitCommentCreated(comment: any) {
   broadcast(taskClients.get(taskId), message);
 }
 
-export function emitLoopUpdated(payload: {
-  taskId: any;
-  patch: any;
-  updatedAt: any;
-}) {
+export function emitLoopUpdated(payload: LoopUpdatedPayload) {
   const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'loop.updated',
@@ -229,7 +259,7 @@ export function emitLoopUpdated(payload: {
   broadcast(taskClients.get(taskId), message);
 }
 
-export function emitNotification(notification: any, userId: string) {
+export function emitNotification({ notification, userId }: NotificationCreatedPayload) {
   const message = JSON.stringify({
     event: 'notification.created',
     notification,
@@ -237,7 +267,7 @@ export function emitNotification(notification: any, userId: string) {
   broadcast(userClients.get(userId), message);
 }
 
-export function emitPresence(payload: any) {
+export function emitPresence(payload: PresencePayload) {
   const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'presence',
@@ -246,7 +276,7 @@ export function emitPresence(payload: any) {
   if (taskId) broadcast(taskClients.get(taskId), message);
 }
 
-export function emitTyping(payload: any, exclude?: WebSocket) {
+export function emitTyping(payload: TypingPayload, exclude?: WebSocket) {
   const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'comment.typing',
