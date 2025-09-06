@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
   if (regex) loopFilter['sequence.description'] = regex;
   const loops = await TaskLoop.find(loopFilter)
     .select('taskId sequence createdAt')
-    .lean<{ _id: Types.ObjectId; taskId: Types.ObjectId; sequence: { description: string }[]; createdAt: Date }>();
+    .lean<{ _id: Types.ObjectId; taskId: Types.ObjectId; sequence: { description: string }[]; createdAt: Date }[]>();
 
   const commentFilter: Record<string, unknown> = { taskId: { $in: accessibleTaskIds } };
   if (regex) commentFilter.content = regex;
