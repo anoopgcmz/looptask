@@ -274,8 +274,8 @@ export async function GET(req: NextRequest) {
           teamId: 1,
           visibility: 1,
           dueDate: 1,
-          highlights: { $meta: 'searchHighlights' },
-          score: { $meta: 'searchScore' },
+          highlights: { $meta: 'searchHighlights' as any },
+          score: { $meta: 'searchScore' as any },
         },
       },
     ];
@@ -284,7 +284,7 @@ export async function GET(req: NextRequest) {
     } else if (query.sort === 'dueDate') {
       pipeline.push({ $sort: { dueDate: 1 } });
     } else {
-      pipeline.push({ $sort: { score: { $meta: 'searchScore' } } });
+      pipeline.push({ $sort: { score: { $meta: 'searchScore' as any } } });
     }
     results = await Task.aggregate<SearchResult>(pipeline);
   } else {
