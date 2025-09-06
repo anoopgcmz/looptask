@@ -6,6 +6,7 @@ import Task from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { emitTaskTransition } from '@/lib/ws';
+import { diff } from '@/lib/diff';
 import {
   notifyStatusChange,
   notifyFlowAdvanced,
@@ -103,7 +104,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         await notifyFlowAdvanced([ownerId] as Types.ObjectId[], updated, desc);
       }
     }
-    emitTaskTransition(updated);
+    const patch = diff(task, updated.toObject());
+    emitTaskTransition({
+      taskId: updated._id,
+      patch,
+      updatedAt: updated.updatedAt,
+    });
     return NextResponse.json<TaskResponse>(updated);
   } else {
     let newStatus = task.status;
@@ -157,7 +163,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         await notifyStatusChange(recipients as Types.ObjectId[], updated);
       }
     }
-    emitTaskTransition(updated);
+    const patch = diff(task, updated.toObject());
+    emitTaskTransition({
+      taskId: updated._id,
+      patch,
+      updatedAt: updated.updatedAt,
+    });
     return NextResponse.json<TaskResponse>(updated);
   }
 }

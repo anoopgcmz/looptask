@@ -111,22 +111,32 @@ function broadcast(
   });
 }
 
-export function emitTaskTransition(task: any) {
-  const taskId = task._id?.toString();
+export function emitTaskTransition(payload: {
+  taskId: any;
+  patch: any;
+  updatedAt: any;
+}) {
+  const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'task.transitioned',
     taskId,
-    task,
+    patch: payload.patch,
+    updatedAt: payload.updatedAt,
   });
   broadcast(taskClients.get(taskId), message);
 }
 
-export function emitTaskUpdated(task: any) {
-  const taskId = task._id?.toString();
+export function emitTaskUpdated(payload: {
+  taskId: any;
+  patch: any;
+  updatedAt: any;
+}) {
+  const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'task.updated',
     taskId,
-    task,
+    patch: payload.patch,
+    updatedAt: payload.updatedAt,
   });
   broadcast(taskClients.get(taskId), message);
 }
@@ -141,12 +151,17 @@ export function emitCommentCreated(comment: any) {
   broadcast(taskClients.get(taskId), message);
 }
 
-export function emitLoopUpdated(payload: { taskId: any; loop: any }) {
+export function emitLoopUpdated(payload: {
+  taskId: any;
+  patch: any;
+  updatedAt: any;
+}) {
   const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'loop.updated',
     taskId,
-    loop: payload.loop,
+    patch: payload.patch,
+    updatedAt: payload.updatedAt,
   });
   broadcast(taskClients.get(taskId), message);
 }

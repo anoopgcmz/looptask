@@ -17,6 +17,7 @@ interface Task {
   priority?: string;
   tags?: string[];
   status?: string;
+  updatedAt?: string;
 }
 
 interface LoopStep {
@@ -31,6 +32,8 @@ interface LoopStep {
 interface TaskLoop {
   sequence: LoopStep[];
   currentStep: number;
+  parallel?: boolean;
+  updatedAt?: string;
 }
 
 export default function TaskDetail({ id }: { id: string }) {
@@ -38,12 +41,16 @@ export default function TaskDetail({ id }: { id: string }) {
   const [loop, setLoop] = useState<TaskLoop | null>(null);
   const [users, setUsers] = useState<UserMap>({});
   const [loopLoading, setLoopLoading] = useState(true);
+  const [taskVersion, setTaskVersion] = useState(0);
+  const [loopVersion, setLoopVersion] = useState(0);
   const viewers = usePresence(id);
 
   const refreshTask = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
     if (res.ok) {
-      setTask(await res.json());
+      const data = await res.json();
+      setTask(data);
+      setTaskVersion(new Date(data.updatedAt).getTime());
     }
   }, [id]);
 
@@ -54,6 +61,7 @@ export default function TaskDetail({ id }: { id: string }) {
       if (res.ok) {
         const loopData = await res.json();
         setLoop(loopData);
+        setLoopVersion(new Date(loopData.updatedAt).getTime());
 
         const ids = Array.from(
           new Set(
@@ -103,16 +111,46 @@ export default function TaskDetail({ id }: { id: string }) {
       switch (data.event) {
         case "task.updated":
         case "task.transitioned":
-          refreshTask();
+          if (!data.updatedAt) return;
+          const tver = new Date(data.updatedAt).getTime();
+          if (tver > taskVersion) {
+            setTask((prev) =>
+              prev ? { ...prev, ...data.patch, updatedAt: data.updatedAt } : { ...data.patch, updatedAt: data.updatedAt }
+            );
+            setTaskVersion(tver);
+          }
           break;
         case "loop.updated":
-          refreshLoop();
+          if (!data.updatedAt) return;
+          const lver = new Date(data.updatedAt).getTime();
+          if (lver > loopVersion) {
+            setLoop((prev) => {
+              if (!prev || !data.patch) {
+                return { ...(data.patch || {}), updatedAt: data.updatedAt } as TaskLoop;
+              }
+              const next: TaskLoop = { ...prev };
+              if (Array.isArray(data.patch.sequence)) {
+                const seq = [...prev.sequence];
+                if (data.patch.sequence.every((s: any) => typeof s.index === "number")) {
+                  data.patch.sequence.forEach((s: any) => {
+                    seq[s.index] = { ...seq[s.index], ...s };
+                  });
+                  next.sequence = seq;
+                } else {
+                  next.sequence = data.patch.sequence as any;
+                }
+              }
+              if (data.patch.parallel !== undefined) next.parallel = data.patch.parallel;
+              return { ...next, updatedAt: data.updatedAt };
+            });
+            setLoopVersion(lver);
+          }
           break;
         default:
           break;
       }
     },
-    [id, refreshTask, refreshLoop]
+    [id, taskVersion, loopVersion]
   );
   const { status } = useRealtime({ onMessage: handleMessage });
 
