@@ -19,7 +19,17 @@ export async function GET() {
   }
   const prefs =
     user.notificationSettings ||
-    { email: true, push: true, digestFrequency: 'daily' };
+    {
+      email: true,
+      push: true,
+      digestFrequency: 'daily',
+      types: {
+        ASSIGNMENT: true,
+        FLOW_ADVANCED: true,
+        TASK_CLOSED: true,
+        OVERDUE: true,
+      },
+    };
   return NextResponse.json(prefs);
 }
 
@@ -27,6 +37,14 @@ const updateSchema = z.object({
   email: z.boolean().optional(),
   push: z.boolean().optional(),
   digestFrequency: z.enum(['daily', 'weekly']).optional(),
+  types: z
+    .object({
+      ASSIGNMENT: z.boolean().optional(),
+      FLOW_ADVANCED: z.boolean().optional(),
+      TASK_CLOSED: z.boolean().optional(),
+      OVERDUE: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export async function PUT(req: Request) {
