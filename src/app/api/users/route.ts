@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Types } from 'mongoose';
+import { Types, type FilterQuery } from 'mongoose';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import User from '@/models/User';
+import User, { type IUser } from '@/models/User';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q') || '';
   await dbConnect();
-  const query: unknown = {
+  const query: FilterQuery<IUser> = {
     organizationId: new Types.ObjectId(session.organizationId),
   };
   if (q) {

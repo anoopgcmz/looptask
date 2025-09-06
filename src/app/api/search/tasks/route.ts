@@ -1,12 +1,26 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { Types } from 'mongoose';
+import { Types, type FilterQuery, type PipelineStage } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
+import Task, { type ITask } from '@/models/Task';
 import Comment from '@/models/Comment';
 import TaskLoop from '@/models/TaskLoop';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
+
+interface RangeFilter {
+  $gte?: Date;
+  $lte?: Date;
+}
+
+interface Highlight {
+  texts: { value: string }[];
+}
+
+type SearchResult = ITask & {
+  highlights?: Highlight[];
+  score?: number;
+};
 
 const querySchema = z.object({
   q: z.string().optional(),
@@ -83,7 +97,7 @@ export async function GET(req: NextRequest) {
   const limit = query.limit;
   const skip = (query.page - 1) * limit;
 
-  const filters: unknown[] = [];
+  const filters: FilterQuery<ITask>[] = [];
   if (query.ownerId?.length)
     filters.push({ ownerId: { $in: query.ownerId.map((id) => new Types.ObjectId(id)) } });
   if (query.createdBy?.length)
@@ -95,10 +109,10 @@ export async function GET(req: NextRequest) {
   if (query.visibility) filters.push({ visibility: query.visibility });
   if (query.teamId) filters.push({ teamId: new Types.ObjectId(query.teamId) });
 
-  const dueRanges: unknown[] = [];
+  const dueRanges: RangeFilter[] = [];
   const maxRange = Math.max(query.dueFrom?.length ?? 0, query.dueTo?.length ?? 0);
   for (let i = 0; i < maxRange; i++) {
-    const range: unknown = {};
+    const range: RangeFilter = {};
     if (query.dueFrom?.[i]) range.$gte = query.dueFrom[i];
     if (query.dueTo?.[i]) range.$lte = query.dueTo[i];
     if (Object.keys(range).length) dueRanges.push(range);
@@ -109,7 +123,7 @@ export async function GET(req: NextRequest) {
     filters.push({ $or: dueRanges.map((r) => ({ dueDate: r })) });
   }
 
-  const customFilters: unknown[] = [];
+  const customFilters: FilterQuery<ITask>[] = [];
   Object.entries(customRaw).forEach(([field, values]) => {
     if (values.length === 1) {
       customFilters.push({ [`custom.${field}`]: values[0] });
@@ -127,38 +141,42 @@ export async function GET(req: NextRequest) {
     try {
       const parsed = JSON.parse(raw.filters as string);
       if (Array.isArray(parsed)) {
-        const dynamic: unknown[] = [];
-        parsed.forEach((f: unknown) => {
-          if (!f?.field || !f?.op) return;
-          const val = f.value;
-          let condition: unknown;
-          switch (f.op) {
-            case 'eq':
-              condition = { [f.field]: val };
-              break;
-            case 'ne':
-              condition = { [f.field]: { $ne: val } };
-              break;
-            case 'gt':
-              condition = { [f.field]: { $gt: val } };
-              break;
-            case 'gte':
-              condition = { [f.field]: { $gte: val } };
-              break;
-            case 'lt':
-              condition = { [f.field]: { $lt: val } };
-              break;
-            case 'lte':
-              condition = { [f.field]: { $lte: val } };
-              break;
-            case 'regex':
-              condition = { [f.field]: { $regex: val, $options: 'i' } };
-              break;
-            default:
-              return;
+        const dynamic: FilterQuery<ITask>[] = [];
+        parsed.forEach(
+          (f: { field?: string; op?: string; value?: unknown }) => {
+            if (!f?.field || !f?.op) return;
+            const val = f.value;
+            let condition: FilterQuery<ITask>;
+            switch (f.op) {
+              case 'eq':
+                condition = { [f.field]: val } as FilterQuery<ITask>;
+                break;
+              case 'ne':
+                condition = { [f.field]: { $ne: val } } as FilterQuery<ITask>;
+                break;
+              case 'gt':
+                condition = { [f.field]: { $gt: val } } as FilterQuery<ITask>;
+                break;
+              case 'gte':
+                condition = { [f.field]: { $gte: val } } as FilterQuery<ITask>;
+                break;
+              case 'lt':
+                condition = { [f.field]: { $lt: val } } as FilterQuery<ITask>;
+                break;
+              case 'lte':
+                condition = { [f.field]: { $lte: val } } as FilterQuery<ITask>;
+                break;
+              case 'regex':
+                condition = {
+                  [f.field]: { $regex: val, $options: 'i' },
+                } as FilterQuery<ITask>;
+                break;
+              default:
+                return;
+            }
+            dynamic.push(condition);
           }
-          dynamic.push(condition);
-        });
+        );
         if (dynamic.length) {
           if (logicOp === '$or') {
             filters.push({ $or: dynamic });
@@ -172,7 +190,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const access: unknown[] = [
+  const access: FilterQuery<ITask>[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
@@ -185,19 +203,19 @@ export async function GET(req: NextRequest) {
   let loopTaskIds: Types.ObjectId[] = [];
   if (!useAtlas && query.q) {
     const [cIds, lIds] = await Promise.all([
-      Comment.find({ $text: { $search: query.q } }).distinct('taskId'),
-      TaskLoop.find({ $text: { $search: query.q } }).distinct('taskId'),
+      Comment.find({ $text: { $search: query.q } }).distinct<string>('taskId'),
+      TaskLoop.find({ $text: { $search: query.q } }).distinct<string>('taskId'),
     ]);
-    commentTaskIds = cIds.map((id: unknown) => new Types.ObjectId(id));
-    loopTaskIds = lIds.map((id: unknown) => new Types.ObjectId(id));
+    commentTaskIds = cIds.map((id) => new Types.ObjectId(id));
+    loopTaskIds = lIds.map((id) => new Types.ObjectId(id));
   }
 
-  const baseFilter =
+  const baseFilter: FilterQuery<ITask> =
     filters.length ? { $and: [...filters, { $or: access }] } : { $or: access };
 
-  let results: unknown[] = [];
+  let results: SearchResult[] = [];
   if (useAtlas && query.q) {
-    const pipeline: unknown[] = [
+    const pipeline: PipelineStage[] = [
       {
         $search: {
           index: 'tasks',
@@ -268,45 +286,48 @@ export async function GET(req: NextRequest) {
     } else {
       pipeline.push({ $sort: { score: { $meta: 'searchScore' } } });
     }
-    results = await Task.aggregate(pipeline);
+    results = await Task.aggregate<SearchResult>(pipeline);
   } else {
-    const sort: unknown = {};
+    const sort: Record<string, 1 | -1> = {};
     if (query.sort === 'updatedAt') sort.updatedAt = -1;
     if (query.sort === 'dueDate') sort.dueDate = 1;
 
     if (query.q) {
-      const taskResults = await Task.find(
+      const taskResults = await Task.find<SearchResult>(
         { ...baseFilter, $text: { $search: query.q } },
         { score: { $meta: 'textScore' } }
       );
 
       const extraIds = [...commentTaskIds, ...loopTaskIds].filter(
-        (id) => !taskResults.some((t: unknown) => t._id.equals(id))
+        (id) => !taskResults.some((t) => t._id.equals(id))
       );
 
-      let extraTasks: unknown[] = [];
+      let extraTasks: SearchResult[] = [];
       if (extraIds.length) {
-        extraTasks = await Task.find({ ...baseFilter, _id: { $in: extraIds } });
+        extraTasks = await Task.find<SearchResult>({
+          ...baseFilter,
+          _id: { $in: extraIds },
+        });
       }
 
       results = taskResults.concat(extraTasks);
 
       if (query.sort === 'dueDate') {
-        results.sort((a: unknown, b: unknown) => {
+        results.sort((a, b) => {
           const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
           const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
           return ad - bd;
         });
       } else if (query.sort === 'updatedAt') {
         results.sort(
-          (a: unknown, b: unknown) =>
+          (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
       } else {
-        results.sort((a: unknown, b: unknown) => (b.score || 0) - (a.score || 0));
+        results.sort((a, b) => (b.score || 0) - (a.score || 0));
       }
     } else {
-      results = await Task.find(baseFilter).sort(
+      results = await Task.find<SearchResult>(baseFilter).sort(
         Object.keys(sort).length ? sort : { updatedAt: -1 }
       );
     }
@@ -314,11 +335,11 @@ export async function GET(req: NextRequest) {
 
   const total = results.length;
   const paged = results.slice(skip, skip + limit);
-  const output = paged.map((t: unknown) => {
+  const output = paged.map((t: SearchResult) => {
     let excerpt = '';
     if (useAtlas && t.highlights) {
       excerpt = t.highlights
-        .map((h: unknown) => h.texts.map((x: unknown) => x.value).join(''))
+        .map((h) => h.texts.map((x) => x.value).join(''))
         .join(' ... ');
     } else {
       excerpt = t.description ? t.description.slice(0, 120) : '';

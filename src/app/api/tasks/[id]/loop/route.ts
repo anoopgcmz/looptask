@@ -262,7 +262,7 @@ export const PATCH = withOrganization(
     const newAssignments: { userId: string; description: string }[] = [];
     const oldAssignments: { userId: string; description: string }[] = [];
     const history: { stepIndex: number; action: 'UPDATE' | 'COMPLETE' | 'REASSIGN' }[] = [];
-    let updatedLoop: unknown = null;
+    let updatedLoop: ITaskLoop | null = null;
   try {
     await sessionDb.withTransaction(async () => {
       const loopDoc = await TaskLoop.findOne({ taskId: id }).session(sessionDb);
