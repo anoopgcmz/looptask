@@ -1,9 +1,11 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import FilterBuilder from '@/components/filter-builder';
+import { useSession } from 'next-auth/react';
+import { getPresets } from './filters';
 
 interface SearchItem {
   _id: string;
@@ -15,6 +17,9 @@ interface SearchItem {
 
 export default function GlobalSearchPage() {
   const params = useSearchParams();
+  const router = useRouter();
+  const { data: session } = useSession();
+  const presets = getPresets(session?.userId);
   const [data, setData] = useState<{ results: SearchItem[]; total: number }>();
   const [saved, setSaved] = useState<{ _id: string; name: string; query: string }[]>([]);
   const [q, setQ] = useState(params.get('q') ?? '');
@@ -67,6 +72,19 @@ export default function GlobalSearchPage() {
   return (
     <div className="p-4">
       <h1 className="text-lg mb-4">Search</h1>
+      {presets.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {presets.map((p) => (
+            <button
+              key={p._id}
+              onClick={() => router.push(`?${p.query}`)}
+              className="border rounded px-2 py-1"
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button onClick={saveCurrent} className="border rounded px-2 py-1">
           Save Search
