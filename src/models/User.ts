@@ -19,6 +19,12 @@ export interface IUser extends Document {
     email: boolean;
     push: boolean;
     digestFrequency: 'daily' | 'weekly';
+    types: {
+      ASSIGNMENT: boolean;
+      FLOW_ADVANCED: boolean;
+      TASK_CLOSED: boolean;
+      OVERDUE: boolean;
+    };
   };
 }
 
@@ -53,6 +59,12 @@ const userSchema = new Schema<IUser>(
         type: String,
         enum: ['daily', 'weekly'],
         default: 'daily',
+      },
+      types: {
+        ASSIGNMENT: { type: Boolean, default: true },
+        FLOW_ADVANCED: { type: Boolean, default: true },
+        TASK_CLOSED: { type: Boolean, default: true },
+        OVERDUE: { type: Boolean, default: true },
       },
     },
   },

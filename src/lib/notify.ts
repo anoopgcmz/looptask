@@ -5,10 +5,37 @@ import User from '@/models/User';
 import dbConnect from '@/lib/db';
 import RateLimit from '@/models/RateLimit';
 import { emitNotification } from '@/lib/ws';
+import path from 'path';
+import { promises as fs } from 'fs';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const THROTTLE_SECONDS = 60;
+
+const templateMap: Record<string, string> = {
+  ASSIGNMENT: 'task-assigned.html',
+  FLOW_ADVANCED: 'loop-step-ready.html',
+  TASK_CLOSED: 'task-completed.html',
+  OVERDUE: 'overdue-alert.html',
+};
+
+async function renderTemplate(
+  type: string,
+  vars: Record<string, string>
+): Promise<string | null> {
+  const file = templateMap[type];
+  if (!file) return null;
+  try {
+    const fullPath = path.join(process.cwd(), 'src', 'emails', file);
+    let html = await fs.readFile(fullPath, 'utf8');
+    Object.entries(vars).forEach(([k, v]) => {
+      html = html.replace(new RegExp(`{{\\s*${k}\\s*}}`, 'g'), v);
+    });
+    return html;
+  } catch {
+    return null;
+  }
+}
 
 async function shouldSend(key: string): Promise<boolean> {
   await dbConnect();
@@ -46,12 +73,20 @@ async function createAndEmail(
   );
   if (resend) {
     const users = await User.find({ _id: { $in: recipients } });
+    const html = await renderTemplate(type, { subject, text });
+    const emailUsers = users.filter((u) => {
+      const settings = u.notificationSettings;
+      if (!settings || settings.email === false) return false;
+      const perType = settings.types?.[type];
+      return perType !== false;
+    });
     await Promise.all(
-      users.map((u) =>
+      emailUsers.map((u) =>
         resend.emails.send({
           from: 'notify@example.com',
           to: u.email,
           subject,
+          html: html || undefined,
           text,
         })
       )
