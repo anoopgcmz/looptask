@@ -12,10 +12,14 @@ const simpleSchema = z.object({
   owner: z.string().min(1, 'Owner is required'),
 });
 
+interface User {
+  _id: string;
+  name: string;
+}
 
 export default function NewTaskPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [simple, setSimple] = useState({ title: '', owner: '' });
   const [simpleError, setSimpleError] = useState<string | null>(null);
 
@@ -23,7 +27,7 @@ export default function NewTaskPage() {
     const load = async () => {
       const res = await fetch('/api/users', { credentials: 'include' });
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as User[];
         setUsers(data);
       }
     };
@@ -52,9 +56,10 @@ export default function NewTaskPage() {
       }
       const task = await resp.json();
       router.push(`/tasks/${task._id}`);
-    } catch (err: any) {
-      setSimpleError(err.message || 'Failed to create task');
-    }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to create task';
+        setSimpleError(message);
+      }
   };
 
   const [flowTitle, setFlowTitle] = useState('');
@@ -102,10 +107,11 @@ export default function NewTaskPage() {
       }
       const task = await resp.json();
       router.push(`/tasks/${task._id}`);
-    } catch (err: any) {
-      setFlowError(err.message || 'Failed to create task');
-    }
-  };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to create task';
+        setFlowError(message);
+      }
+    };
 
   const flowContent = (
     <form onSubmit={submitFlow} className="space-y-4">

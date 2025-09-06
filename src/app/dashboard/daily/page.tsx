@@ -1,17 +1,44 @@
 'use client';
 import { useEffect, useState } from 'react';
 
+interface SummaryItem {
+  ownerId: string;
+  completed: number;
+  total: number;
+}
+
+interface PendingObjective {
+  _id: string;
+  title: string;
+}
+
+interface TaskItem {
+  _id: string;
+  title: string;
+}
+
+interface TaskGroup {
+  ownerId: string;
+  tasks: TaskItem[];
+}
+
+interface DashboardData {
+  summary: SummaryItem[];
+  pending: PendingObjective[];
+  tasks: TaskGroup[];
+}
+
 export default function DailyDashboardPage() {
   const [date, setDate] = useState(
     new Date().toISOString().split('T')[0]
   );
   const [teamId, setTeamId] = useState('');
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     if (!teamId) return;
     fetch(`/api/dashboard/daily?date=${date}&teamId=${teamId}`)
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<DashboardData>)
       .then(setData)
       .catch(() => setData(null));
   }, [date, teamId]);
@@ -38,7 +65,7 @@ export default function DailyDashboardPage() {
           <div>
             <h2 className="font-semibold">Summary</h2>
             <ul className="list-disc pl-6">
-              {data.summary.map((s: any) => (
+              {data.summary.map((s) => (
                 <li key={s.ownerId}>
                   {s.ownerId}: {s.completed}/{s.total}
                 </li>
@@ -48,18 +75,18 @@ export default function DailyDashboardPage() {
           <div>
             <h2 className="font-semibold">Pending Objectives</h2>
             <ul className="list-disc pl-6">
-              {data.pending.map((o: any) => (
+              {data.pending.map((o) => (
                 <li key={o._id}>{o.title}</li>
               ))}
             </ul>
           </div>
           <div>
             <h2 className="font-semibold">Tasks Due Today</h2>
-            {data.tasks.map((group: any) => (
+            {data.tasks.map((group) => (
               <div key={group.ownerId} className="pl-4">
                 <h3 className="font-medium">{group.ownerId}</h3>
                 <ul className="list-disc pl-6">
-                  {group.tasks.map((t: any) => (
+                  {group.tasks.map((t) => (
                     <li key={t._id}>{t.title}</li>
                   ))}
                 </ul>

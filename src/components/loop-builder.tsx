@@ -11,6 +11,17 @@ import useLoopBuilder, { type LoopStep, type TemplateStep } from '@/hooks/useLoo
 import { registerLoopBuilder } from '@/lib/loopBuilder';
 import LoopTimeline from '@/components/loop-timeline';
 
+interface User {
+  _id: string;
+  name: string;
+}
+
+interface Template {
+  _id: string;
+  name: string;
+  steps: TemplateStep[];
+}
+
 export default function LoopBuilder() {
   const {
     open,
@@ -24,8 +35,8 @@ export default function LoopBuilder() {
     reorderSteps,
     setFromTemplate,
   } = useLoopBuilder();
-  const [users, setUsers] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
@@ -42,8 +53,8 @@ export default function LoopBuilder() {
           fetch('/api/users', { credentials: 'include' }),
           fetch('/api/loop-templates', { credentials: 'include' }),
         ]);
-        if (usersRes.ok) setUsers(await usersRes.json());
-        if (tmplRes.ok) setTemplates(await tmplRes.json());
+        if (usersRes.ok) setUsers((await usersRes.json()) as User[]);
+        if (tmplRes.ok) setTemplates((await tmplRes.json()) as Template[]);
       } catch {
         // ignore
       }
@@ -134,16 +145,16 @@ export default function LoopBuilder() {
     setTemplateName('');
     try {
       const res = await fetch('/api/loop-templates', { credentials: 'include' });
-      if (res.ok) setTemplates(await res.json());
+      if (res.ok) setTemplates((await res.json()) as Template[]);
     } catch {
       // ignore
     }
   };
 
   const handleApplyTemplate = () => {
-    const tmpl = templates.find((t: any) => t._id === selectedTemplate);
+    const tmpl = templates.find((t) => t._id === selectedTemplate);
     if (!tmpl) return;
-    setFromTemplate(tmpl.steps as TemplateStep[]);
+    setFromTemplate(tmpl.steps);
   };
 
   return (
@@ -251,7 +262,7 @@ function StepItem({
 }: {
   step: LoopStep;
   allSteps: LoopStep[];
-  users: any[];
+  users: User[];
   onChange: (id: string, data: Partial<LoopStep>) => void;
   onRemove: (id: string) => void;
   index: number;
