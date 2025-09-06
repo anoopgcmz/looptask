@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
+import LoopTimeline, { StepWithStatus } from "@/components/loop-timeline";
+import LoopProgress from "@/components/loop-progress";
 
 interface Task {
   title?: string;
@@ -90,15 +92,23 @@ export default function TaskDetail({ id }: { id: string }) {
       <div>Tags: {task.tags?.join(", ")}</div>
       <div>Status: {task.status}</div>
       {loop && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
+          <LoopProgress
+            total={loop.sequence.length}
+            completed={loop.sequence.filter((s) => s.status === "COMPLETED").length}
+          />
           <div className="font-semibold">Loop Steps</div>
-          <ul className="list-disc pl-4">
-            {loop.sequence.map((s, idx) => (
-              <li key={idx} className="text-sm">
-                {s.description} - {s.status}
-              </li>
-            ))}
-          </ul>
+          <LoopTimeline
+            steps={loop.sequence.map((s, idx) => ({
+              id: String(idx),
+              assignedTo: "",
+              description: s.description,
+              dependencies: [],
+              index: idx,
+              status: s.status,
+            })) as StepWithStatus[]}
+            users={[]}
+          />
         </div>
       )}
       <Button
