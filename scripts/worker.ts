@@ -2,13 +2,14 @@ import agenda, { initAgenda, DEFAULT_TZ } from '@/lib/agenda';
 import User from '@/models/User';
 import Team from '@/models/Team';
 import Task from '@/models/Task';
+import type { ITask } from '@/models/Task';
 import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
 import { Types } from 'mongoose';
 import type { Job } from 'agenda';
 
 agenda.define('task.dueSoon', async (job: Job) => {
   const { taskId, stepId } = job.attrs.data as { taskId: string; stepId?: string };
-  const task = await Task.findById(taskId).lean();
+  const task = await Task.findById(taskId).lean<ITask>();
   if (!task) return;
   let recipients: Types.ObjectId[] = [];
   if (stepId) {
@@ -23,7 +24,7 @@ agenda.define('task.dueSoon', async (job: Job) => {
 
 agenda.define('task.dueNow', async (job: Job) => {
   const { taskId, stepId } = job.attrs.data as { taskId: string; stepId?: string };
-  const task = await Task.findById(taskId).lean();
+  const task = await Task.findById(taskId).lean<ITask>();
   if (!task) return;
   let recipients: Types.ObjectId[] = [];
   if (stepId) {
