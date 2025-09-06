@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Types } from 'mongoose';
+import { Types, type PipelineStage } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
 import { auth } from '@/lib/auth';
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   await dbConnect();
 
-  const access: unknown[] = [
+  const access: Record<string, unknown>[] = [
     { participantIds: new Types.ObjectId(session.userId) },
   ];
   if (session.teamId) {
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const suggestions = new Set<string>();
 
   if (useAtlas) {
-    const titlePipeline: unknown[] = [
+    const titlePipeline: PipelineStage[] = [
       {
         $search: {
           index: 'tasks',
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       if (t.title) suggestions.add(t.title);
     });
 
-    const tagPipeline: unknown[] = [
+    const tagPipeline: PipelineStage[] = [
       {
         $search: {
           index: 'tasks',
