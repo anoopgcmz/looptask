@@ -10,6 +10,7 @@ import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
 import { notifyAssignment, notifyFlowAdvanced } from '@/lib/notify';
+import { emitLoopUpdated } from '@/lib/ws';
 
 const loopStepSchema = z.object({
   assignedTo: z.string(),
@@ -136,7 +137,7 @@ export const POST = withOrganization(
         userId: new Types.ObjectId(session.userId),
       }))
     );
-
+    emitLoopUpdated({ taskId: params.id, loop });
     return NextResponse.json(loop);
   }
 );
@@ -305,11 +306,11 @@ export const PATCH = withOrganization(
       await notifyAssignment([uid], task, a.description);
       await notifyFlowAdvanced([uid], task, a.description);
     }
-    for (const a of oldAssignments) {
-      const uid = new Types.ObjectId(a.userId);
-      await notifyAssignment([uid], task, a.description);
-    }
-
+  for (const a of oldAssignments) {
+    const uid = new Types.ObjectId(a.userId);
+    await notifyAssignment([uid], task, a.description);
+  }
+    emitLoopUpdated({ taskId: params.id, loop: updatedLoop });
     return NextResponse.json(updatedLoop);
   }
 );

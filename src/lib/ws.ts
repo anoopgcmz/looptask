@@ -77,12 +77,12 @@ export function emitCommentCreated(comment: any) {
   broadcast(taskClients.get(taskId), message);
 }
 
-export function emitLoopUpdated(loop: any) {
-  const taskId = loop.taskId?.toString();
+export function emitLoopUpdated(payload: { taskId: any; loop: any }) {
+  const taskId = payload.taskId?.toString();
   const message = JSON.stringify({
     event: 'loop.updated',
     taskId,
-    loop,
+    loop: payload.loop,
   });
   broadcast(taskClients.get(taskId), message);
 }
