@@ -78,7 +78,12 @@ async function createAndEmail(
   }
   if (!recipients.length) return;
   const notifications = await Notification.insertMany(
-    recipients.map((userId) => ({ userId, type, entityRef }))
+    recipients.map((userId) => ({
+      userId,
+      type,
+      message: text,
+      taskId: entityRef.taskId,
+    }))
   );
   notifications.forEach((n) =>
     emitNotification(n.toObject(), n.userId.toString())

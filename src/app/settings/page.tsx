@@ -12,7 +12,7 @@ interface PasswordFormData {
 interface NotificationsFormData {
   email: boolean;
   push: boolean;
-  digestFrequency: 'daily' | 'weekly';
+  digestFrequency: 'immediate' | 'daily' | 'weekly';
 }
 
 interface TimezoneFormData {
@@ -68,7 +68,7 @@ export default function SettingsPage() {
         resetNotifications({
           email: prefs.email ?? true,
           push: prefs.push ?? true,
-          digestFrequency: prefs.digestFrequency || 'daily',
+          digestFrequency: prefs.digestFrequency || 'immediate',
         });
       } catch {
         setLoadError('Failed to load settings');
@@ -220,6 +220,7 @@ export default function SettingsPage() {
               className="border p-2"
               {...registerNotifications('digestFrequency')}
             >
+              <option value="immediate">Immediate</option>
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
             </select>

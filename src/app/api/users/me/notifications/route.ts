@@ -23,7 +23,7 @@ export async function GET() {
     {
       email: true,
       push: true,
-      digestFrequency: 'daily',
+      digestFrequency: 'immediate',
       types: {
         [NotificationType.ASSIGNMENT]: true,
         [NotificationType.LOOP_STEP_READY]: true,
@@ -37,7 +37,7 @@ export async function GET() {
 const updateSchema = z.object({
   email: z.boolean().optional(),
   push: z.boolean().optional(),
-  digestFrequency: z.enum(['daily', 'weekly']).optional(),
+  digestFrequency: z.enum(['immediate', 'daily', 'weekly']).optional(),
   types: z
     .object({
       [NotificationType.ASSIGNMENT]: z.boolean().optional(),
