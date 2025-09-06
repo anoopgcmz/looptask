@@ -57,7 +57,7 @@ const loopStepSchema = new Schema<ILoopStep>(
 
 const taskLoopSchema = new Schema<ITaskLoop>(
   {
-    taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true, index: true },
+    taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
     sequence: [loopStepSchema],
     currentStep: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
@@ -65,5 +65,8 @@ const taskLoopSchema = new Schema<ITaskLoop>(
   },
   { timestamps: true }
 );
+
+taskLoopSchema.index({ taskId: 1 });
+taskLoopSchema.index({ 'sequence.status': 1 });
 
 export default models.TaskLoop || model<ITaskLoop>('TaskLoop', taskLoopSchema);
