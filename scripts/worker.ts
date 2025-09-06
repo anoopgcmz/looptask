@@ -8,9 +8,9 @@ import { Types } from 'mongoose';
 import type { Job } from 'agenda';
 
 type EveryOptions = Parameters<typeof agenda.every>[3];
-interface EveryOptionsWithUnique extends EveryOptions {
+type EveryOptionsWithUnique = EveryOptions & {
   unique?: Record<string, unknown>;
-}
+};
 
 agenda.define('task.dueSoon', async (job: Job<{ taskId: string; stepId?: string }>) => {
   const { taskId, stepId } = job.attrs.data;
