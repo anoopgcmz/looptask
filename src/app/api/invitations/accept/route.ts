@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       organizationId: new Types.ObjectId(invite.organizationId),
       role: invite.role,
     });
-    await Invitation.updateOne({ _id: invite._id }, { $set: { used: true } });
+    await Invitation.updateOne({ tokenHash }, { $set: { used: true } });
     return NextResponse.json({ id: user._id }, { status: 201 });
   } catch (e: any) {
     if (e.code === 11000) {
