@@ -20,6 +20,7 @@ export default function useTyping(
     const url = `${window.location.origin.replace(/^http/, 'ws')}/api/ws?taskId=${taskId}`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
+    const localTimers = timers.current;
     ws.addEventListener('message', (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -52,7 +53,7 @@ export default function useTyping(
     });
     return () => {
       ws.close();
-      Object.values(timers.current).forEach(clearTimeout);
+      Object.values(localTimers).forEach(clearTimeout);
     };
   }, [taskId, userId, enabled]);
 
