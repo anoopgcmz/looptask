@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
   if (regex) commentFilter.content = regex;
   const comments = await Comment.find(commentFilter)
     .select('taskId content createdAt')
-    .lean<{ _id: Types.ObjectId; taskId: Types.ObjectId; content: string; createdAt: Date }>();
+    .lean<{ _id: Types.ObjectId; taskId: Types.ObjectId; content: string; createdAt: Date }[]>();
 
   const results: Array<{
     _id: Types.ObjectId;
