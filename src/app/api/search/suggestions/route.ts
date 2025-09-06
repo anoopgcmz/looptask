@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       { $project: { title: 1 } },
     ];
     const titleResults = await Task.aggregate(titlePipeline);
-    titleResults.forEach((t: { title?: string }) => {
+    titleResults.forEach((t) => {
       if (t.title) suggestions.add(t.title);
     });
 
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       { $project: { tags: 1 } },
     ];
     const tagResults = await Task.aggregate(tagPipeline);
-    tagResults.forEach((t: { tags?: string[] }) => {
+    tagResults.forEach((t) => {
       t.tags?.forEach((tag: string) => suggestions.add(tag));
     });
   } else {
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     )
       .limit(10)
       .lean();
-    results.forEach((t: { title?: string; tags?: string[] }) => {
+    results.forEach((t) => {
       if (t.title && regex.test(t.title)) suggestions.add(t.title);
       t.tags?.forEach((tag: string) => {
         if (regex.test(tag)) suggestions.add(tag);
