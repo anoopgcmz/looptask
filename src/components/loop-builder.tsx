@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import useLoopBuilder, { type LoopStep, type TemplateStep } from '@/hooks/useLoopBuilder';
 import { registerLoopBuilder } from '@/lib/loopBuilder';
-import LoopVisualizer from '@/components/loop-visualizer';
+import LoopTimeline from '@/components/loop-timeline';
 
 export default function LoopBuilder() {
   const {
@@ -215,7 +215,7 @@ export default function LoopBuilder() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <LoopVisualizer
+            <LoopTimeline
               steps={steps.map((s) => ({ ...s, status: 'PENDING' }))}
               users={users}
             />
