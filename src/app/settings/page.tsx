@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const {
     register: registerNotifications,
     handleSubmit: handleNotificationsSubmit,
-    formState: { errors: notificationsErrors, isSubmitting: notificationsSubmitting },
+    formState: { isSubmitting: notificationsSubmitting },
     reset: resetNotifications,
   } = useForm<NotificationsFormData>();
 

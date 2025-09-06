@@ -99,16 +99,18 @@ export default function LoopBuilder() {
   const handleUpdateStep = (id: string, data: Partial<LoopStep>) => {
     updateStep(id, data);
     setErrors((prev) => {
-      const { [id]: _omit, ...rest } = prev;
-      return rest;
+      const next = { ...prev };
+      delete next[id];
+      return next;
     });
   };
 
   const handleRemoveStep = (id: string) => {
     removeStep(id);
     setErrors((prev) => {
-      const { [id]: _omit, ...rest } = prev;
-      return rest;
+      const next = { ...prev };
+      delete next[id];
+      return next;
     });
   };
 

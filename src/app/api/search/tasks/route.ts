@@ -166,7 +166,7 @@ export async function GET(req: Request) {
           }
         }
       }
-    } catch (e) {
+    } catch {
       // ignore invalid JSON
     }
   }

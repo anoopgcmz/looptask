@@ -18,7 +18,7 @@ export default function FilterBuilder() {
         const parsed = JSON.parse(existing);
         if (Array.isArray(parsed) && parsed.length) return parsed;
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return [{ field: '', op: 'eq', value: '' }];
@@ -37,7 +37,7 @@ export default function FilterBuilder() {
           setFilters(parsed);
         }
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     setLogic(params.get('logic') === 'OR' ? 'OR' : 'AND');

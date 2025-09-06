@@ -17,15 +17,6 @@ interface Task {
   priority?: string;
 }
 
-const statusLabels: Record<string, string> = {
-  OPEN: 'Open',
-  IN_PROGRESS: 'In Progress',
-  IN_REVIEW: 'In Review',
-  REVISIONS: 'Revisions',
-  FLOW_IN_PROGRESS: 'Flow In Progress',
-  DONE: 'Done',
-};
-
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
   {
