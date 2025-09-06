@@ -13,6 +13,31 @@ export default function TaskSearchPage() {
   const params = useSearchParams();
   const [data, setData] = useState<{ results: SearchResult[]; verification: any }>();
 
+  const [ownerIds, setOwnerIds] = useState<string[]>(() => {
+    const vals = params.getAll('ownerId');
+    return vals.length ? vals : [''];
+  });
+  const [helperIds, setHelperIds] = useState<string[]>(() => {
+    const vals = params.getAll('helpers');
+    return vals.length ? vals : [''];
+  });
+  const [createdByIds, setCreatedByIds] = useState<string[]>(() => {
+    const vals = params.getAll('createdBy');
+    return vals.length ? vals : [''];
+  });
+  const [dueRanges, setDueRanges] = useState<{ from: string; to: string }[]>(() => {
+    const froms = params.getAll('dueFrom');
+    const tos = params.getAll('dueTo');
+    const max = Math.max(froms.length, tos.length, 1);
+    return Array.from({ length: max }, (_, i) => ({ from: froms[i] ?? '', to: tos[i] ?? '' }));
+  });
+  const initialCustom = Array.from(params.entries())
+    .filter(([k]) => k.startsWith('custom['))
+    .map(([k, v]) => ({ key: k.slice(7, -1), value: v }));
+  const [customFilters, setCustomFilters] = useState<{ key: string; value: string }[]>(
+    initialCustom.length ? initialCustom : [{ key: '', value: '' }]
+  );
+
   useEffect(() => {
     const qs = params.toString();
     fetch(`/api/search/tasks?${qs}`).then((res) => res.json()).then(setData);
@@ -50,32 +75,80 @@ export default function TaskSearchPage() {
           placeholder="tag"
           className="border rounded px-2 py-1"
         />
-        <input
-          type="date"
-          name="dueFrom"
-          defaultValue={params.get('dueFrom') ?? ''}
+        {dueRanges.map((r, i) => (
+          <div key={i} className="flex gap-2">
+            <input
+              type="date"
+              name="dueFrom"
+              defaultValue={r.from}
+              className="border rounded px-2 py-1"
+            />
+            <input
+              type="date"
+              name="dueTo"
+              defaultValue={r.to}
+              className="border rounded px-2 py-1"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setDueRanges([...dueRanges, { from: '', to: '' }])}
           className="border rounded px-2 py-1"
-        />
-        <input
-          type="date"
-          name="dueTo"
-          defaultValue={params.get('dueTo') ?? ''}
+        >
+          + Due
+        </button>
+        {ownerIds.map((v, i) => (
+          <input
+            key={i}
+            type="text"
+            name="ownerId"
+            defaultValue={v}
+            placeholder="ownerId"
+            className="border rounded px-2 py-1"
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => setOwnerIds([...ownerIds, ''])}
           className="border rounded px-2 py-1"
-        />
-        <input
-          type="text"
-          name="ownerId"
-          defaultValue={params.get('ownerId') ?? ''}
-          placeholder="ownerId"
+        >
+          + Owner
+        </button>
+        {helperIds.map((v, i) => (
+          <input
+            key={i}
+            type="text"
+            name="helpers"
+            defaultValue={v}
+            placeholder="helperId"
+            className="border rounded px-2 py-1"
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => setHelperIds([...helperIds, ''])}
           className="border rounded px-2 py-1"
-        />
-        <input
-          type="text"
-          name="createdBy"
-          defaultValue={params.get('createdBy') ?? ''}
-          placeholder="createdBy"
+        >
+          + Helper
+        </button>
+        {createdByIds.map((v, i) => (
+          <input
+            key={i}
+            type="text"
+            name="createdBy"
+            defaultValue={v}
+            placeholder="createdBy"
+            className="border rounded px-2 py-1"
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => setCreatedByIds([...createdByIds, ''])}
           className="border rounded px-2 py-1"
-        />
+        >
+          + Creator
+        </button>
         <input
           type="text"
           name="teamId"
@@ -101,6 +174,40 @@ export default function TaskSearchPage() {
           <option value="updatedAt">Updated</option>
           <option value="dueDate">Due date</option>
         </select>
+        {customFilters.map((cf, i) => (
+          <div key={i} className="flex gap-2">
+            <input
+              type="text"
+              value={cf.key}
+              onChange={(e) => {
+                const next = [...customFilters];
+                next[i].key = e.target.value;
+                setCustomFilters(next);
+              }}
+              placeholder="custom field"
+              className="border rounded px-2 py-1"
+            />
+            <input
+              type="text"
+              name={cf.key ? `custom[${cf.key}]` : undefined}
+              value={cf.value}
+              onChange={(e) => {
+                const next = [...customFilters];
+                next[i].value = e.target.value;
+                setCustomFilters(next);
+              }}
+              placeholder="value"
+              className="border rounded px-2 py-1"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setCustomFilters([...customFilters, { key: '', value: '' }])}
+          className="border rounded px-2 py-1"
+        >
+          + Custom
+        </button>
         <button type="submit" className="border rounded px-2 py-1">
           Apply
         </button>

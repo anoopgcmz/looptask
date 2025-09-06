@@ -16,10 +16,26 @@ const querySchema = z.object({
     .union([z.string(), z.array(z.string())])
     .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
     .optional(),
-  dueFrom: z.coerce.date().optional(),
-  dueTo: z.coerce.date().optional(),
-  ownerId: z.string().optional(),
-  createdBy: z.string().optional(),
+  dueFrom: z
+    .union([z.coerce.date(), z.array(z.coerce.date())])
+    .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+    .optional(),
+  dueTo: z
+    .union([z.coerce.date(), z.array(z.coerce.date())])
+    .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+    .optional(),
+  ownerId: z
+    .union([z.string(), z.array(z.string())])
+    .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+    .optional(),
+  helpers: z
+    .union([z.string(), z.array(z.string())])
+    .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+    .optional(),
+  createdBy: z
+    .union([z.string(), z.array(z.string())])
+    .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
+    .optional(),
   teamId: z.string().optional(),
   visibility: z.enum(['PRIVATE', 'TEAM']).optional(),
   sort: z.enum(['relevance', 'updatedAt', 'dueDate']).optional(),
@@ -33,7 +49,14 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const raw: Record<string, string | string[]> = {};
+  const customRaw: Record<string, string[]> = {};
   url.searchParams.forEach((value, key) => {
+    const customMatch = key.match(/^custom\[(.+)\]$/);
+    if (customMatch) {
+      const field = customMatch[1];
+      customRaw[field] = customRaw[field] ? [...customRaw[field], value] : [value];
+      return;
+    }
     if (raw[key]) {
       raw[key] = Array.isArray(raw[key])
         ? [...(raw[key] as string[]), value]
@@ -52,18 +75,41 @@ export async function GET(req: Request) {
 
   await dbConnect();
 
-  const filter: any = {};
-  if (query.ownerId) filter.ownerId = new Types.ObjectId(query.ownerId);
-  if (query.createdBy) filter.createdBy = new Types.ObjectId(query.createdBy);
-  if (query.status && query.status.length) filter.status = { $in: query.status };
-  if (query.dueFrom || query.dueTo) {
-    filter.dueDate = {};
-    if (query.dueFrom) filter.dueDate.$gte = query.dueFrom;
-    if (query.dueTo) filter.dueDate.$lte = query.dueTo;
+  const filters: any[] = [];
+  if (query.ownerId?.length)
+    filters.push({ ownerId: { $in: query.ownerId.map((id) => new Types.ObjectId(id)) } });
+  if (query.createdBy?.length)
+    filters.push({ createdBy: { $in: query.createdBy.map((id) => new Types.ObjectId(id)) } });
+  if (query.helpers?.length)
+    filters.push({ helpers: { $in: query.helpers.map((id) => new Types.ObjectId(id)) } });
+  if (query.status && query.status.length) filters.push({ status: { $in: query.status } });
+  if (query.tag && query.tag.length) filters.push({ tags: { $in: query.tag } });
+  if (query.visibility) filters.push({ visibility: query.visibility });
+  if (query.teamId) filters.push({ teamId: new Types.ObjectId(query.teamId) });
+
+  const dueRanges: any[] = [];
+  const maxRange = Math.max(query.dueFrom?.length ?? 0, query.dueTo?.length ?? 0);
+  for (let i = 0; i < maxRange; i++) {
+    const range: any = {};
+    if (query.dueFrom?.[i]) range.$gte = query.dueFrom[i];
+    if (query.dueTo?.[i]) range.$lte = query.dueTo[i];
+    if (Object.keys(range).length) dueRanges.push(range);
   }
-  if (query.tag && query.tag.length) filter.tags = { $in: query.tag };
-  if (query.visibility) filter.visibility = query.visibility;
-  if (query.teamId) filter.teamId = new Types.ObjectId(query.teamId);
+  if (dueRanges.length === 1) {
+    filters.push({ dueDate: dueRanges[0] });
+  } else if (dueRanges.length > 1) {
+    filters.push({ $or: dueRanges.map((r) => ({ dueDate: r })) });
+  }
+
+  const customFilters: any[] = [];
+  Object.entries(customRaw).forEach(([field, values]) => {
+    if (values.length === 1) {
+      customFilters.push({ [`custom.${field}`]: values[0] });
+    } else {
+      customFilters.push({ $or: values.map((v) => ({ [`custom.${field}`]: v })) });
+    }
+  });
+  if (customFilters.length) filters.push(...customFilters);
 
   const access: any[] = [
     { participantIds: new Types.ObjectId(session.userId) },
@@ -73,6 +119,12 @@ export async function GET(req: Request) {
   }
 
   const useAtlas = process.env.ATLAS_SEARCH === 'true';
+
+  const textFilter = !useAtlas && query.q ? [{ $text: { $search: query.q } }] : [];
+  const mongoFilter =
+    filters.length || textFilter.length
+      ? { $and: [...textFilter, ...filters, { $or: access }] }
+      : { $or: access };
 
   let results: any[] = [];
   if (useAtlas && query.q) {
@@ -107,7 +159,7 @@ export async function GET(req: Request) {
           as: 'comments',
         },
       },
-      { $match: { $and: [filter, { $or: access }] } },
+      { $match: mongoFilter },
       {
         $project: {
           title: 1,
@@ -133,14 +185,12 @@ export async function GET(req: Request) {
     }
     results = await Task.aggregate(pipeline);
   } else {
-    const mongoFilter: any = { ...filter };
-    if (query.q) mongoFilter.$text = { $search: query.q };
     const sort: any = {};
     if (query.q) sort.score = { $meta: 'textScore' };
     if (query.sort === 'updatedAt') sort.updatedAt = -1;
     if (query.sort === 'dueDate') sort.dueDate = 1;
     results = await Task.find(
-      { $and: [mongoFilter, { $or: access }] },
+      mongoFilter,
       query.q ? { score: { $meta: 'textScore' } } : undefined
     ).sort(Object.keys(sort).length ? sort : { updatedAt: -1 });
   }
@@ -167,9 +217,11 @@ export async function GET(req: Request) {
         dueFrom: query.dueFrom,
         dueTo: query.dueTo,
         ownerId: query.ownerId,
+        helpers: query.helpers,
         createdBy: query.createdBy,
         teamId: query.teamId,
         visibility: query.visibility,
+        custom: customRaw,
         sort: query.sort,
       },
     },
