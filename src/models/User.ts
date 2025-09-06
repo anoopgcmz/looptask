@@ -1,9 +1,15 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type HydratedDocument,
+  type Types,
+} from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;
 
-export interface IUser extends Document {
+export interface IUser {
   name: string;
   email: string;
   username: string;
@@ -29,6 +35,8 @@ export interface IUser extends Document {
   };
   pushSubscriptions: any[];
 }
+
+export type UserDocument = HydratedDocument<IUser>;
 
 const userSchema = new Schema<IUser>(
   {
@@ -77,14 +85,9 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ email: 1, organizationId: 1 }, { unique: true });
 
-userSchema.pre('save', async function () {
+userSchema.pre('save', async function (this: UserDocument) {
   if (this.isModified('password')) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    (this as any).password = await bcrypt.hash(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (this as any).password,
-      SALT_ROUNDS
-    );
+    this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
   }
 });
 
