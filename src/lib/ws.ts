@@ -1,3 +1,6 @@
+import dbConnect from '@/lib/db';
+import RateLimit from '@/models/RateLimit';
+
 interface MetaWebSocket extends WebSocket {
   userId?: string;
   organizationId?: string;
@@ -10,6 +13,49 @@ const taskClients = new Map<string, Set<WebSocket>>();
 // number of active connections so we only emit `user.left` when the last
 // connection closes.
 const taskPresence = new Map<string, Map<string, number>>();
+
+const recentEvents = new Map<string, number>();
+const SHORT_THROTTLE_MS = 500;
+
+const LONG_LIMITS: Record<string, { limit: number; windowSeconds: number }> = {
+  'comment.typing': { limit: 20, windowSeconds: 10 },
+};
+
+function isThrottled(userId: string, event: string): boolean {
+  const key = `${userId}:${event}`;
+  const now = Date.now();
+  const last = recentEvents.get(key) ?? 0;
+  if (now - last < SHORT_THROTTLE_MS) return true;
+  recentEvents.set(key, now);
+  return false;
+}
+
+async function checkRateLimit(userId: string, event: string): Promise<boolean> {
+  const cfg = LONG_LIMITS[event];
+  if (!cfg) return true;
+  await dbConnect();
+  const key = `ws:${userId}:${event}`;
+  const now = new Date();
+  const windowEndsAt = new Date(now.getTime() + cfg.windowSeconds * 1000);
+  const record = await RateLimit.findOne({ key });
+  if (!record || record.windowEndsAt < now) {
+    await RateLimit.updateOne(
+      { key },
+      { count: 1, windowEndsAt },
+      { upsert: true }
+    );
+    return true;
+  }
+  if (record.count >= cfg.limit) return false;
+  await RateLimit.updateOne({ key }, { $inc: { count: 1 } });
+  return true;
+}
+
+function notifyLimited(ws: WebSocket, event: string) {
+  try {
+    ws.send(JSON.stringify({ event: 'rate.limited', type: event }));
+  } catch {}
+}
 
 export function addClient(ws: MetaWebSocket) {
   if (ws.userId) {
@@ -43,22 +89,29 @@ export function addClient(ws: MetaWebSocket) {
       }
     });
   }
-    ws.addEventListener('message', (event) => {
-      try {
-        const data = JSON.parse(event.data.toString());
-      if (data.event === 'comment.typing' && data.taskId) {
+  ws.addEventListener('message', async (event) => {
+    try {
+      const data = JSON.parse(event.data.toString());
+      const evt = data.event;
+      if (ws.userId && evt) {
+        if (isThrottled(ws.userId, evt) || !(await checkRateLimit(ws.userId, evt))) {
+          notifyLimited(ws, evt);
+          return;
+        }
+      }
+      if (evt === 'comment.typing' && data.taskId) {
         if (ws.taskIds?.includes(data.taskId) && ws.userId) {
           emitTyping({ taskId: data.taskId, userId: ws.userId }, ws);
         }
-      } else if (data.event === 'ping') {
+      } else if (evt === 'ping') {
         try {
           ws.send('pong');
         } catch {}
       }
-      } catch {
-        // ignore
-      }
-    });
+    } catch {
+      // ignore
+    }
+  });
   ws.addEventListener('close', () => {
     if (ws.userId) {
       const set = userClients.get(ws.userId);
