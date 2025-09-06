@@ -17,6 +17,7 @@ import type {
   TaskResponse,
 } from '@/types/api/task';
 import { stepSchema } from '@/lib/schemas/taskStep';
+import { serializeTask } from '@/lib/serializeTask';
 
 const createTaskSchema: z.ZodType<TaskPayload> = z
   .object({
@@ -123,7 +124,7 @@ export const POST = withOrganization(async (req, session) => {
   if (mentionIds.length) {
     await notifyMention(mentionIds as Types.ObjectId[], task._id);
   }
-  return NextResponse.json<TaskResponse>(task, { status: 201 });
+  return NextResponse.json<TaskResponse>(serializeTask(task), { status: 201 });
 });
 
 const listQuerySchema: z.ZodType<TaskListQuery> = z
@@ -211,6 +212,6 @@ export const GET = withOrganization(async (req, session) => {
     })
     .skip((page - 1) * limit)
     .limit(limit);
-  return NextResponse.json<TaskResponse[]>(tasks);
+  return NextResponse.json<TaskResponse[]>(tasks.map(serializeTask));
 });
 
