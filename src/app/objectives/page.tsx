@@ -1,17 +1,23 @@
 'use client';
 import { useEffect, useState } from 'react';
 
+interface Objective {
+  _id: string;
+  title: string;
+  status: string;
+}
+
 export default function ObjectivesPage() {
   const [date, setDate] = useState(
     new Date().toISOString().split('T')[0]
   );
   const [teamId, setTeamId] = useState('');
-  const [objectives, setObjectives] = useState<any[]>([]);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
 
   useEffect(() => {
     if (!teamId) return;
     fetch(`/api/objectives?date=${date}&teamId=${teamId}`)
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<Objective[]>)
       .then(setObjectives)
       .catch(() => setObjectives([]));
   }, [date, teamId]);

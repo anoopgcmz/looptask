@@ -3,13 +3,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  username: string;
+  role: string;
+}
+
 export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [q, setQ] = useState('');
 
   const load = async (search = '') => {
     const res = await fetch('/api/users?q=' + encodeURIComponent(search));
-    const data = await res.json();
+    const data = (await res.json()) as User[];
     setUsers(data);
   };
 

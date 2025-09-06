@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import useNotificationsChannel from '@/hooks/useNotificationsChannel';
+import useNotificationsChannel, { type NotificationPayload } from '@/hooks/useNotificationsChannel';
 
 const PAGE_SIZE = 20;
 
@@ -11,7 +11,7 @@ export default function NotificationsPage() {
     startDate: '',
     endDate: '',
   });
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<NotificationPayload[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export default function NotificationsPage() {
         params.append('page', nextPage.toString());
         const res = await fetch(`/api/notifications?${params.toString()}`);
         if (res.ok) {
-          const data = await res.json();
+          const data = (await res.json()) as NotificationPayload[];
           setItems((prev) => (replace ? data : [...prev, ...data]));
           setHasMore(data.length === PAGE_SIZE);
           setPage(nextPage);
