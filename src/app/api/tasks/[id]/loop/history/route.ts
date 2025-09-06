@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -14,7 +14,11 @@ const querySchema = z.object({
 });
 
 export const GET = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
     const url = new URL(req.url);
     const raw: Record<string, any> = {};
     url.searchParams.forEach((value, key) => {
@@ -27,8 +31,9 @@ export const GET = withOrganization(
       return problem(400, 'Invalid request', e.message);
     }
 
+    const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(params.id);
+    const task = await Task.findById(id);
     if (
       !task ||
       !canReadTask(
@@ -41,7 +46,7 @@ export const GET = withOrganization(
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const history = await LoopHistory.find({ taskId: new Types.ObjectId(params.id) })
+    const history = await LoopHistory.find({ taskId: new Types.ObjectId(id) })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);

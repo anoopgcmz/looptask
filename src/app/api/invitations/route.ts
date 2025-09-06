@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 import dbConnect from '@/lib/db';
@@ -13,7 +13,7 @@ const inviteSchema = z.object({
   role: z.enum(['ADMIN', 'USER']).optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');

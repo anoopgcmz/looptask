@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { generateOtp, createOtpToken, checkRateLimit } from '@/lib/otp';
 import { sendOtpEmail } from '@/lib/email';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { email } = await req.json();
   if (!email) {
     return NextResponse.json(

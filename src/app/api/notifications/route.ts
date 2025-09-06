@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
 import Notification, { type INotification } from '@/models/Notification';
@@ -17,7 +17,7 @@ const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

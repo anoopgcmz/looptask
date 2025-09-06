@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 import dbConnect from '@/lib/db';
@@ -13,7 +13,7 @@ const acceptSchema = z.object({
   password: z.string(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   let body: z.infer<typeof acceptSchema>;
   try {
     body = acceptSchema.parse(await req.json());

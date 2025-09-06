@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
 import LoopTemplate from '@/models/LoopTemplate';
@@ -22,7 +22,7 @@ export async function GET() {
   return NextResponse.json(templates);
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   let body: z.infer<typeof templateSchema>;
   try {
     body = templateSchema.parse(await req.json());
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   return NextResponse.json(template, { status: 201 });
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   const schema = templateSchema.extend({ id: z.string() });
   let body: z.infer<typeof schema>;
   try {
@@ -54,7 +54,7 @@ export async function PUT(req: Request) {
   return NextResponse.json(template);
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   const schema = z.object({ id: z.string() });
   let body: z.infer<typeof schema>;
   try {

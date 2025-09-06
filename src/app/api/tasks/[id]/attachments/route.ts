@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -10,9 +10,14 @@ import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
 
 export const GET = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
+    const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(params.id);
+    const task = await Task.findById(id);
     if (
       !task ||
       !canReadTask(
@@ -22,20 +27,25 @@ export const GET = withOrganization(
     ) {
       return problem(404, 'Not Found', 'Task not found');
     }
-    const attachments = await Attachment.find({ taskId: params.id }).sort({ createdAt: -1 });
+    const attachments = await Attachment.find({ taskId: id }).sort({ createdAt: -1 });
     return NextResponse.json(attachments);
   }
 );
 
 export const POST = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
     const form = await req.formData();
     const file = form.get('file');
     if (!(file instanceof File)) {
       return problem(400, 'Invalid request', 'File is required');
     }
+    const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(params.id);
+    const task = await Task.findById(id);
     if (
       !task ||
       !canWriteTask(
@@ -52,7 +62,7 @@ export const POST = withOrganization(
     const filepath = path.join(uploadDir, filename);
     await fs.writeFile(filepath, buffer);
     const attachment = await Attachment.create({
-      taskId: new Types.ObjectId(params.id),
+      taskId: new Types.ObjectId(id),
       userId: new Types.ObjectId(session.userId),
       filename: file.name,
       url: `/uploads/${filename}`,
@@ -62,16 +72,21 @@ export const POST = withOrganization(
 );
 
 export const DELETE = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
     const url = new URL(req.url);
     const attachmentId = url.searchParams.get('id');
     if (!attachmentId) return problem(400, 'Invalid request', 'id is required');
     await dbConnect();
     const attachment = await Attachment.findById(attachmentId);
-    if (!attachment || attachment.taskId.toString() !== params.id) {
+    const { id } = await params;
+    if (!attachment || attachment.taskId.toString() !== id) {
       return problem(404, 'Not Found', 'Attachment not found');
     }
-    const task = await Task.findById(params.id);
+    const task = await Task.findById(id);
     if (
       !task ||
       !canWriteTask(

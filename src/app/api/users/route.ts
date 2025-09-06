@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
@@ -6,7 +6,7 @@ import User from '@/models/User';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
@@ -45,7 +45,7 @@ const createUserSchema = z.object({
   permissions: z.array(z.string()).optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');

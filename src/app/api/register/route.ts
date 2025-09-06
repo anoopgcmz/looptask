@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -14,7 +14,7 @@ const registerSchema = z.object({
   organizationName: z.string().optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   let body: z.infer<typeof registerSchema>;
   try {
     body = registerSchema.parse(await req.json());

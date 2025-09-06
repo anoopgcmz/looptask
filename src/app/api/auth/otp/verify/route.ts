@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { verifyAndConsumeOtp } from '@/lib/otp';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { email, code } = await req.json();
   if (!email || !code) {
     return NextResponse.json(

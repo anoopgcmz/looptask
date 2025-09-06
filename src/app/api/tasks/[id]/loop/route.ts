@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -55,8 +55,8 @@ const loopPatchSchema = z.object({
 
 export const POST = withOrganization(
   async (
-    req: Request,
-    { params }: { params: { id: string } },
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
     session
   ) => {
     let body: z.infer<typeof loopSchema>;
@@ -66,8 +66,9 @@ export const POST = withOrganization(
       return problem(400, 'Invalid request', e.message);
     }
 
+    const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(params.id).lean();
+    const task = await Task.findById(id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -117,7 +118,7 @@ export const POST = withOrganization(
     }
 
     const sequence = steps.map((s) => ({
-      taskId: new Types.ObjectId(params.id),
+      taskId: new Types.ObjectId(id),
       assignedTo: new Types.ObjectId(s.assignedTo),
       description: s.description,
       estimatedTime: s.estimatedTime,
@@ -125,7 +126,7 @@ export const POST = withOrganization(
     }));
 
     const loop = await TaskLoop.create({
-      taskId: new Types.ObjectId(params.id),
+      taskId: new Types.ObjectId(id),
       sequence,
     });
 
@@ -137,15 +138,20 @@ export const POST = withOrganization(
         userId: new Types.ObjectId(session.userId),
       }))
     );
-    emitLoopUpdated({ taskId: params.id, patch: loop, updatedAt: loop.updatedAt });
+    emitLoopUpdated({ taskId: id, patch: loop, updatedAt: loop.updatedAt });
     return NextResponse.json(loop);
   }
 );
 
 export const GET = withOrganization(
-  async (_req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
+    const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(params.id).lean();
+    const task = await Task.findById(id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -155,14 +161,18 @@ export const GET = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot access this loop');
     }
-      const loop = await TaskLoop.findOne({ taskId: params.id }).lean();
+      const loop = await TaskLoop.findOne({ taskId: id }).lean();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
     return NextResponse.json(loop);
   }
 );
 
 export const PATCH = withOrganization(
-  async (req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
     let body: z.infer<typeof loopPatchSchema>;
     try {
       body = loopPatchSchema.parse(await req.json());
@@ -170,8 +180,9 @@ export const PATCH = withOrganization(
       return problem(400, 'Invalid request', e.message);
     }
 
+    const { id } = await params;
     await dbConnect();
-    const task = await Task.findById(params.id).lean();
+    const task = await Task.findById(id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -181,7 +192,7 @@ export const PATCH = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot modify this loop');
     }
-      const loop = await TaskLoop.findOne({ taskId: params.id }).lean();
+      const loop = await TaskLoop.findOne({ taskId: id }).lean();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
 
     const { sequence: steps, parallel } = body;
@@ -248,7 +259,7 @@ export const PATCH = withOrganization(
   let updatedLoop: any = null;
   try {
     await sessionDb.withTransaction(async () => {
-      const loopDoc = await TaskLoop.findOne({ taskId: params.id }).session(sessionDb);
+      const loopDoc = await TaskLoop.findOne({ taskId: id }).session(sessionDb);
       if (!loopDoc) return;
       if (steps) {
         steps.forEach((s) => {
@@ -310,15 +321,20 @@ export const PATCH = withOrganization(
     const uid = new Types.ObjectId(a.userId);
     await notifyAssignment([uid], task, a.description);
   }
-    emitLoopUpdated({ taskId: params.id, patch: body, updatedAt: updatedLoop.updatedAt });
+    emitLoopUpdated({ taskId: id, patch: body, updatedAt: updatedLoop.updatedAt });
     return NextResponse.json(updatedLoop);
   }
 );
 
 export const DELETE = withOrganization(
-  async (_req: Request, { params }: { params: { id: string } }, session) => {
+  async (
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+    session
+  ) => {
+    const { id } = await params;
     await dbConnect();
-      const task = await Task.findById(params.id).lean();
+      const task = await Task.findById(id).lean();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -328,7 +344,7 @@ export const DELETE = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot delete this loop');
     }
-      const loop = await TaskLoop.findOneAndDelete({ taskId: params.id }).lean();
+      const loop = await TaskLoop.findOneAndDelete({ taskId: id }).lean();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
     return NextResponse.json({ success: true });
   }
