@@ -22,7 +22,7 @@ async function run() {
   for (const org of organizations) {
     const team = await Team.create({ name: `${org.name} Team` });
     const base = org.name.toLowerCase().replace(/\s+/g, '');
-    const [user1, user2, user3, _admin] = await User.create([
+    const [user1, user2, user3] = await User.create([
       {
         name: 'User One',
         email: `user1@${org.domain}`,
