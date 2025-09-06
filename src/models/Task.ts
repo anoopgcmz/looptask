@@ -36,6 +36,7 @@ export interface ITask extends Document {
   steps?: IStep[];
   currentStepIndex?: number;
   participantIds?: Types.ObjectId[];
+  custom?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -74,11 +75,15 @@ const taskSchema = new Schema<ITask>(
     steps: [stepSchema],
     currentStepIndex: { type: Number, default: 0 },
     participantIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    custom: { type: Map, of: Schema.Types.Mixed },
   },
   { timestamps: true }
 );
 
 taskSchema.index({ organizationId: 1, status: 1, dueDate: 1 });
+taskSchema.index({ ownerId: 1 });
+taskSchema.index({ helpers: 1 });
+taskSchema.index({ 'custom.$**': 1 });
 taskSchema.index({ updatedAt: -1 });
 taskSchema.index({ title: 'text', description: 'text' });
 
