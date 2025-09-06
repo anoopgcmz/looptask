@@ -227,6 +227,9 @@ export const PUT = withOrganization(
     if (!owner) {
       return problem(400, 'Invalid request', 'Owner must be in your organization');
     }
+    if (!body.steps) {
+      return problem(400, 'Invalid request', 'Steps are required');
+    }
     for (const s of body.steps) {
       const stepOwner = await User.findOne({
         _id: new Types.ObjectId(s.ownerId),
