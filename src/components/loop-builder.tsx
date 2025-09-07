@@ -68,8 +68,8 @@ export default function LoopBuilder() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = steps.findIndex((s) => s.id === active.id);
-    const newIndex = steps.findIndex((s) => s.id === over.id);
+    const oldIndex = steps.findIndex((s: LoopStep) => s.id === active.id);
+    const newIndex = steps.findIndex((s: LoopStep) => s.id === over.id);
     reorderSteps(oldIndex, newIndex);
   };
 
@@ -196,7 +196,7 @@ export default function LoopBuilder() {
               </Button>
             </div>
             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={steps.map((s) => s.id)}>
+              <SortableContext items={steps.map((s: LoopStep) => s.id)}>
                 {steps.map((step) => (
                   <StepItem
                     key={step.id}
@@ -229,7 +229,7 @@ export default function LoopBuilder() {
         ) : (
           <div className="flex flex-col gap-4">
             <LoopTimeline
-              steps={steps.map((s) => ({ ...s, status: 'PENDING' }))}
+              steps={steps.map((s: LoopStep) => ({ ...s, status: 'PENDING' }))}
               users={users}
             />
             <div className="flex justify-end gap-2">
@@ -338,8 +338,8 @@ function StepItem({
           className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
         >
         {allSteps
-          .filter((s) => s.id !== step.id)
-          .map((s) => (
+          .filter((s: LoopStep) => s.id !== step.id)
+          .map((s: LoopStep) => (
             <option key={s.id} value={s.id}>
               {s.description || 'Untitled Step'}
             </option>

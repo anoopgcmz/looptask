@@ -97,7 +97,7 @@ export default function GlobalSearchPage() {
         </a>
         {saved.length > 0 && (
           <ul className="flex flex-wrap gap-2">
-            {saved.map((s) => (
+            {saved.map((s: { _id: string; name: string; query: string }) => (
               <li key={s._id}>
                 <Link
                   href={`/search?${s.query}`}
@@ -124,7 +124,7 @@ export default function GlobalSearchPage() {
           />
           {suggestions.length > 0 && (
             <ul className="absolute left-0 right-0 bg-white border rounded mt-1 z-10 max-h-40 overflow-auto">
-              {suggestions.map((s) => (
+              {suggestions.map((s: string) => (
                 <li key={s}>
                   <button
                     type="button"

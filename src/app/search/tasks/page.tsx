@@ -95,7 +95,7 @@ export default function TaskSearchPage() {
         </a>
         {saved.length > 0 && (
           <ul className="flex flex-wrap gap-2">
-            {saved.map((s) => (
+            {saved.map((s: { _id: string; name: string; query: string }) => (
               <li key={s._id}>
                 <a
                   href={`/search/tasks?${s.query}`}

@@ -35,7 +35,7 @@ export async function completeStep(
 
       const newActives: number[] = [];
       let activated = false;
-      loop.sequence.forEach((s, idx) => {
+      loop.sequence.forEach((s: ILoopStep, idx) => {
         if (s.status === 'COMPLETED') return;
         const deps: Array<number | Types.ObjectId> = s.dependencies ?? [];
         const depsMet = deps.every((d) => {
@@ -67,9 +67,14 @@ export async function completeStep(
       if (newActives.length) {
         loop.currentStep = Math.min(...newActives);
       } else {
-        const activeIdx = loop.sequence.findIndex((s) => s.status === 'ACTIVE');
+        const activeIdx = loop.sequence.findIndex(
+          (s: ILoopStep) => s.status === 'ACTIVE'
+        );
         loop.currentStep = activeIdx; // -1 if none
-        if (activeIdx === -1 && loop.sequence.every((s) => s.status === 'COMPLETED')) {
+        if (
+          activeIdx === -1 &&
+          loop.sequence.every((s: ILoopStep) => s.status === 'COMPLETED')
+        ) {
           loop.isActive = false;
         }
       }

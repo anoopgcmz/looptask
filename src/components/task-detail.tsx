@@ -228,14 +228,16 @@ export default function TaskDetail({ id }: { id: string }) {
         <div className="flex flex-col gap-2">
           <LoopProgress
             total={loop.sequence.length}
-            completed={loop.sequence.filter((s) => s.status === "COMPLETED").length}
+            completed={
+              loop.sequence.filter((s: LoopStep) => s.status === 'COMPLETED').length
+            }
           />
           <div className="font-semibold">Loop Steps</div>
           <LoopVisualizer
             steps={
-              loop.sequence.map((s, idx) => ({
+              loop.sequence.map((s: LoopStep, idx) => ({
                 id: String(idx),
-                assignedTo: s.assignedTo ?? "",
+                assignedTo: s.assignedTo ?? '',
                 description: s.description,
                 estimatedTime: s.estimatedTime,
                 dependencies: s.dependencies ?? [],

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, startSession } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
+import Task, { type IStep } from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { emitTaskTransition } from '@/lib/ws';
@@ -63,7 +63,9 @@ export async function POST(
     const mongoSession = await startSession();
     let updated: ITask | null = null;
     await mongoSession.withTransaction(async () => {
-      const t = await Task.findById(task._id).session(mongoSession);
+      const t = (await Task.findById(task._id).session(
+        mongoSession
+      )) as ITask | null;
       if (!t) throw new Error('Task not found');
       const idx = t.currentStepIndex ?? 0;
       const step = t.steps[idx];
@@ -71,11 +73,11 @@ export async function POST(
       step.status = 'DONE';
       step.completedAt = new Date();
 
-      const allDone = t.steps.every((s) => s.status === 'DONE');
+      const allDone = t.steps.every((s: IStep) => s.status === 'DONE');
       if (allDone) {
         t.status = 'DONE';
       } else {
-        const nextIdx = t.steps.findIndex((s) => s.status !== 'DONE');
+        const nextIdx = t.steps.findIndex((s: IStep) => s.status !== 'DONE');
         t.currentStepIndex = nextIdx;
         t.ownerId = t.steps[nextIdx].ownerId;
         t.status = 'FLOW_IN_PROGRESS';

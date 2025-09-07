@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
-import TaskLoop from '@/models/TaskLoop';
+import TaskLoop, { type ILoopStep } from '@/models/TaskLoop';
 import Comment from '@/models/Comment';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
@@ -107,7 +107,9 @@ export async function GET(req: NextRequest) {
   });
 
   loops.forEach((l) => {
-    const step = l.sequence.find((s) => (regex ? regex.test(s.description) : true));
+    const step = l.sequence.find((s: ILoopStep) =>
+      regex ? regex.test(s.description) : true
+    );
     const desc = step?.description || '';
     results.push({
       _id: l._id,

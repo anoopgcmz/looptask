@@ -33,7 +33,7 @@ export default function useLoopBuilder() {
   const closeBuilder = () => setOpen(false);
 
   const addStep = () => {
-    setSteps((s) => {
+    setSteps((s: LoopStep[]) => {
       const nextIndex = s.length;
       return [
         ...s,
@@ -49,11 +49,13 @@ export default function useLoopBuilder() {
   };
 
   const updateStep = (id: string, data: Partial<LoopStep>) => {
-    setSteps((s) => s.map((step) => (step.id === id ? { ...step, ...data } : step)));
+    setSteps((s: LoopStep[]) =>
+      s.map((step) => (step.id === id ? { ...step, ...data } : step))
+    );
   };
 
   const removeStep = (id: string) => {
-    setSteps((s) =>
+    setSteps((s: LoopStep[]) =>
       s
         .filter((step) => step.id !== id)
         .map((step, idx) => ({ ...step, index: idx }))
@@ -61,7 +63,7 @@ export default function useLoopBuilder() {
   };
 
   const reorderSteps = (from: number, to: number) => {
-    setSteps((s) =>
+    setSteps((s: LoopStep[]) =>
       arrayMove(s, from, to).map((step, idx) => ({ ...step, index: idx }))
     );
   };

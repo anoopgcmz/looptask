@@ -100,7 +100,7 @@ taskSchema.pre('save', function (next) {
   if (this.ownerId) ids.add(this.ownerId.toString());
   this.helpers?.forEach((h) => ids.add(h.toString()));
   this.mentions?.forEach((m) => ids.add(m.toString()));
-  this.steps?.forEach((s) => ids.add(s.ownerId.toString()));
+  this.steps?.forEach((s: IStep) => ids.add(s.ownerId.toString()));
   this.participantIds = Array.from(ids).map((id) => new Types.ObjectId(id));
   next();
 });
