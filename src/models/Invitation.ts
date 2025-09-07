@@ -1,15 +1,6 @@
-import { Schema, model, models, type Model, type Types } from 'mongoose';
+import { Schema, model, models, type InferSchemaType, type Model } from 'mongoose';
 
-export interface IInvitation {
-  email: string;
-  organizationId: Types.ObjectId;
-  tokenHash: string;
-  role: 'ADMIN' | 'USER';
-  expiresAt: Date;
-  used: boolean;
-}
-
-const invitationSchema = new Schema<IInvitation>(
+const invitationSchema = new Schema(
   {
     email: { type: String, required: true, lowercase: true },
     organizationId: {
@@ -27,7 +18,8 @@ const invitationSchema = new Schema<IInvitation>(
 
 invitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-const Invitation: Model<IInvitation> =
-  models.Invitation || model<IInvitation>('Invitation', invitationSchema);
+export type IInvitation = InferSchemaType<typeof invitationSchema>;
 
-export default Invitation;
+export const Invitation: Model<IInvitation> =
+  (models.Invitation as Model<IInvitation>) ??
+  model<IInvitation>('Invitation', invitationSchema);

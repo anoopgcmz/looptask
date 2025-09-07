@@ -21,7 +21,7 @@ const auth = vi.fn();
 vi.mock('@/lib/auth', () => ({ auth }));
 
 const findOneAndUpdate = vi.fn();
-vi.mock('@/models/Notification', () => ({ default: { findOneAndUpdate } }));
+vi.mock('@/models/Notification', () => ({ Notification: { findOneAndUpdate } }));
 
 import { POST } from './route';
 

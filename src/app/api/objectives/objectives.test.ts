@@ -32,7 +32,7 @@ interface TaskQuery {
 const tasks = new Map<string, Task>();
 
 vi.mock('@/models/Objective', () => ({
-  default: {
+  Objective: {
     create: vi.fn(async (doc: unknown) => {
       const _id = doc._id || new Types.ObjectId();
       const objective = { ...doc, _id };
@@ -61,7 +61,7 @@ vi.mock('@/models/Objective', () => ({
 }));
 
 vi.mock('@/models/Task', () => ({
-  default: {
+  Task: {
     find: vi.fn(async (filter: TaskQuery): Promise<Task[]> => {
       return Array.from(tasks.values()).filter((t) => {
         const due =

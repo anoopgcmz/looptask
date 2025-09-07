@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/db';
-import User from '@/models/User';
+import { User } from '@/models/User';
 import { sendPushToUser } from '@/lib/push';
 
 const bodySchema = z.object({
@@ -10,6 +10,8 @@ const bodySchema = z.object({
   title: z.string(),
   body: z.string(),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();

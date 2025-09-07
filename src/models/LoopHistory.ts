@@ -1,14 +1,13 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-export interface ILoopHistory extends Document {
-  taskId: Types.ObjectId;
-  stepIndex: number;
-  action: 'CREATE' | 'UPDATE' | 'COMPLETE' | 'REASSIGN';
-  userId: Types.ObjectId;
-  createdAt: Date;
-}
-
-const loopHistorySchema = new Schema<ILoopHistory>(
+const loopHistorySchema = new Schema(
   {
     taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true, index: true },
     stepIndex: { type: Number, required: true },
@@ -22,4 +21,9 @@ const loopHistorySchema = new Schema<ILoopHistory>(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-export default models.LoopHistory || model<ILoopHistory>('LoopHistory', loopHistorySchema);
+export type ILoopHistory = InferSchemaType<typeof loopHistorySchema>;
+
+export const LoopHistory: Model<ILoopHistory> =
+  (models.LoopHistory as Model<ILoopHistory>) ??
+  model<ILoopHistory>('LoopHistory', loopHistorySchema);
+

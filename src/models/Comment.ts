@@ -1,13 +1,13 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-export interface IComment extends Document {
-  taskId: Types.ObjectId;
-  userId: Types.ObjectId;
-  content: string;
-  parentId?: Types.ObjectId;
-}
-
-const commentSchema = new Schema<IComment>(
+const commentSchema = new Schema(
   {
     taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -22,4 +22,9 @@ commentSchema.index({ updatedAt: -1 });
 commentSchema.index({ userId: 1 });
 commentSchema.index({ content: 'text' });
 
-export default models.Comment || model<IComment>('Comment', commentSchema);
+export type IComment = InferSchemaType<typeof commentSchema>;
+
+export const Comment: Model<IComment> =
+  (models.Comment as Model<IComment>) ??
+  model<IComment>('Comment', commentSchema);
+

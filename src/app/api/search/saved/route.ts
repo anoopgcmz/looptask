@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import SavedSearch from '@/models/SavedSearch';
+import { SavedSearch } from '@/models/SavedSearch';
 import { auth } from '@/lib/auth';
 import { getPresets } from '@/app/search/filters';
 
@@ -9,6 +9,8 @@ const bodySchema = z.object({
   name: z.string(),
   query: z.string(),
 });
+
+export const runtime = 'nodejs';
 
 export async function GET() {
   const session = await auth();

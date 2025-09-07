@@ -4,9 +4,9 @@ import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { canReadTask } from '@/lib/access';
-import Comment, { type IComment } from '@/models/Comment';
-import Task from '@/models/Task';
-import ActivityLog from '@/models/ActivityLog';
+import { Comment, type IComment } from '@/models/Comment';
+import { Task } from '@/models/Task';
+import { ActivityLog } from '@/models/ActivityLog';
 import { emitCommentCreated } from '@/lib/ws';
 import { problem } from '@/lib/http';
 
@@ -22,6 +22,8 @@ const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();

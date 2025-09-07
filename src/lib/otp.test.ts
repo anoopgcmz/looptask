@@ -12,7 +12,7 @@ vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
 const tokens: unknown[] = [];
 vi.mock('@/models/OtpToken', () => ({
-  default: {
+  OtpToken: {
     findOne: vi.fn(async (query: unknown) =>
       tokens
         .filter((t) => t.email === query.email)
@@ -32,7 +32,7 @@ vi.mock('@/models/OtpToken', () => ({
 
 const rates = new Map<string, unknown>();
 vi.mock('@/models/RateLimit', () => ({
-  default: {
+  RateLimit: {
     findOne: vi.fn(async ({ key }: unknown) => rates.get(key) || null),
     updateOne: vi.fn(async ({ key }: unknown, update: unknown, opts?: unknown) => {
       const record = rates.get(key);

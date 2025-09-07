@@ -1,8 +1,8 @@
 import dbConnect from '@/lib/db';
-import Organization from '@/models/Organization';
-import Team from '@/models/Team';
-import User from '@/models/User';
-import Task from '@/models/Task';
+import { Organization } from '@/models/Organization';
+import { Team } from '@/models/Team';
+import { User } from '@/models/User';
+import { Task } from '@/models/Task';
 
 export async function seed() {
   await dbConnect();

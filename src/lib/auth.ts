@@ -5,7 +5,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { signIn as signInBase } from 'next-auth/react';
 import bcrypt from 'bcrypt';
 import dbConnect from '@/lib/db';
-import User from '@/models/User';
+import { User } from '@/models/User';
 
 interface AuthUser {
   id: string;

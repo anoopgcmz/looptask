@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 import dbConnect from '@/lib/db';
-import Invitation, { type IInvitation } from '@/models/Invitation';
-import User from '@/models/User';
+import { Invitation, type IInvitation } from '@/models/Invitation';
+import { User } from '@/models/User';
 import { problem } from '@/lib/http';
 import { Types } from 'mongoose';
 
@@ -12,6 +12,8 @@ const acceptSchema = z.object({
   name: z.string(),
   password: z.string(),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   let body: z.infer<typeof acceptSchema>;

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { Types, type FilterQuery } from 'mongoose';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import User, { type IUser } from '@/models/User';
+import { User, type IUser } from '@/models/User';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -44,6 +44,8 @@ const createUserSchema = z.object({
   avatar: z.string().optional(),
   permissions: z.array(z.string()).optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();

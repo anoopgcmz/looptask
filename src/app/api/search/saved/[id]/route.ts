@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import SavedSearch from '@/models/SavedSearch';
+import { SavedSearch } from '@/models/SavedSearch';
 import { auth } from '@/lib/auth';
 
 interface Params {
@@ -13,6 +13,8 @@ const bodySchema = z.object({
   name: z.string().optional(),
   query: z.string().optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function GET(_req: NextRequest, context: Params) {
   const { params } = context;

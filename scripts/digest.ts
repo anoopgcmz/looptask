@@ -1,6 +1,6 @@
 import dbConnect from '@/lib/db';
-import User, { type IUser } from '@/models/User';
-import Notification, { type INotification } from '@/models/Notification';
+import { User, type IUser } from '@/models/User';
+import { Notification, type INotification } from '@/models/Notification';
 import type { FilterQuery } from 'mongoose';
 import { Resend } from 'resend';
 import path from 'path';

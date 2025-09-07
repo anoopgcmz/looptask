@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, startSession } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task, { type IStep } from '@/models/Task';
-import ActivityLog from '@/models/ActivityLog';
+import { Task, type IStep } from '@/models/Task';
+import { ActivityLog } from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { emitTaskTransition } from '@/lib/ws';
 import { diff } from '@/lib/diff';
@@ -21,6 +21,8 @@ import type { ITask } from '@/models/Task';
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(
   req: NextRequest,

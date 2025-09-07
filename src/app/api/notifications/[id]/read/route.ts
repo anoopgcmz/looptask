@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Notification from '@/models/Notification';
+import { Notification } from '@/models/Notification';
 import { auth } from '@/lib/auth';
 
 export async function POST(
@@ -43,3 +43,5 @@ export async function POST(
 
   return NextResponse.json(notification);
 }
+
+export const runtime = 'nodejs';

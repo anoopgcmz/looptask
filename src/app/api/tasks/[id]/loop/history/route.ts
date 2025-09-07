@@ -3,8 +3,8 @@ import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
-import LoopHistory from '@/models/LoopHistory';
+import { Task } from '@/models/Task';
+import { LoopHistory } from '@/models/LoopHistory';
 import { canReadTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
@@ -13,6 +13,8 @@ const querySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
+
+export const runtime = 'nodejs';
 
 export const GET = withOrganization(
   async (

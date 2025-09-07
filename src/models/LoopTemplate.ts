@@ -1,20 +1,13 @@
-import { Schema, model, models, type Document, Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  Types,
+} from 'mongoose';
 
-export interface ILoopStep {
-  assignedTo: Types.ObjectId;
-  description: string;
-  estimatedTime?: number;
-  dependencies?: number[];
-}
-
-export interface ILoopTemplate extends Document {
-  name: string;
-  steps: ILoopStep[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const loopStepSchema = new Schema<ILoopStep>(
+const loopStepSchema = new Schema(
   {
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     description: { type: String, required: true },
@@ -24,7 +17,7 @@ const loopStepSchema = new Schema<ILoopStep>(
   { _id: false }
 );
 
-const loopTemplateSchema = new Schema<ILoopTemplate>(
+const loopTemplateSchema = new Schema(
   {
     name: { type: String, required: true },
     steps: [loopStepSchema],
@@ -32,4 +25,10 @@ const loopTemplateSchema = new Schema<ILoopTemplate>(
   { timestamps: true }
 );
 
-export default models.LoopTemplate || model<ILoopTemplate>('LoopTemplate', loopTemplateSchema);
+export type ILoopStep = InferSchemaType<typeof loopStepSchema>;
+export type ILoopTemplate = InferSchemaType<typeof loopTemplateSchema>;
+
+export const LoopTemplate: Model<ILoopTemplate> =
+  (models.LoopTemplate as Model<ILoopTemplate>) ??
+  model<ILoopTemplate>('LoopTemplate', loopTemplateSchema);
+

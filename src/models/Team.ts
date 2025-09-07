@@ -1,12 +1,13 @@
-import { Schema, model, models, type Types, type Model } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-export interface ITeam {
-  _id: Types.ObjectId;
-  name: string;
-  timezone: string;
-}
-
-const teamSchema = new Schema<ITeam>(
+const teamSchema = new Schema(
   {
     name: { type: String, required: true },
     timezone: { type: String, default: 'Asia/Kolkata' },
@@ -14,6 +15,8 @@ const teamSchema = new Schema<ITeam>(
   { timestamps: true }
 );
 
-const TeamModel = (models.Team as Model<ITeam>) || model<ITeam>('Team', teamSchema);
+export type ITeam = InferSchemaType<typeof teamSchema> & { _id: Types.ObjectId };
 
-export default TeamModel;
+export const Team: Model<ITeam> =
+  (models.Team as Model<ITeam>) ?? model<ITeam>('Team', teamSchema);
+

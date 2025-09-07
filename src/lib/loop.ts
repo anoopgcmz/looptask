@@ -1,9 +1,9 @@
 import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
+import { Task } from '@/models/Task';
 import type { ITask } from '@/models/Task';
-import TaskLoop, { type ILoopStep, type ITaskLoop } from '@/models/TaskLoop';
-import LoopHistory from '@/models/LoopHistory';
+import { TaskLoop, type ILoopStep, type ITaskLoop } from '@/models/TaskLoop';
+import { LoopHistory } from '@/models/LoopHistory';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 
 export async function completeStep(

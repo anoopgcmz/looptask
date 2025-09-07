@@ -1,5 +1,5 @@
 import dbConnect from '@/lib/db';
-import RateLimit from '@/models/RateLimit';
+import { RateLimit } from '@/models/RateLimit';
 import type { Types } from 'mongoose';
 
 interface MetaWebSocket extends WebSocket {

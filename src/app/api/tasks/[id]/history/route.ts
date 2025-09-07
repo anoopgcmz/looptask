@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
-import ActivityLog from '@/models/ActivityLog';
+import { Task } from '@/models/Task';
+import { ActivityLog } from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { canReadTask } from '@/lib/access';
 import { problem } from '@/lib/http';
@@ -50,4 +50,6 @@ export async function GET(
 
   return NextResponse.json(events);
 }
+
+export const runtime = 'nodejs';
 

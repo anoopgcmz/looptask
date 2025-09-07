@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Organization from '@/models/Organization';
-import User from '@/models/User';
+import { Organization } from '@/models/Organization';
+import { User } from '@/models/User';
 import { problem } from '@/lib/http';
 
 const registerSchema = z.object({
@@ -13,6 +13,8 @@ const registerSchema = z.object({
   organizationId: z.string().optional(),
   organizationName: z.string().optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   let body: z.infer<typeof registerSchema>;

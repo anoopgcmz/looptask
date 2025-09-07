@@ -1,14 +1,13 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-export interface IActivityLog extends Document {
-  taskId: Types.ObjectId;
-  actorId: Types.ObjectId;
-  type: string;
-  payload: unknown;
-  createdAt: Date;
-}
-
-const activityLogSchema = new Schema<IActivityLog>(
+const activityLogSchema = new Schema(
   {
     taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true, index: true },
     actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -18,4 +17,9 @@ const activityLogSchema = new Schema<IActivityLog>(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-export default models.ActivityLog || model<IActivityLog>('ActivityLog', activityLogSchema);
+export type IActivityLog = InferSchemaType<typeof activityLogSchema>;
+
+export const ActivityLog: Model<IActivityLog> =
+  (models.ActivityLog as Model<IActivityLog>) ??
+  model<IActivityLog>('ActivityLog', activityLogSchema);
+

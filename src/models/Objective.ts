@@ -1,17 +1,15 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  type Types,
+} from 'mongoose';
 
 export type ObjectiveStatus = 'OPEN' | 'DONE';
 
-export interface IObjective extends Document {
-  date: string;
-  teamId: Types.ObjectId;
-  title: string;
-  ownerId: Types.ObjectId;
-  linkedTaskIds: Types.ObjectId[];
-  status: ObjectiveStatus;
-}
-
-const objectiveSchema = new Schema<IObjective>(
+const objectiveSchema = new Schema(
   {
     date: { type: String, required: true },
     teamId: { type: Schema.Types.ObjectId, ref: 'Team', required: true },
@@ -23,4 +21,9 @@ const objectiveSchema = new Schema<IObjective>(
   { timestamps: true }
 );
 
-export default models.Objective || model<IObjective>('Objective', objectiveSchema);
+export type IObjective = InferSchemaType<typeof objectiveSchema>;
+
+export const Objective: Model<IObjective> =
+  (models.Objective as Model<IObjective>) ??
+  model<IObjective>('Objective', objectiveSchema);
+
