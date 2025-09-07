@@ -316,21 +316,22 @@ export const PATCH = withOrganization(
   } finally {
     await sessionDb.endSession();
   }
-    if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
+  if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
 
-    const notifyTask = task as Pick<ITask, '_id' | 'title' | 'status'>;
+  const notifyTask = task as Pick<ITask, '_id' | 'title' | 'status'>;
 
-    for (const a of newAssignments) {
-      const uid = new Types.ObjectId(a.userId);
-      await notifyAssignment([uid], notifyTask, a.description);
-      await notifyLoopStepReady([uid], notifyTask, a.description);
-    }
-    for (const a of oldAssignments) {
-      const uid = new Types.ObjectId(a.userId);
-      await notifyAssignment([uid], notifyTask, a.description);
-    }
-    emitLoopUpdated({ taskId: id, patch: body, updatedAt: updatedLoop.updatedAt });
-    return NextResponse.json(updatedLoop);
+  for (const a of newAssignments) {
+    const uid = new Types.ObjectId(a.userId);
+    await notifyAssignment([uid], notifyTask, a.description);
+    await notifyLoopStepReady([uid], notifyTask, a.description);
+  }
+  for (const a of oldAssignments) {
+    const uid = new Types.ObjectId(a.userId);
+    await notifyAssignment([uid], notifyTask, a.description);
+  }
+  const loop = updatedLoop as ITaskLoop;
+  emitLoopUpdated({ taskId: id, patch: body, updatedAt: loop.updatedAt });
+  return NextResponse.json(loop);
   }
 );
 
