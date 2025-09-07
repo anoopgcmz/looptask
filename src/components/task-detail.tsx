@@ -209,7 +209,7 @@ export default function TaskDetail({ id }: { id: string }) {
       <input
         className="border p-2"
         type="date"
-        value={task.dueDate ? task.dueDate.split("T")[0] : ""}
+        value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
         onChange={(e) => setTask({ ...task, dueDate: e.target.value })}
         onBlur={(e) => void updateField("dueDate", e.target.value)}
       />

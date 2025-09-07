@@ -64,14 +64,16 @@ function createResolver<T>(schema: z.ZodSchema<T>) {
   return (values: unknown) => {
     const result = schema.safeParse(values);
     if (result.success) return { values: result.data, errors: {} };
-    const errors = result.error.issues.reduce<Record<string, unknown>>(
-      (acc, issue) => {
-        const path = issue.path[0] as string;
-        acc[path] = { type: issue.code, message: issue.message };
-        return acc;
-      },
-      {}
-    );
+      const errors = result.error.issues.reduce<Record<string, unknown>>(
+        (acc, issue) => {
+          const [firstPath] = issue.path;
+          if (typeof firstPath === 'string') {
+            acc[firstPath] = { type: issue.code, message: issue.message };
+          }
+          return acc;
+        },
+        {}
+      );
     return { values: {}, errors };
   };
 }
@@ -192,7 +194,8 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   };
 
   const onUploadSubmit = async ({ file }: { file: FileList }) => {
-    const f = file[0];
+    const f = file.item(0);
+    if (!f) return;
     const tempId = `temp-${Date.now()}`;
     const tempAtt = { _id: tempId, filename: f.name, url: URL.createObjectURL(f) };
     setAttachments((prev) => [tempAtt, ...prev]);

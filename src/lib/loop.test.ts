@@ -64,9 +64,9 @@ describe('completeStep', () => {
   it('blocks steps with unmet dependencies and activates when ready', async () => {
     let res = await completeStep(taskId.toString(), 0, userA.toString());
     expect(res).toBe(loop);
-    expect(loop.sequence[0].status).toBe('COMPLETED');
-    expect(loop.sequence[1].status).toBe('ACTIVE');
-    expect(loop.sequence[2].status).toBe('BLOCKED');
+    expect(loop.sequence[0]?.status).toBe('COMPLETED');
+    expect(loop.sequence[1]?.status).toBe('ACTIVE');
+    expect(loop.sequence[2]?.status).toBe('BLOCKED');
     expect(loop.currentStep).toBe(1);
     expect(notifyAssignment).toHaveBeenCalledWith([userB], { _id: taskId }, undefined);
     expect(notifyLoopStepReady).toHaveBeenCalledWith([userB], { _id: taskId }, undefined);
@@ -77,8 +77,8 @@ describe('completeStep', () => {
 
     notifyLoopStepReady.mockClear();
     res = await completeStep(taskId.toString(), 1, userB.toString());
-    expect(loop.sequence[1].status).toBe('COMPLETED');
-    expect(loop.sequence[2].status).toBe('ACTIVE');
+    expect(loop.sequence[1]?.status).toBe('COMPLETED');
+    expect(loop.sequence[2]?.status).toBe('ACTIVE');
     expect(loop.currentStep).toBe(2);
     expect(notifyAssignment).toHaveBeenCalledWith([userC], { _id: taskId }, undefined);
     expect(notifyLoopStepReady).toHaveBeenCalledWith([userC], { _id: taskId }, undefined);

@@ -29,9 +29,8 @@ interface DashboardData {
 }
 
 export default function DailyDashboardPage() {
-  const [date, setDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [initialDate] = new Date().toISOString().split('T');
+  const [date, setDate] = useState(initialDate ?? '');
   const [teamId, setTeamId] = useState('');
   const [data, setData] = useState<DashboardData | null>(null);
 

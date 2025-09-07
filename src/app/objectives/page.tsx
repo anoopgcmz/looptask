@@ -8,9 +8,8 @@ interface Objective {
 }
 
 export default function ObjectivesPage() {
-  const [date, setDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [initialDate] = new Date().toISOString().split('T');
+  const [date, setDate] = useState(initialDate ?? '');
   const [teamId, setTeamId] = useState('');
   const [objectives, setObjectives] = useState<Objective[]>([]);
 

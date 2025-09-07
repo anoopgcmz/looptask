@@ -55,11 +55,12 @@ function flushQueue() {
     : [];
   const process = async () => {
     while (queue.length) {
-      const item = queue[0];
+      const item = queue.shift();
+      if (!item) break;
       try {
         await fetch(item.url, item.init);
-        queue.shift();
       } catch {
+        queue.unshift(item);
         break;
       }
     }

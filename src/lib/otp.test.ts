@@ -14,7 +14,10 @@ const tokens: unknown[] = [];
 vi.mock('@/models/OtpToken', () => ({
   default: {
     findOne: vi.fn(async (query: unknown) =>
-      tokens.filter((t) => t.email === query.email).sort((a, b) => b.createdAt - a.createdAt)[0] || null
+      tokens
+        .filter((t) => t.email === query.email)
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .at(0) || null
     ),
     create: vi.fn(async (doc: unknown) => {
       tokens.push({ ...doc, attempts: 0, createdAt: new Date() });

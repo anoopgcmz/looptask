@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     return problem(400, 'Invalid request', 'Organization is required');
   }
 
-  const username = body.email.split('@')[0];
+  const [username] = body.email.split('@');
 
   try {
     const user = await User.create({

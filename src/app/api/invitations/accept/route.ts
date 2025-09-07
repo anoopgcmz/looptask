@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     return problem(400, 'Invalid request', 'Invalid or expired token');
   }
 
-  const username = invite.email.split('@')[0];
+  const [username] = invite.email.split('@');
   try {
     const user = await User.create({
       name: body.name,

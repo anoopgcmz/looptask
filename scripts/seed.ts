@@ -22,7 +22,7 @@ export async function seed() {
   for (const org of organizations) {
     const team = await Team.create({ name: `${org.name} Team` });
     const base = org.name.toLowerCase().replace(/\s+/g, '');
-    const [user1, user2, user3] = await User.create([
+    const users = await User.create([
       {
         name: 'User One',
         email: `user1@${org.domain}`,
@@ -57,6 +57,10 @@ export async function seed() {
         role: 'ADMIN',
       },
     ]);
+    const [user1, user2, user3] = users;
+    if (!user1 || !user2 || !user3) {
+      throw new Error('Failed to create seed users');
+    }
 
     const simpleDue = new Date(Date.now() + 2 * 60 * 60 * 1000);
     await Task.create({
