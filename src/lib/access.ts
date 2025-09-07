@@ -3,8 +3,8 @@ import type { ITask } from '@/models/Task';
 
 type UserLike = {
   _id: Types.ObjectId | string;
-  organizationId?: Types.ObjectId | string;
-  teamId?: Types.ObjectId | string;
+  organizationId?: Types.ObjectId | string | undefined;
+  teamId?: Types.ObjectId | string | undefined;
 };
 
 export function canReadTask(user: UserLike, task: ITask): boolean {

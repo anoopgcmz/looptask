@@ -13,31 +13,31 @@ export type TaskVisibility = 'PRIVATE' | 'TEAM';
 export interface IStep {
   title: string;
   ownerId: Types.ObjectId;
-  description?: string;
-  dueAt?: Date;
+  description?: string | undefined;
+  dueAt?: Date | undefined;
   status: 'OPEN' | 'DONE';
-  completedAt?: Date;
+  completedAt?: Date | undefined;
 }
 
 export interface ITask extends Document {
   _id: Types.ObjectId;
   title: string;
-  description?: string;
+  description?: string | undefined;
   createdBy: Types.ObjectId;
-  ownerId?: Types.ObjectId;
-  helpers?: Types.ObjectId[];
-  mentions?: Types.ObjectId[];
+  ownerId?: Types.ObjectId | undefined;
+  helpers?: Types.ObjectId[] | undefined;
+  mentions?: Types.ObjectId[] | undefined;
   organizationId: Types.ObjectId;
-  teamId?: Types.ObjectId;
+  teamId?: Types.ObjectId | undefined;
   status: TaskStatus;
   priority: TaskPriority;
-  tags?: string[];
-  visibility?: TaskVisibility;
-  dueDate?: Date;
-  steps?: IStep[];
-  currentStepIndex?: number;
-  participantIds?: Types.ObjectId[];
-  custom?: Record<string, unknown>;
+  tags?: string[] | undefined;
+  visibility?: TaskVisibility | undefined;
+  dueDate?: Date | undefined;
+  steps?: IStep[] | undefined;
+  currentStepIndex?: number | undefined;
+  participantIds?: Types.ObjectId[] | undefined;
+  custom?: Record<string, unknown> | undefined;
   createdAt: Date;
   updatedAt: Date;
 }

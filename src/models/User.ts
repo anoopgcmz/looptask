@@ -24,17 +24,17 @@ export interface IUser {
   username: string;
   password: string;
   organizationId: Types.ObjectId;
-  teamId?: Types.ObjectId;
+  teamId?: Types.ObjectId | undefined;
   timezone: string;
   isActive: boolean;
   role: 'ADMIN' | 'USER';
-  avatar?: string;
+  avatar?: string | undefined;
   permissions: string[];
   notificationSettings: {
     email: boolean;
     push: boolean;
     digestFrequency: 'immediate' | 'daily' | 'weekly';
-    lastDigestAt?: Date;
+    lastDigestAt?: Date | undefined;
     types: {
       ASSIGNMENT: boolean;
       LOOP_STEP_READY: boolean;
