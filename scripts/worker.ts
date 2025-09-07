@@ -27,7 +27,7 @@ interface TaskJobData extends JobAttributesData {
 
 agenda.define('task.dueSoon', async (job: Job<TaskJobData>) => {
   const { taskId, stepId } = job.attrs.data;
-  const task = await Task.findById(taskId).lean<ITask>();
+  const task = await Task.findById(taskId).lean<ITask & { _id: Types.ObjectId }>();
   if (!task) return;
   let recipients: Types.ObjectId[] = [];
   if (stepId) {
@@ -38,14 +38,18 @@ agenda.define('task.dueSoon', async (job: Job<TaskJobData>) => {
     recipients = task.participantIds ?? [];
   }
   if (recipients.length) {
-    const t = task as Pick<ITask, '_id' | 'title' | 'status'>;
+    const t: Pick<ITask, '_id' | 'title' | 'status'> = {
+      _id: task._id,
+      title: task.title,
+      status: task.status,
+    };
     await notifyDueSoon(recipients, t);
   }
 });
 
 agenda.define('task.dueNow', async (job: Job<TaskJobData>) => {
   const { taskId, stepId } = job.attrs.data;
-  const task = await Task.findById(taskId).lean<ITask>();
+  const task = await Task.findById(taskId).lean<ITask & { _id: Types.ObjectId }>();
   if (!task) return;
   let recipients: Types.ObjectId[] = [];
   if (stepId) {
@@ -56,7 +60,11 @@ agenda.define('task.dueNow', async (job: Job<TaskJobData>) => {
     recipients = task.participantIds ?? [];
   }
   if (recipients.length) {
-    const t = task as Pick<ITask, '_id' | 'title' | 'status'>;
+    const t: Pick<ITask, '_id' | 'title' | 'status'> = {
+      _id: task._id,
+      title: task.title,
+      status: task.status,
+    };
     await notifyDueNow(recipients, t);
     await notifyOverdue(recipients, t);
   }
