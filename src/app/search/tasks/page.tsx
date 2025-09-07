@@ -5,20 +5,19 @@ import { useEffect, useState } from 'react';
 import FilterBuilder from '@/components/filter-builder';
 import { useSession } from 'next-auth/react';
 import { getPresets } from '../filters';
-
-interface SearchResult {
-  _id: string;
-  title: string;
-  excerpt: string;
-}
+import type {
+  SearchResult,
+  SearchTasksResponse,
+  SavedSearch,
+} from '@/types/api/search';
 
 export default function TaskSearchPage() {
   const params = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
   const presets = getPresets(session?.userId);
-  const [data, setData] = useState<{ results: SearchResult[]; verification: unknown }>();
-  const [saved, setSaved] = useState<{ _id: string; name: string; query: string }[]>([]);
+  const [data, setData] = useState<SearchTasksResponse>();
+  const [saved, setSaved] = useState<SavedSearch[]>([]);
 
   const [ownerIds, setOwnerIds] = useState<string[]>(() => {
     const vals = params.getAll('ownerId');
@@ -47,24 +46,36 @@ export default function TaskSearchPage() {
 
   useEffect(() => {
     const qs = params.toString();
-    fetch(`/api/search/tasks?${qs}`).then((res) => res.json()).then(setData);
+    const run = async () => {
+      const res = await fetch(`/api/search/tasks?${qs}`);
+      if (!res.ok) return;
+      setData((await res.json()) as SearchTasksResponse);
+    };
+    void run();
   }, [params]);
 
   useEffect(() => {
-    fetch('/api/search/saved').then((res) => res.json()).then(setSaved);
+    const run = async () => {
+      const res = await fetch('/api/search/saved');
+      if (!res.ok) return;
+      setSaved((await res.json()) as SavedSearch[]);
+    };
+    void run();
   }, []);
 
-  const saveCurrent = () => {
+  const saveCurrent = async () => {
     const name = prompt('Name this search');
     if (!name) return;
     const qs = params.toString();
-    fetch('/api/search/saved', {
+    const res = await fetch('/api/search/saved', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, query: qs }),
-    }).then(() =>
-      fetch('/api/search/saved').then((res) => res.json()).then(setSaved)
-    );
+    });
+    if (!res.ok) return;
+    const savedRes = await fetch('/api/search/saved');
+    if (!savedRes.ok) return;
+    setSaved((await savedRes.json()) as SavedSearch[]);
   };
 
   return (
@@ -95,7 +106,7 @@ export default function TaskSearchPage() {
         </a>
         {saved.length > 0 && (
           <ul className="flex flex-wrap gap-2">
-            {saved.map((s: { _id: string; name: string; query: string }) => (
+            {saved.map((s) => (
               <li key={s._id}>
                 <a
                   href={`/search/tasks?${s.query}`}

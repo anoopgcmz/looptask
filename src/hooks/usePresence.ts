@@ -26,15 +26,17 @@ export default function usePresence(taskId: string) {
           if (!viewersRef.current[userId]) {
             viewersRef.current[userId] = { _id: userId };
             update();
-            fetch(`/api/users/${userId}`)
-              .then((res) => (res.ok ? res.json() : null))
-              .then((user) => {
-                if (user) {
-                  viewersRef.current[user._id] = user;
-                  update();
-                }
-              })
-              .catch(() => {});
+            (async () => {
+              try {
+                const res = await fetch(`/api/users/${userId}`);
+                if (!res.ok) return;
+                const user: Viewer = await res.json();
+                viewersRef.current[user._id] = user;
+                update();
+              } catch {
+                /* ignore */
+              }
+            })();
           }
         } else if (data.event === 'user.left') {
           const userId: string = data.userId;

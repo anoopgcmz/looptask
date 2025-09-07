@@ -5,12 +5,7 @@ import { SessionProvider, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-
-interface Task {
-  _id: string;
-  title: string;
-  status: string;
-}
+import type { TaskResponse as Task } from '@/types/api/task';
 
 const statusLabels: Record<string, string> = {
   OPEN: 'Open',
@@ -42,13 +37,17 @@ function DashboardInner() {
   useEffect(() => {
     async function loadTasks() {
       const results = await Promise.all(
-        statusTabs.map((s) =>
-          fetch(
-            `/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`
-          )
-            .then((res) => res.json())
-            .catch(() => [])
-        )
+        statusTabs.map(async (s) => {
+          try {
+            const res = await fetch(
+              `/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`
+            );
+            if (!res.ok) return [] as Task[];
+            return (await res.json()) as Task[];
+          } catch {
+            return [] as Task[];
+          }
+        })
       );
       const next: Record<string, Task[]> = {};
       statusTabs.forEach((s, i) => {

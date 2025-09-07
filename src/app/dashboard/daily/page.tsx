@@ -37,10 +37,21 @@ export default function DailyDashboardPage() {
 
   useEffect(() => {
     if (!teamId) return;
-    fetch(`/api/dashboard/daily?date=${date}&teamId=${teamId}`)
-      .then((res) => res.json() as Promise<DashboardData>)
-      .then(setData)
-      .catch(() => setData(null));
+    const run = async () => {
+      try {
+        const res = await fetch(
+          `/api/dashboard/daily?date=${date}&teamId=${teamId}`
+        );
+        if (!res.ok) {
+          setData(null);
+          return;
+        }
+        setData((await res.json()) as DashboardData);
+      } catch {
+        setData(null);
+      }
+    };
+    void run();
   }, [date, teamId]);
 
   return (

@@ -2,15 +2,23 @@
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import useNotificationsChannel from '@/hooks/useNotificationsChannel';
+import type { UnreadCount } from '@/types/api/notifications';
 
 export default function NotificationsBadge() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    fetch('/api/notifications/unread-count')
-      .then((res) => (res.ok ? res.json() : { count: 0 }))
-      .then((data) => setCount(data.count))
-      .catch(() => {});
+    const run = async () => {
+      try {
+        const res = await fetch('/api/notifications/unread-count');
+        if (!res.ok) return;
+        const data = (await res.json()) as UnreadCount;
+        setCount(data.count);
+      } catch {
+        /* ignore */
+      }
+    };
+    void run();
     const readHandler = (e: Event) => {
       const detail = (e as CustomEvent<{ count?: number }>).detail;
       setCount((c) => Math.max(0, c - (detail?.count ?? 1)));

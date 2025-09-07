@@ -16,10 +16,19 @@ export default function ObjectivesPage() {
 
   useEffect(() => {
     if (!teamId) return;
-    fetch(`/api/objectives?date=${date}&teamId=${teamId}`)
-      .then((res) => res.json() as Promise<Objective[]>)
-      .then(setObjectives)
-      .catch(() => setObjectives([]));
+    const run = async () => {
+      try {
+        const res = await fetch(`/api/objectives?date=${date}&teamId=${teamId}`);
+        if (!res.ok) {
+          setObjectives([]);
+          return;
+        }
+        setObjectives((await res.json()) as Objective[]);
+      } catch {
+        setObjectives([]);
+      }
+    };
+    void run();
   }, [date, teamId]);
 
   return (
