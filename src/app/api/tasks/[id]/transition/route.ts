@@ -67,6 +67,7 @@ export async function POST(
         mongoSession
       )) as ITask | null;
       if (!t) throw new Error('Task not found');
+      if (!t.steps) throw new Error('Task steps missing');
       const idx = t.currentStepIndex ?? 0;
       const step = t.steps[idx];
       if (!step || step.status === 'DONE') return;
