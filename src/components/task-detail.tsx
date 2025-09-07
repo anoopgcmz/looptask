@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
 import LoopVisualizer, { StepWithStatus, UserMap } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
-import useRealtime from "@/hooks/useRealtime";
+import useRealtime, { RealtimeMessage } from "@/hooks/useRealtime";
 import usePresence from "@/hooks/usePresence";
 import { Avatar } from "@/components/ui/avatar";
 
@@ -111,7 +111,7 @@ export default function TaskDetail({ id }: { id: string }) {
   }, [refreshLoop]);
 
   const handleMessage = useCallback(
-    (data: unknown) => {
+    (data: RealtimeMessage) => {
       if (data.taskId !== id) return;
       switch (data.event) {
         case "task.updated":

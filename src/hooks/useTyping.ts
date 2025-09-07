@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isRealtimeMessage } from '@/hooks/useRealtime';
 
 interface User {
   _id: string;
@@ -23,10 +24,10 @@ export default function useTyping(
     const localTimers = timers.current;
     ws.addEventListener('message', (event) => {
       try {
-        const data = JSON.parse(event.data);
-        if (data.taskId !== taskId) return;
+        const data: unknown = JSON.parse(event.data);
+        if (!isRealtimeMessage(data) || data.taskId !== taskId) return;
         if (data.event === 'comment.typing') {
-          const uid: string = data.userId;
+          const uid: string = (data as any).userId;
           if (!uid || uid === userId) return;
           if (!usersRef.current[uid]) {
             usersRef.current[uid] = { _id: uid };
