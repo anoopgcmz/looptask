@@ -4,6 +4,7 @@ import {
   models,
   type HydratedDocument,
   type Types,
+  type Model,
 } from 'mongoose';
 import bcrypt from 'bcrypt';
 
@@ -110,4 +111,6 @@ userSchema.pre('save', async function (this: UserDocument) {
   }
 });
 
-export default models.User || model<IUser>('User', userSchema);
+const UserModel = (models.User as Model<IUser>) || model<IUser>('User', userSchema);
+
+export default UserModel;

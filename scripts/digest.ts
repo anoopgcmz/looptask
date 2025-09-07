@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import User, { type IUser } from '@/models/User';
 import Notification, { type INotification } from '@/models/Notification';
+import type { FilterQuery } from 'mongoose';
 import { Resend } from 'resend';
 import path from 'path';
 import { promises as fs } from 'fs';
@@ -16,11 +17,12 @@ async function main() {
   await dbConnect();
   const template = await loadTemplate();
   const now = new Date();
-  const users = await User.find({
+  const userQuery: FilterQuery<IUser> = {
     isActive: true,
     'notificationSettings.digestFrequency': { $ne: 'immediate' },
     'notificationSettings.email': { $ne: false },
-  });
+  };
+  const users = await User.find(userQuery).lean<IUser>();
 
   for (const user of users) {
     const prefs: Partial<IUser['notificationSettings']> =
@@ -30,11 +32,12 @@ async function main() {
     const interval = freq === 'weekly' ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
     if (now.getTime() - last.getTime() < interval) continue;
 
-    const notifications: INotification[] = await Notification.find({
+    const notificationQuery: FilterQuery<INotification> = {
       userId: user._id,
       read: false,
       createdAt: { $gt: last },
-    }).lean();
+    };
+    const notifications = await Notification.find(notificationQuery).lean<INotification>();
     if (!notifications.length) continue;
 
     const listItems = notifications
