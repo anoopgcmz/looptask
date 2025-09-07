@@ -30,15 +30,17 @@ export default function useTyping(
           if (!uid || uid === userId) return;
           if (!usersRef.current[uid]) {
             usersRef.current[uid] = { _id: uid };
-            fetch(`/api/users/${uid}`)
-              .then((res) => (res.ok ? res.json() : null))
-              .then((user) => {
-                if (user) {
-                  usersRef.current[user._id] = user;
-                  setVersion((v) => v + 1);
-                }
-              })
-              .catch(() => {});
+            (async () => {
+              try {
+                const res = await fetch(`/api/users/${uid}`);
+                if (!res.ok) return;
+                const user: User = await res.json();
+                usersRef.current[user._id] = user;
+                setVersion((v) => v + 1);
+              } catch {
+                /* ignore */
+              }
+            })();
           }
           setVersion((v) => v + 1);
           clearTimeout(timers.current[uid]);

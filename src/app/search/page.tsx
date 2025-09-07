@@ -6,28 +6,31 @@ import Link from 'next/link';
 import FilterBuilder from '@/components/filter-builder';
 import { useSession } from 'next-auth/react';
 import { getPresets } from './filters';
-
-interface SearchItem {
-  _id: string;
-  type: 'task' | 'loop' | 'comment';
-  taskId: string;
-  title: string;
-  excerpt: string;
-}
+import type {
+  SearchItem,
+  GlobalSearchResponse,
+  SavedSearch,
+  SuggestionsResponse,
+} from '@/types/api/search';
 
 export default function GlobalSearchPage() {
   const params = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
   const presets = getPresets(session?.userId);
-  const [data, setData] = useState<{ results: SearchItem[]; total: number }>();
-  const [saved, setSaved] = useState<{ _id: string; name: string; query: string }[]>([]);
+  const [data, setData] = useState<GlobalSearchResponse>();
+  const [saved, setSaved] = useState<SavedSearch[]>([]);
   const [q, setQ] = useState(params.get('q') ?? '');
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     const qs = params.toString();
-    fetch(`/api/search/global?${qs}`).then((res) => res.json()).then(setData);
+    const run = async () => {
+      const res = await fetch(`/api/search/global?${qs}`);
+      if (!res.ok) return;
+      setData((await res.json()) as GlobalSearchResponse);
+    };
+    void run();
   }, [params]);
 
   useEffect(() => {
@@ -35,31 +38,44 @@ export default function GlobalSearchPage() {
   }, [params]);
 
   useEffect(() => {
-    fetch('/api/search/saved').then((res) => res.json()).then(setSaved);
+    const run = async () => {
+      const res = await fetch('/api/search/saved');
+      if (!res.ok) return;
+      setSaved((await res.json()) as SavedSearch[]);
+    };
+    void run();
   }, []);
 
-  const saveCurrent = () => {
+  const saveCurrent = async () => {
     const name = prompt('Name this search');
     if (!name) return;
     const qs = params.toString();
-    fetch('/api/search/saved', {
+    const res = await fetch('/api/search/saved', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, query: qs }),
-    }).then(() =>
-      fetch('/api/search/saved').then((res) => res.json()).then(setSaved)
-    );
+    });
+    if (!res.ok) return;
+    const savedRes = await fetch('/api/search/saved');
+    if (!savedRes.ok) return;
+    setSaved((await savedRes.json()) as SavedSearch[]);
   };
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      if (!q) {
-        setSuggestions([]);
-        return;
-      }
-      fetch(`/api/search/suggestions?q=${encodeURIComponent(q)}`)
-        .then((res) => res.json())
-        .then((data) => setSuggestions(data.suggestions || []));
+      const run = async () => {
+        if (!q) {
+          setSuggestions([]);
+          return;
+        }
+        const res = await fetch(
+          `/api/search/suggestions?q=${encodeURIComponent(q)}`
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as SuggestionsResponse;
+        setSuggestions(data.suggestions || []);
+      };
+      void run();
     }, 300);
     return () => clearTimeout(handler);
   }, [q]);
@@ -97,7 +113,7 @@ export default function GlobalSearchPage() {
         </a>
         {saved.length > 0 && (
           <ul className="flex flex-wrap gap-2">
-            {saved.map((s: { _id: string; name: string; query: string }) => (
+            {saved.map((s) => (
               <li key={s._id}>
                 <Link
                   href={`/search?${s.query}`}

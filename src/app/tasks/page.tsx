@@ -6,16 +6,7 @@ import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import TaskCard from '@/components/task-card';
 import { useSession } from 'next-auth/react';
-
-interface Task {
-  _id: string;
-  title: string;
-  status: string;
-  assignee?: string;
-  ownerId?: string;
-  dueDate?: string;
-  priority?: string;
-}
+import type { TaskResponse as Task } from '@/types/api/task';
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -61,7 +52,7 @@ export default function TasksPage() {
     setLoading(true);
     try {
       const results = await Promise.all(
-        statusTabs.map((s) => {
+        statusTabs.map(async (s) => {
           const params = new URLSearchParams();
           if (filters.assignee) params.append('ownerId', filters.assignee);
           if (filters.priority) params.append('priority', filters.priority);
@@ -72,9 +63,13 @@ export default function TasksPage() {
           s.query.forEach((st) => params.append('status', st));
           params.append('limit', PAGE_SIZE.toString());
           params.append('page', '1');
-          return fetch(`/api/tasks?${params.toString()}`)
-            .then((res) => res.json())
-            .catch(() => []);
+          try {
+            const res = await fetch(`/api/tasks?${params.toString()}`);
+            if (!res.ok) return [] as Task[];
+            return (await res.json()) as Task[];
+          } catch {
+            return [] as Task[];
+          }
         })
       );
       const nextTasks: Record<string, Task[]> = {};
@@ -111,9 +106,15 @@ export default function TasksPage() {
         tab.query.forEach((st) => params.append('status', st));
         params.append('limit', PAGE_SIZE.toString());
         params.append('page', nextPage.toString());
-        const result: Task[] = await fetch(`/api/tasks?${params.toString()}`)
-          .then((res) => res.json())
-          .catch(() => []);
+        let result: Task[] = [];
+        try {
+          const res = await fetch(`/api/tasks?${params.toString()}`);
+          if (res.ok) {
+            result = (await res.json()) as Task[];
+          }
+        } catch {
+          result = [];
+        }
         setTasks((prev) => ({
           ...prev,
           [status]: [...prev[status], ...result],
