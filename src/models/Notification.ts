@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import { Schema, model, models, type Document, type Types, type Model } from 'mongoose';
 
 export interface INotification extends Document {
   userId: Types.ObjectId;
@@ -26,4 +26,8 @@ notificationSchema.index({ userId: 1, read: 1 });
 notificationSchema.index({ createdAt: -1 });
 notificationSchema.index({ type: 1 });
 
-export default models.Notification || model<INotification>('Notification', notificationSchema);
+const NotificationModel =
+  (models.Notification as Model<INotification>) ||
+  model<INotification>('Notification', notificationSchema);
+
+export default NotificationModel;
