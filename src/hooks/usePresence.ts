@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { isRealtimeMessage } from '@/hooks/useRealtime';
 
 interface Viewer {
   _id: string;
@@ -19,10 +20,10 @@ export default function usePresence(taskId: string) {
 
     ws.addEventListener('message', (event) => {
       try {
-        const data = JSON.parse(event.data);
-        if (data.taskId !== taskId) return;
+        const data: unknown = JSON.parse(event.data);
+        if (!isRealtimeMessage(data) || data.taskId !== taskId) return;
         if (data.event === 'user.joined') {
-          const userId: string = data.userId;
+          const userId: string = (data as any).userId;
           if (!viewersRef.current[userId]) {
             viewersRef.current[userId] = { _id: userId };
             update();
@@ -39,7 +40,7 @@ export default function usePresence(taskId: string) {
             })();
           }
         } else if (data.event === 'user.left') {
-          const userId: string = data.userId;
+          const userId: string = (data as any).userId;
           if (viewersRef.current[userId]) {
             delete viewersRef.current[userId];
             update();

@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 export type ConnectionStatus = 'connecting' | 'connected' | 'offline';
 
 export interface RealtimeMessage {
+  taskId: string;
   event: string;
+  patch?: any;
+  updatedAt?: string;
   [key: string]: unknown;
 }
 
@@ -27,12 +30,14 @@ const HEARTBEAT_INTERVAL = 30000;
 const HEARTBEAT_TIMEOUT = 10000;
 const MAX_BACKOFF = 30000;
 
-function isRealtimeMessage(data: unknown): data is RealtimeMessage {
+export function isRealtimeMessage(data: unknown): data is RealtimeMessage {
   return (
     typeof data === 'object' &&
     data !== null &&
     'event' in data &&
-    typeof (data as { event: unknown }).event === 'string'
+    typeof (data as { event: unknown }).event === 'string' &&
+    'taskId' in data &&
+    typeof (data as { taskId: unknown }).taskId === 'string'
   );
 }
 
