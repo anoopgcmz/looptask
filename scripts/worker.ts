@@ -5,7 +5,14 @@ import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
 import { Types } from 'mongoose';
-import type { Job, JobAttributesData } from 'agenda';
+
+// The agenda library no longer exports the Job type.  Define a minimal
+// interface that matches the shape used in this worker so that the script can
+// compile without relying on the missing type export.
+type JobAttributesData = Record<string, unknown>;
+interface Job<T extends JobAttributesData = JobAttributesData> {
+  attrs: { data: T };
+}
 
 type EveryOptions = Parameters<typeof agenda.every>[3];
 type EveryOptionsWithUnique = EveryOptions & {
