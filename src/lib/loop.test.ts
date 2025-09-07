@@ -19,12 +19,26 @@ vi.mock('@/models/LoopHistory', () => ({ default: { create: createHistory } }));
 
 import { completeStep } from './loop';
 
+interface TestLoop {
+  taskId: Types.ObjectId;
+  sequence: Array<{
+    assignedTo: Types.ObjectId;
+    status: string;
+    description?: string;
+    dependencies?: number[];
+  }>;
+  currentStep: number;
+  isActive: boolean;
+  save: () => Promise<null>;
+  parallel?: boolean;
+}
+
 describe('completeStep', () => {
   const taskId = new Types.ObjectId();
   const userA = new Types.ObjectId();
   const userB = new Types.ObjectId();
   const userC = new Types.ObjectId();
-  let loop: unknown;
+  let loop: TestLoop;
 
   beforeEach(() => {
     notifyLoopStepReady.mockReset();
@@ -40,6 +54,7 @@ describe('completeStep', () => {
         { assignedTo: userC, status: 'PENDING', dependencies: [1] },
       ],
       currentStep: 0,
+      isActive: true,
       save: vi.fn().mockResolvedValue(null),
     };
     findOne.mockResolvedValue(loop);
