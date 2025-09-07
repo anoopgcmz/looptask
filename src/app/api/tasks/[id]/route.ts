@@ -146,9 +146,12 @@ export const PATCH = withOrganization(
         }))
       : task.steps,
   });
-  if (task.steps?.length) {
-    task.status = 'FLOW_IN_PROGRESS';
-    task.ownerId = task.steps[task.currentStepIndex ?? 0].ownerId;
+  if (Array.isArray(task.steps) && task.steps.length) {
+    const stepIndex = task.currentStepIndex ?? 0;
+    if (stepIndex >= 0 && stepIndex < task.steps.length) {
+      task.status = 'FLOW_IN_PROGRESS';
+      task.ownerId = task.steps[stepIndex].ownerId;
+    }
   }
   task.participantIds = computeParticipants({
     createdBy: task.createdBy,
@@ -264,9 +267,12 @@ export const PUT = withOrganization(
       })),
       currentStepIndex: body.currentStepIndex,
     });
-    if (task.steps?.length) {
-      task.status = 'FLOW_IN_PROGRESS';
-      task.ownerId = task.steps[task.currentStepIndex ?? 0].ownerId;
+    if (Array.isArray(task.steps) && task.steps.length) {
+      const stepIndex = task.currentStepIndex ?? 0;
+      if (stepIndex >= 0 && stepIndex < task.steps.length) {
+        task.status = 'FLOW_IN_PROGRESS';
+        task.ownerId = task.steps[stepIndex].ownerId;
+      }
     }
     task.participantIds = computeParticipants({
       createdBy: task.createdBy,
