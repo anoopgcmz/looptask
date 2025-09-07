@@ -22,7 +22,7 @@ async function main() {
     'notificationSettings.digestFrequency': { $ne: 'immediate' },
     'notificationSettings.email': { $ne: false },
   };
-  const users = await User.find(userQuery).lean<IUser>();
+  const users = await User.find(userQuery).lean();
 
   for (const user of users) {
     const prefs: Partial<IUser['notificationSettings']> =
@@ -37,7 +37,7 @@ async function main() {
       read: false,
       createdAt: { $gt: last },
     };
-    const notifications = await Notification.find(notificationQuery).lean<INotification>();
+    const notifications = await Notification.find(notificationQuery).lean();
     if (!notifications.length) continue;
 
     const listItems = notifications
