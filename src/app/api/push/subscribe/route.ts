@@ -4,8 +4,17 @@ import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 
+const subscriptionSchema = z.object({
+  endpoint: z.string(),
+  expirationTime: z.number().nullable().optional(),
+  keys: z.object({
+    p256dh: z.string(),
+    auth: z.string(),
+  }),
+});
+
 const bodySchema = z.object({
-  subscription: z.any(),
+  subscription: subscriptionSchema,
 });
 
 export async function POST(req: NextRequest) {
@@ -14,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: z.infer<typeof bodySchema>;
+  let body: { subscription: z.infer<typeof subscriptionSchema> };
   try {
     body = bodySchema.parse(await req.json());
   } catch (e: unknown) {
