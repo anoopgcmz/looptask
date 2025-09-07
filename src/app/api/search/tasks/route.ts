@@ -7,6 +7,7 @@ import Comment from '@/models/Comment';
 import TaskLoop from '@/models/TaskLoop';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
+import { meta } from '@/lib/mongo';
 
 interface RangeFilter {
   $gte?: Date;
@@ -274,8 +275,8 @@ export async function GET(req: NextRequest) {
           teamId: 1,
           visibility: 1,
           dueDate: 1,
-          highlights: { $meta: 'searchHighlights' as unknown as string },
-          score: { $meta: 'searchScore' as unknown as string },
+          highlights: meta('searchHighlights'),
+          score: meta('searchScore'),
         },
       },
     ];
