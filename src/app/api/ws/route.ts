@@ -1,6 +1,7 @@
 import { addClient } from '@/lib/ws';
 import { auth } from '@/lib/auth';
 import { type NextRequest } from 'next/server';
+import type { WebSocket } from 'ws';
 
 interface MetaWebSocket extends WebSocket {
   userId?: string;
@@ -34,7 +35,6 @@ export async function GET(request: NextRequest) {
 
   const interval = setInterval(() => {
     try {
-      // @ts-expect-error Node's WebSocket supports ping
       server.ping();
     } catch {
       try {
