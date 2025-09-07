@@ -1,6 +1,6 @@
 import dbConnect from '@/lib/db';
 import User, { type IUser } from '@/models/User';
-import Notification from '@/models/Notification';
+import Notification, { type INotification } from '@/models/Notification';
 import { Resend } from 'resend';
 import path from 'path';
 import { promises as fs } from 'fs';
@@ -37,7 +37,9 @@ async function main() {
     }).lean();
     if (!notifications.length) continue;
 
-    const listItems = notifications.map((n: any) => `<li>${n.message}</li>`).join('');
+    const listItems = notifications
+      .map((n: INotification) => `<li>${n.message}</li>`)
+      .join('');
     const html = template.replace('{{content}}', listItems);
     if (resend) {
       await resend.emails.send({
