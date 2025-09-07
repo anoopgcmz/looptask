@@ -17,13 +17,6 @@ interface TaskJobData extends JobAttributesData {
   stepId?: string;
 }
 
-interface UserJobData extends JobAttributesData {
-  userId: string;
-}
-
-interface TeamJobData extends JobAttributesData {
-  teamId: string;
-}
 
 agenda.define('task.dueSoon', async (job: Job<TaskJobData>) => {
   const { taskId, stepId } = job.attrs.data;
@@ -62,11 +55,11 @@ agenda.define('task.dueNow', async (job: Job<TaskJobData>) => {
   }
 });
 
-agenda.define('task.overdueDigest', async (job: Job<UserJobData>) => {
+agenda.define('task.overdueDigest', async (job: Job<JobAttributesData>) => {
   console.log('task.overdueDigest', job.attrs.data);
 });
 
-agenda.define('dashboard.dailySnapshot', async (job: Job<TeamJobData>) => {
+agenda.define('dashboard.dailySnapshot', async (job: Job<JobAttributesData>) => {
   console.log('dashboard.dailySnapshot', job.attrs.data);
 });
 
