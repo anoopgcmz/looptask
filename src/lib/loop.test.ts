@@ -10,7 +10,8 @@ vi.mock('@/lib/notify', () => ({ notifyLoopStepReady, notifyAssignment }));
 const findOne = vi.fn();
 vi.mock('@/models/TaskLoop', () => ({ default: { findOne } }));
 
-const findTaskById = vi.fn();
+interface Task { _id: Types.ObjectId }
+const findTaskById = vi.fn<[string], Promise<Task | null>>();
 vi.mock('@/models/Task', () => ({ default: { findById: findTaskById } }));
 
 const createHistory = vi.fn();

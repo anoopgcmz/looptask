@@ -19,11 +19,25 @@ import { notifyTaskClosed, notifyLoopStepReady, notifyAssignment } from '@/lib/n
 // mocks
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
-const tasks = new Map<string, unknown>();
+interface Task {
+  _id: mongoose.Types.ObjectId;
+  title: string;
+  createdBy: mongoose.Types.ObjectId;
+  ownerId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  status: string;
+  steps: { title: string; ownerId: mongoose.Types.ObjectId; status: string }[];
+  currentStepIndex: number;
+  participantIds?: mongoose.Types.ObjectId[];
+  save?: () => Promise<void>;
+  session?: () => Task;
+}
+
+const tasks = new Map<string, Task>();
 
 vi.mock('@/models/Task', () => ({
   default: {
-    findById: vi.fn(async (id: string) => {
+    findById: vi.fn(async (id: string): Promise<Task | null> => {
       const doc = tasks.get(id);
       if (!doc) return null;
       doc.save = async function () {

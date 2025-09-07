@@ -7,7 +7,18 @@ import { GET as dailyDashboard } from '../dashboard/daily/route';
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
 const objectives = new Map<string, unknown>();
-const tasks = new Map<string, unknown>();
+
+interface Task {
+  _id: mongoose.Types.ObjectId;
+  title: string;
+  ownerId: mongoose.Types.ObjectId;
+  dueDate: Date;
+  participantIds: mongoose.Types.ObjectId[];
+  visibility?: string;
+  teamId?: mongoose.Types.ObjectId;
+}
+
+const tasks = new Map<string, Task>();
 
 vi.mock('@/models/Objective', () => ({
   default: {
@@ -40,14 +51,14 @@ vi.mock('@/models/Objective', () => ({
 
 vi.mock('@/models/Task', () => ({
   default: {
-    find: vi.fn(async (filter: unknown) => {
+    find: vi.fn(async (filter: any): Promise<Task[]> => {
       return Array.from(tasks.values()).filter((t) => {
         const due =
           t.dueDate >= filter.dueDate.$gte && t.dueDate < filter.dueDate.$lt;
-        const accessible = filter.$or.some((c: unknown) => {
+        const accessible = filter.$or.some((c: any) => {
           if (c.participantIds) {
             return t.participantIds.some(
-              (p: unknown) => p.toString() === c.participantIds.toString()
+              (p) => p.toString() === c.participantIds.toString()
             );
           }
           if (c.visibility) {
