@@ -108,8 +108,8 @@ export async function POST(
     } else {
       const ownerId = updated.ownerId;
       if (ownerId && ownerId.toString() !== actorId) {
-        const step = updated.steps[updated.currentStepIndex];
-        const desc = step?.title;
+        const step = updated.steps?.[updated.currentStepIndex];
+        const desc = step ? step.title : undefined;
         await notifyAssignment([ownerId] as Types.ObjectId[], updated, desc);
         await notifyLoopStepReady([ownerId] as Types.ObjectId[], updated, desc);
       }
