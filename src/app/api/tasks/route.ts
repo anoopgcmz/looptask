@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Task from '@/models/Task';
-import type { ITask } from '@/models/Task';
+import type { ITask, TaskStatus } from '@/models/Task';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
@@ -44,7 +44,7 @@ export const POST = withOrganization(async (req, session) => {
   }
   const createdBy = session.userId;
   let ownerId = body.ownerId;
-  let status: string = 'OPEN';
+  let status: TaskStatus = 'OPEN';
   let currentStepIndex = 0;
   const steps = body.steps ?? [];
   if (steps.length) {
