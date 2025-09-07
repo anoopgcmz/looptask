@@ -17,6 +17,13 @@ interface User {
   name: string;
 }
 
+interface FlowStep {
+  title: string;
+  description: string;
+  ownerId: string;
+  due: string;
+}
+
 export default function NewTaskPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -63,7 +70,7 @@ export default function NewTaskPage() {
   };
 
   const [flowTitle, setFlowTitle] = useState('');
-  const [steps, setSteps] = useState([
+  const [steps, setSteps] = useState<FlowStep[]>([
     { title: '', description: '', ownerId: '', due: '' },
   ]);
   const [flowError, setFlowError] = useState<string | null>(null);
@@ -77,7 +84,7 @@ export default function NewTaskPage() {
     value: string,
   ) => {
     setSteps((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, [key]: value } : s)),
+      prev.map((s: FlowStep, i) => (i === index ? { ...s, [key]: value } : s)),
     );
   };
 
@@ -87,7 +94,7 @@ export default function NewTaskPage() {
     try {
       const body = {
         title: flowTitle,
-        steps: steps.map((s) => ({
+        steps: steps.map((s: FlowStep) => ({
           title: s.title,
           description: s.description,
           ownerId: s.ownerId,

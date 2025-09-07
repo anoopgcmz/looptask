@@ -80,7 +80,7 @@ export default function LoopTimeline({
     ? users.find((u) => u._id === selected.assignedTo)
     : null;
   const selectedDependencies = selected?.dependencies?.map(
-    (d) => localSteps.find((s) => s.id === d)?.description || d
+    (d) => localSteps.find((s: StepWithStatus) => s.id === d)?.description || d
   );
 
   const statusColors: Record<

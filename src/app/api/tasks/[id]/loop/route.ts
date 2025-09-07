@@ -23,6 +23,8 @@ const loopStepSchema = z.object({
   dependencies: z.array(z.string()).optional(),
 });
 
+type LoopStepInput = z.infer<typeof loopStepSchema>;
+
 const loopSchema = z.object({
   sequence: z.array(loopStepSchema).optional(),
 });
@@ -36,7 +38,7 @@ const loopStepStatus = z
     'IN_PROGRESS',
     'DONE',
   ])
-  .transform((s) => {
+  .transform((s: string) => {
     if (s === 'IN_PROGRESS') return 'ACTIVE';
     if (s === 'DONE') return 'COMPLETED';
     return s;
@@ -56,6 +58,8 @@ const loopPatchSchema = z.object({
     )
     .optional(),
 });
+
+type LoopPatchStep = z.infer<typeof loopPatchSchema>['sequence'][number];
 
 export const POST = withOrganization(
   async (
@@ -84,10 +88,10 @@ export const POST = withOrganization(
       return problem(403, 'Forbidden', 'You cannot create a loop for this task');
     }
 
-    const steps = body.sequence ?? [];
+    const steps: LoopStepInput[] = body.sequence ?? [];
     const errors: { index: number; message: string }[] = [];
     const userIds = new Set<string>();
-    steps.forEach((s, idx) => {
+    steps.forEach((s: LoopStepInput, idx) => {
       if (!Types.ObjectId.isValid(s.assignedTo)) {
         errors.push({ index: idx, message: 'Invalid user ID' });
       } else {
@@ -100,7 +104,7 @@ export const POST = withOrganization(
         _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
       }).lean<LeanUser[]>();
       const userMap = new Map(users.map((u) => [u._id.toString(), u]));
-      steps.forEach((s, idx) => {
+      steps.forEach((s: LoopStepInput, idx) => {
         const u = userMap.get(s.assignedTo);
         if (!u) {
           errors.push({ index: idx, message: 'Assignee not found' });
@@ -122,7 +126,7 @@ export const POST = withOrganization(
       return problem(400, 'Invalid request', detail);
     }
 
-    const sequence = steps.map((s) => ({
+    const sequence = steps.map((s: LoopStepInput) => ({
       taskId: new Types.ObjectId(id),
       assignedTo: new Types.ObjectId(s.assignedTo),
       description: s.description,
@@ -201,7 +205,8 @@ export const PATCH = withOrganization(
     const existingLoop = await TaskLoop.findOne({ taskId: id }).lean<ITaskLoop>();
     if (!existingLoop) return problem(404, 'Not Found', 'Loop not found');
 
-    const { sequence: steps, parallel } = body;
+    const { sequence: stepsRaw, parallel } = body;
+    const steps = stepsRaw as LoopPatchStep[] | undefined;
 
     if (steps) {
       if (steps.length !== existingLoop.sequence.length) {
@@ -211,7 +216,7 @@ export const PATCH = withOrganization(
       const errors: { index: number; message: string }[] = [];
       const userIds = new Set<string>();
       const seen = new Set<number>();
-      steps.forEach((s, idx) => {
+      steps.forEach((s: LoopPatchStep, idx) => {
         if (seen.has(s.index)) {
           errors.push({ index: idx, message: 'Duplicate index' });
         } else if (s.index < 0 || s.index >= existingLoop.sequence.length) {
@@ -233,7 +238,7 @@ export const PATCH = withOrganization(
           _id: { $in: Array.from(userIds).map((id) => new Types.ObjectId(id)) },
         }).lean<LeanUser[]>();
         const userMap = new Map(users.map((u) => [u._id.toString(), u]));
-        steps.forEach((s, idx) => {
+        steps.forEach((s: LoopPatchStep, idx) => {
           if (s.assignedTo !== undefined) {
             const u = userMap.get(s.assignedTo);
             if (!u) {
@@ -268,7 +273,7 @@ export const PATCH = withOrganization(
       const loopDoc = await TaskLoop.findOne({ taskId: id }).session(sessionDb);
       if (!loopDoc) return;
       if (steps) {
-        steps.forEach((s) => {
+        steps.forEach((s: LoopPatchStep) => {
           const current = loopDoc.sequence[s.index];
           if (s.assignedTo !== undefined && s.assignedTo !== current.assignedTo.toString()) {
             oldAssignments.push({ userId: current.assignedTo.toString(), description: current.description });

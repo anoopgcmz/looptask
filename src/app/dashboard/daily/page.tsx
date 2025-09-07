@@ -65,7 +65,7 @@ export default function DailyDashboardPage() {
           <div>
             <h2 className="font-semibold">Summary</h2>
             <ul className="list-disc pl-6">
-              {data.summary.map((s) => (
+              {data.summary.map((s: SummaryItem) => (
                 <li key={s.ownerId}>
                   {s.ownerId}: {s.completed}/{s.total}
                 </li>
