@@ -6,7 +6,7 @@ import SavedSearch from '@/models/SavedSearch';
 import { auth } from '@/lib/auth';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 const bodySchema = z.object({
@@ -14,13 +14,13 @@ const bodySchema = z.object({
   query: z.string().optional(),
 });
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(_req: NextRequest, context: Params) {
+  const { params } = context;
+  const { id } = await params;
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const { id } = params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
@@ -33,13 +33,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return NextResponse.json(search);
 }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, context: Params) {
+  const { params } = context;
+  const { id } = await params;
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const { id } = params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
@@ -64,13 +64,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json(search);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(_req: NextRequest, context: Params) {
+  const { params } = context;
+  const { id } = await params;
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const { id } = params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }

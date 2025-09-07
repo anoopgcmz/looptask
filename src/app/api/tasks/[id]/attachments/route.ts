@@ -13,10 +13,11 @@ import { withOrganization } from '@/lib/middleware/withOrganization';
 export const GET = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
-    const { id } = params;
+    const { params } = context;
+    const { id } = await params;
     await dbConnect();
     const task = await Task.findById(id);
     if (
@@ -36,7 +37,7 @@ export const GET = withOrganization(
 export const POST = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
     const form = await req.formData();
@@ -44,7 +45,8 @@ export const POST = withOrganization(
     if (!(file instanceof File)) {
       return problem(400, 'Invalid request', 'File is required');
     }
-    const { id } = params;
+    const { params } = context;
+    const { id } = await params;
     await dbConnect();
     const task = await Task.findById(id);
     if (
@@ -75,7 +77,7 @@ export const POST = withOrganization(
 export const DELETE = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
     const url = new URL(req.url);
@@ -83,7 +85,8 @@ export const DELETE = withOrganization(
     if (!attachmentId) return problem(400, 'Invalid request', 'id is required');
     await dbConnect();
     const attachment = await Attachment.findById(attachmentId);
-    const { id } = params;
+    const { params } = context;
+    const { id } = await params;
     if (!attachment || attachment.taskId.toString() !== id) {
       return problem(404, 'Not Found', 'Attachment not found');
     }
