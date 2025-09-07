@@ -18,6 +18,17 @@ interface Task {
   teamId?: mongoose.Types.ObjectId;
 }
 
+interface TaskQuery {
+  dueDate: {
+    $gte: Date;
+    $lt: Date;
+  };
+  $or: (
+    | { participantIds: mongoose.Types.ObjectId }
+    | { visibility: string; teamId: mongoose.Types.ObjectId }
+  )[];
+}
+
 const tasks = new Map<string, Task>();
 
 vi.mock('@/models/Objective', () => ({
@@ -51,17 +62,17 @@ vi.mock('@/models/Objective', () => ({
 
 vi.mock('@/models/Task', () => ({
   default: {
-    find: vi.fn(async (filter: any): Promise<Task[]> => {
+    find: vi.fn(async (filter: TaskQuery): Promise<Task[]> => {
       return Array.from(tasks.values()).filter((t) => {
         const due =
           t.dueDate >= filter.dueDate.$gte && t.dueDate < filter.dueDate.$lt;
-        const accessible = filter.$or.some((c: any) => {
-          if (c.participantIds) {
+        const accessible = filter.$or.some((c: TaskQuery['$or'][number]) => {
+          if ('participantIds' in c) {
             return t.participantIds.some(
               (p) => p.toString() === c.participantIds.toString()
             );
           }
-          if (c.visibility) {
+          if ('visibility' in c) {
             return (
               t.visibility === c.visibility &&
               t.teamId?.toString() === c.teamId.toString()
