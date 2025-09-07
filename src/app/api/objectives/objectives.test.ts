@@ -138,7 +138,7 @@ describe('objectives api', () => {
     expect(list.length).toBe(2);
 
     await toggleObjective(new Request('http://test', { method: 'PATCH' }), {
-      params: { id: obj1._id },
+      params: Promise.resolve({ id: obj1._id }),
     });
 
     const task1 = {
