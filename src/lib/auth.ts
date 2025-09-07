@@ -52,18 +52,18 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userId = user.id;
         token.email = user.email;
-        token.organizationId = user.organizationId;
-        token.teamId = user.teamId;
-        token.role = user.role;
+        if (user.organizationId) token.organizationId = user.organizationId;
+        if (user.teamId) token.teamId = user.teamId;
+        if (user.role) token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
       session.userId = token.userId;
       session.email = token.email;
-      session.organizationId = token.organizationId;
-      session.teamId = token.teamId;
-      session.role = token.role;
+      if (token.organizationId) session.organizationId = token.organizationId;
+      if (token.teamId) session.teamId = token.teamId;
+      if (token.role) session.role = token.role;
       return session;
     },
   },
