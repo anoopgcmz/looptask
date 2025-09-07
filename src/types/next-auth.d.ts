@@ -5,9 +5,9 @@ declare module 'next-auth' {
   interface Session {
     userId: string;
     email: string;
-    organizationId: string;
-    teamId: string;
-    role: string;
+    organizationId: string | undefined;
+    teamId: string | undefined;
+    role: string | undefined;
   }
 }
 
@@ -15,8 +15,8 @@ declare module 'next-auth/jwt' {
   interface JWT {
     userId: string;
     email: string;
-    organizationId: string;
-    teamId: string;
-    role: string;
+    organizationId: string | undefined;
+    teamId: string | undefined;
+    role: string | undefined;
   }
 }
