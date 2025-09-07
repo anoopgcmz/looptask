@@ -10,9 +10,9 @@ import User from '@/models/User';
 interface AuthUser {
   id: string;
   email: string;
-  organizationId?: string;
-  teamId?: string;
-  role?: string;
+  organizationId?: string | undefined;
+  teamId?: string | undefined;
+  role?: string | undefined;
 }
 
 export const authOptions: NextAuthOptions = {

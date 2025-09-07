@@ -15,7 +15,7 @@ interface Task {
   dueDate: Date;
   participantIds: mongoose.Types.ObjectId[];
   visibility?: string;
-  teamId?: mongoose.Types.ObjectId;
+  teamId?: mongoose.Types.ObjectId | undefined;
 }
 
 interface TaskQuery {
