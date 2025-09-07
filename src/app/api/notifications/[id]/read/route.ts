@@ -6,14 +6,14 @@ import { auth } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
