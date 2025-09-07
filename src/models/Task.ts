@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document, Types } from 'mongoose';
+import { Schema, model, models, type Document, Types, type Model } from 'mongoose';
 
 export type TaskStatus =
   | 'OPEN'
@@ -105,4 +105,6 @@ taskSchema.pre('save', function (next) {
   next();
 });
 
-export default models.Task || model<ITask>('Task', taskSchema);
+const TaskModel = (models.Task as Model<ITask>) || model<ITask>('Task', taskSchema);
+
+export default TaskModel;

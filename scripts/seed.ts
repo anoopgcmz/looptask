@@ -4,7 +4,7 @@ import Team from '@/models/Team';
 import User from '@/models/User';
 import Task from '@/models/Task';
 
-async function run() {
+export async function seed() {
   await dbConnect();
   await Promise.all([
     Organization.deleteMany({}),
@@ -85,10 +85,13 @@ async function run() {
   }
 
   console.log('Seeding complete');
-  process.exit(0);
 }
 
-run().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seed()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}
