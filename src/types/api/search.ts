@@ -1,13 +1,21 @@
-export interface SearchResult {
-  _id: string;
-  title: string;
-  excerpt: string;
-}
+import { z } from 'zod';
 
-export interface SearchTasksResponse {
-  results: SearchResult[];
-  verification: unknown;
-}
+export const SearchResultSchema = z.object({
+  _id: z.string(),
+  title: z.string(),
+  excerpt: z.string(),
+});
+export type SearchResult = z.infer<typeof SearchResultSchema>;
+
+export const SearchTasksResponseSchema = z.object({
+  results: z.array(SearchResultSchema),
+  total: z.number(),
+  verification: z.object({
+    q: z.string().optional(),
+    filters: z.record(z.unknown()),
+  }),
+});
+export type SearchTasksResponse = z.infer<typeof SearchTasksResponseSchema>;
 
 export interface SearchItem {
   _id: string;
