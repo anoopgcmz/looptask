@@ -1,5 +1,5 @@
 import dbConnect from '@/lib/db';
-import User from '@/models/User';
+import User, { type IUser } from '@/models/User';
 import Notification from '@/models/Notification';
 import { Resend } from 'resend';
 import path from 'path';
@@ -23,7 +23,8 @@ async function main() {
   });
 
   for (const user of users) {
-    const prefs: any = user.notificationSettings || {};
+    const prefs: Partial<IUser['notificationSettings']> =
+      user.notificationSettings ?? {};
     const freq = prefs.digestFrequency;
     const last: Date = prefs.lastDigestAt || new Date(0);
     const interval = freq === 'weekly' ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
