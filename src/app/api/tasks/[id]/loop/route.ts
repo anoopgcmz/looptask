@@ -62,7 +62,7 @@ type LoopPatchStep = z.infer<typeof loopPatchStepSchema>;
 export const POST = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: Promise<{ id: string }> },
+    { params }: { params: { id: string } },
     session: Session
   ) => {
     let body: z.infer<typeof loopSchema>;
@@ -73,7 +73,7 @@ export const POST = withOrganization(
       return problem(400, 'Invalid request', err.message);
     }
 
-    const { id } = await params;
+    const { id } = params;
     await dbConnect();
     const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
@@ -153,10 +153,10 @@ export const POST = withOrganization(
 export const GET = withOrganization(
   async (
     _req: NextRequest,
-    { params }: { params: Promise<{ id: string }> },
+    { params }: { params: { id: string } },
     session: Session
   ) => {
-    const { id } = await params;
+    const { id } = params;
     await dbConnect();
     const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
@@ -177,7 +177,7 @@ export const GET = withOrganization(
 export const PATCH = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: Promise<{ id: string }> },
+    { params }: { params: { id: string } },
     session: Session
   ) => {
     let body: z.infer<typeof loopPatchSchema>;
@@ -188,7 +188,7 @@ export const PATCH = withOrganization(
       return problem(400, 'Invalid request', err.message);
     }
 
-    const { id } = await params;
+    const { id } = params;
     await dbConnect();
     const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
@@ -341,10 +341,10 @@ export const PATCH = withOrganization(
 export const DELETE = withOrganization(
   async (
     _req: NextRequest,
-    { params }: { params: Promise<{ id: string }> },
+    { params }: { params: { id: string } },
     session: Session
   ) => {
-    const { id } = await params;
+    const { id } = params;
     await dbConnect();
       const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');

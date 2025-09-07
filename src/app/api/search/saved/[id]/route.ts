@@ -6,7 +6,7 @@ import SavedSearch from '@/models/SavedSearch';
 import { auth } from '@/lib/auth';
 
 interface Params {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 const bodySchema = z.object({
@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id } = params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id } = params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
@@ -70,7 +70,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id } = params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
