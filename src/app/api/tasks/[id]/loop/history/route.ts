@@ -17,9 +17,11 @@ const querySchema = z.object({
 export const GET = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
+    const { params } = context;
+    const { id } = await params;
     const url = new URL(req.url);
     const raw: Record<string, unknown> = {};
     url.searchParams.forEach((value, key) => {
@@ -33,7 +35,6 @@ export const GET = withOrganization(
       return problem(400, 'Invalid request', err.message);
     }
 
-    const { id } = params;
     await dbConnect();
     const task = await Task.findById(id);
     if (

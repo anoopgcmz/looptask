@@ -67,10 +67,11 @@ const putSchema: z.ZodType<TaskPayload> = z
 export const GET = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
-  const { id } = params;
+  const { params } = context;
+  const { id } = await params;
   await dbConnect();
   const task: ITask | null = await Task.findById(id);
   if (
@@ -88,7 +89,7 @@ export const GET = withOrganization(
 export const PATCH = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
   let body: Partial<TaskPayload>;
@@ -98,7 +99,8 @@ export const PATCH = withOrganization(
     const err = e as Error;
     return problem(400, 'Invalid request', err.message);
   }
-  const { id } = params;
+  const { params } = context;
+  const { id } = await params;
   await dbConnect();
   const task: ITask | null = await Task.findById(id);
   if (!task) return problem(404, 'Not Found', 'Task not found');
@@ -175,10 +177,11 @@ export const PATCH = withOrganization(
 export const DELETE = withOrganization(
   async (
     _req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
-    const { id } = params;
+    const { params } = context;
+    const { id } = await params;
     await dbConnect();
     const task: ITask | null = await Task.findById(id);
     if (!task) return problem(404, 'Not Found', 'Task not found');
@@ -204,7 +207,7 @@ export const DELETE = withOrganization(
 export const PUT = withOrganization(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    context: { params: Promise<{ id: string }> },
     session: Session
   ) => {
     let body: TaskPayload;
@@ -214,7 +217,8 @@ export const PUT = withOrganization(
       const err = e as Error;
       return problem(400, 'Invalid request', err.message);
     }
-    const { id } = params;
+    const { params } = context;
+    const { id } = await params;
     await dbConnect();
     const task: ITask | null = await Task.findById(id);
     if (!task) return problem(404, 'Not Found', 'Task not found');

@@ -24,8 +24,10 @@ const bodySchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { params } = context;
+  const { id } = await params;
   const session = await auth();
   if (!session?.userId || !session.organizationId)
     return problem(401, 'Unauthorized', 'You must be signed in.');
@@ -39,7 +41,6 @@ export async function POST(
   }
 
   await dbConnect();
-  const { id } = params;
   const task = await Task.findById(id).lean<ITask>();
   if (!task || task.organizationId.toString() !== session.organizationId)
     return problem(404, 'Not Found', 'Task not found');

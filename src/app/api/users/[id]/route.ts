@@ -4,10 +4,11 @@ import User from '@/models/User';
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { params } = context;
+  const { id } = await params;
   await dbConnect();
-  const { id } = params;
   const user = await User.findById(id).lean();
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(user);
@@ -15,11 +16,12 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const data = await req.json();
+  const { params } = context;
+  const { id } = await params;
   await dbConnect();
-  const { id } = params;
   const user = await User.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -30,10 +32,11 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { params } = context;
+  const { id } = await params;
   await dbConnect();
-  const { id } = params;
   await User.findByIdAndDelete(id);
   return NextResponse.json({ ok: true });
 }

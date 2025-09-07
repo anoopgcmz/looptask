@@ -6,14 +6,15 @@ import { problem } from '@/lib/http';
 
 export async function PATCH(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { params } = context;
+  const { id } = await params;
   const session = await auth();
   if (!session?.userId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   await dbConnect();
-  const { id } = params;
   const objective = await Objective.findById(id);
   if (!objective) {
     return problem(404, 'Not Found', 'Objective not found');
