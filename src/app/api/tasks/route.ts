@@ -47,8 +47,9 @@ export const POST = withOrganization(async (req, session) => {
   let status: TaskStatus = 'OPEN';
   let currentStepIndex = 0;
   const steps = body.steps ?? [];
-  if (steps.length) {
-    ownerId = steps[0].ownerId;
+  const firstStep = steps[0];
+  if (firstStep) {
+    ownerId = firstStep.ownerId;
     status = 'FLOW_IN_PROGRESS';
     currentStepIndex = 0;
   }

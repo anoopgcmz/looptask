@@ -39,11 +39,12 @@ export async function POST(req: NextRequest) {
     );
   }
   await dbConnect();
+  const [namePart] = email.split('@');
   await User.updateOne(
     { email },
     {
       $setOnInsert: {
-        name: email.split('@')[0],
+        name: namePart,
         email,
         username: email,
         password: await bcrypt.hash('changeme', SALT_ROUNDS),

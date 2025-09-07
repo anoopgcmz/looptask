@@ -95,8 +95,9 @@ describe('PATCH /tasks/:id/loop assignedTo updates', () => {
 
     const res = await PATCH(req, { params: Promise.resolve({ id: taskId.toString() }) });
     expect(res.status).toBe(200);
-    expect(loop.sequence[0].assignedTo).toEqual(newUser);
-    expect(loop.sequence[0].status).toBe('PENDING');
+    const first = loop.sequence[0];
+    expect(first?.assignedTo).toEqual(newUser);
+    expect(first?.status).toBe('PENDING');
     expect(loop.currentStep).toBe(0);
     expect(loop.isActive).toBe(true);
     expect(notifyAssignment).toHaveBeenCalledTimes(2);

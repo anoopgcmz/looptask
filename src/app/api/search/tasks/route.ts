@@ -73,7 +73,11 @@ export async function GET(req: NextRequest) {
     const customMatch = key.match(/^custom\[(.+)\]$/);
     if (customMatch) {
       const field = customMatch[1];
-      customRaw[field] = customRaw[field] ? [...customRaw[field], value] : [value];
+      if (field) {
+        customRaw[field] = customRaw[field]
+          ? [...customRaw[field], value]
+          : [value];
+      }
       return;
     }
     if (raw[key]) {
@@ -114,12 +118,15 @@ export async function GET(req: NextRequest) {
   const maxRange = Math.max(query.dueFrom?.length ?? 0, query.dueTo?.length ?? 0);
   for (let i = 0; i < maxRange; i++) {
     const range: RangeFilter = {};
-    if (query.dueFrom?.[i]) range.$gte = query.dueFrom[i];
-    if (query.dueTo?.[i]) range.$lte = query.dueTo[i];
+    const from = query.dueFrom?.[i];
+    if (from) range.$gte = from;
+    const to = query.dueTo?.[i];
+    if (to) range.$lte = to;
     if (Object.keys(range).length) dueRanges.push(range);
   }
   if (dueRanges.length === 1) {
-    filters.push({ dueDate: dueRanges[0] });
+    const [range] = dueRanges;
+    if (range) filters.push({ dueDate: range });
   } else if (dueRanges.length > 1) {
     filters.push({ $or: dueRanges.map((r) => ({ dueDate: r })) });
   }
@@ -127,7 +134,10 @@ export async function GET(req: NextRequest) {
   const customFilters: FilterQuery<ITask>[] = [];
   Object.entries(customRaw).forEach(([field, values]) => {
     if (values.length === 1) {
-      customFilters.push({ [`custom.${field}`]: values[0] });
+      const [val] = values;
+      if (val !== undefined) {
+        customFilters.push({ [`custom.${field}`]: val });
+      }
     } else {
       customFilters.push({ $or: values.map((v) => ({ [`custom.${field}`]: v })) });
     }

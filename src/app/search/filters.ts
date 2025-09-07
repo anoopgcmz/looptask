@@ -4,7 +4,10 @@ export interface PresetSearch {
   query: string;
 }
 
-const formatDate = (d: Date) => d.toISOString().split('T')[0];
+const formatDate = (d: Date) => {
+  const [datePart] = d.toISOString().split('T');
+  return datePart || '';
+};
 
 export function getPresets(userId?: string | null): PresetSearch[] {
   const presets: PresetSearch[] = [];

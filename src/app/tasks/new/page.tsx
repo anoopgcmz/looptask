@@ -45,7 +45,8 @@ export default function NewTaskPage() {
     e.preventDefault();
     const res = simpleSchema.safeParse(simple);
     if (!res.success) {
-      setSimpleError(res.error.errors[0].message);
+      const firstError = res.error.errors[0];
+      setSimpleError(firstError ? firstError.message : 'Invalid input');
       return;
     }
     setSimpleError(null);
