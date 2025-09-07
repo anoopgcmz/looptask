@@ -9,14 +9,14 @@ import { problem } from '@/lib/http';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const session = await auth();
   if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
 
-  const { id } = await params;
+  const { id } = params;
   await dbConnect();
   const task = await Task.findById(id);
   if (
