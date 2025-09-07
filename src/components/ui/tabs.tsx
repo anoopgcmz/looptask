@@ -6,12 +6,12 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { timing } from '@/lib/motion'
 
-const TabsContext = React.createContext<{ value: string }>({ value: '' })
+const TabsContext = React.createContext<{ value: string | undefined }>({ value: undefined })
 
 function Tabs({ defaultValue, children, ...props }: TabsPrimitive.TabsProps) {
-  const [value, setValue] = React.useState(defaultValue)
+  const [value, setValue] = React.useState<string | undefined>(defaultValue)
   return (
-    <TabsContext.Provider value={{ value: value as string }}>
+    <TabsContext.Provider value={{ value }}>
       <TabsPrimitive.Root
         value={value}
         onValueChange={setValue}
@@ -40,7 +40,7 @@ const TabsTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
 >(({ className, children, value, ...props }, ref) => {
   const { value: current } = React.useContext(TabsContext)
-  const active = current === value
+  const active = current !== undefined && current === value
   return (
     <TabsPrimitive.Trigger
       ref={ref}
@@ -72,7 +72,7 @@ const TabsContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
 >(({ className, children, value, ...props }, ref) => {
   const { value: current } = React.useContext(TabsContext)
-  const active = current === value
+  const active = current !== undefined && current === value
   const prefersReducedMotion = useReducedMotion()
   return (
     <TabsPrimitive.Content
