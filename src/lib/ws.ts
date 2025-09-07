@@ -144,7 +144,8 @@ export function addClient(ws: MetaWebSocket) {
   }
   ws.addEventListener('message', async (event) => {
     try {
-      const data = JSON.parse(event.data.toString()) as {
+      const parsed = JSON.parse(event.data.toString()) as unknown;
+      const data = parsed as {
         event?: string;
         taskId?: string;
       };

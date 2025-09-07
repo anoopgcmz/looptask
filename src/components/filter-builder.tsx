@@ -15,8 +15,8 @@ export default function FilterBuilder() {
     try {
       const existing = params.get('filters');
       if (existing) {
-        const parsed = JSON.parse(existing);
-        if (Array.isArray(parsed) && parsed.length) return parsed;
+        const parsed = JSON.parse(existing) as unknown;
+        if (Array.isArray(parsed) && parsed.length) return parsed as FilterRow[];
       }
     } catch {
       // ignore
@@ -32,9 +32,9 @@ export default function FilterBuilder() {
     try {
       const existing = params.get('filters');
       if (existing) {
-        const parsed = JSON.parse(existing);
+        const parsed = JSON.parse(existing) as unknown;
         if (Array.isArray(parsed) && parsed.length) {
-          setFilters(parsed);
+          setFilters(parsed as FilterRow[]);
         }
       }
     } catch {

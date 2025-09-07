@@ -23,13 +23,14 @@ export default function usePresence(taskId: string) {
         const data: unknown = JSON.parse(event.data);
         if (!isRealtimeMessage(data) || data.taskId !== taskId) return;
         if (data.event === 'user.joined') {
-          const userId: string = (data as any).userId;
-          if (!viewersRef.current[userId]) {
-            viewersRef.current[userId] = { _id: userId };
+          const uid = typeof data.userId === 'string' ? data.userId : undefined;
+          if (!uid) return;
+          if (!viewersRef.current[uid]) {
+            viewersRef.current[uid] = { _id: uid };
             update();
             (async () => {
               try {
-                const res = await fetch(`/api/users/${userId}`);
+                const res = await fetch(`/api/users/${uid}`);
                 if (!res.ok) return;
                 const user: Viewer = await res.json();
                 viewersRef.current[user._id] = user;
@@ -40,9 +41,9 @@ export default function usePresence(taskId: string) {
             })();
           }
         } else if (data.event === 'user.left') {
-          const userId: string = (data as any).userId;
-          if (viewersRef.current[userId]) {
-            delete viewersRef.current[userId];
+          const uid = typeof data.userId === 'string' ? data.userId : undefined;
+          if (uid && viewersRef.current[uid]) {
+            delete viewersRef.current[uid];
             update();
           }
         }

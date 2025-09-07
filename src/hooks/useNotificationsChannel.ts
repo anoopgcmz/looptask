@@ -21,7 +21,8 @@ export default function useNotificationsChannel({ onNotification }: Options = {}
     const ws = new WebSocket(url);
     ws.addEventListener('message', (event) => {
       try {
-        const data = JSON.parse(event.data) as {
+        const parsed = JSON.parse(event.data) as unknown;
+        const data = parsed as {
           event: string;
           notification: NotificationPayload;
         };
