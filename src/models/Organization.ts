@@ -1,4 +1,4 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 export interface IOrganization extends Document {
   name: string;
@@ -15,4 +15,8 @@ const organizationSchema = new Schema<IOrganization>(
   { timestamps: true }
 );
 
-export default models.Organization || model<IOrganization>('Organization', organizationSchema);
+const OrganizationModel =
+  (models.Organization as Model<IOrganization>) ||
+  model<IOrganization>('Organization', organizationSchema);
+
+export default OrganizationModel;
