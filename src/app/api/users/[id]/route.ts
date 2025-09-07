@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import dbConnect from '@/lib/db';
-import User from '@/models/User';
+import { User } from '@/models/User';
 
 export async function GET(
   _req: NextRequest,
@@ -40,3 +40,5 @@ export async function DELETE(
   await User.findByIdAndDelete(id);
   return NextResponse.json({ ok: true });
 }
+
+export const runtime = 'nodejs';

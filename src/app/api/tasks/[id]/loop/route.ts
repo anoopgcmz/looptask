@@ -3,11 +3,10 @@ import type { Session } from 'next-auth';
 import { z } from 'zod';
 import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
-import type { ITask } from '@/models/Task';
-import TaskLoop, { type ITaskLoop } from '@/models/TaskLoop';
-import LoopHistory from '@/models/LoopHistory';
-import User, { type IUser } from '@/models/User';
+import { Task, type ITask } from '@/models/Task';
+import { TaskLoop, type ITaskLoop } from '@/models/TaskLoop';
+import { LoopHistory } from '@/models/LoopHistory';
+import { User, type IUser } from '@/models/User';
 import { canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
@@ -56,6 +55,8 @@ const loopPatchSchema = z.object({
   parallel: z.boolean().optional(),
   sequence: z.array(loopPatchStepSchema).optional(),
 });
+
+export const runtime = 'nodejs';
 
 type LoopPatchStep = z.infer<typeof loopPatchStepSchema>;
 

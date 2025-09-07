@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Objective, { type IObjective } from '@/models/Objective';
-import Task, { type ITask } from '@/models/Task';
+import { Objective, type IObjective } from '@/models/Objective';
+import { Task, type ITask } from '@/models/Task';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -11,6 +11,8 @@ const querySchema = z.object({
   date: z.string(),
   teamId: z.string(),
 });
+
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   const session = await auth();

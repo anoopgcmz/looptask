@@ -1,9 +1,9 @@
 import { Types } from 'mongoose';
 import { Resend } from 'resend';
-import Notification from '@/models/Notification';
-import User from '@/models/User';
+import { Notification } from '@/models/Notification';
+import { User } from '@/models/User';
 import dbConnect from '@/lib/db';
-import RateLimit from '@/models/RateLimit';
+import { RateLimit } from '@/models/RateLimit';
 import { emitNotification } from '@/lib/ws';
 import path from 'path';
 import { promises as fs } from 'fs';

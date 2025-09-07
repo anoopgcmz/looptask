@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import LoopTemplate from '@/models/LoopTemplate';
+import { LoopTemplate } from '@/models/LoopTemplate';
 import { problem } from '@/lib/http';
 
 const stepSchema = z.object({
@@ -15,6 +15,8 @@ const templateSchema = z.object({
   name: z.string(),
   steps: z.array(stepSchema),
 });
+
+export const runtime = 'nodejs';
 
 export async function GET() {
   await dbConnect();

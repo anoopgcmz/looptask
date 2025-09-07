@@ -36,7 +36,7 @@ interface Task {
 const tasks = new Map<string, Task>();
 
 vi.mock('@/models/Task', () => ({
-  default: {
+  Task: {
     findById: vi.fn(async (id: string): Promise<Task | null> => {
       const doc = tasks.get(id);
       if (!doc) return null;
@@ -52,7 +52,7 @@ vi.mock('@/models/Task', () => ({
 }));
 
 vi.mock('@/models/ActivityLog', () => ({
-  default: { create: vi.fn() },
+  ActivityLog: { create: vi.fn() },
 }));
 
 let currentUserId = '';

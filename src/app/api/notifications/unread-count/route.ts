@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
-import Notification from '@/models/Notification';
+import { Notification } from '@/models/Notification';
 import { auth } from '@/lib/auth';
 
 export async function GET() {
@@ -15,3 +15,5 @@ export async function GET() {
   });
   return NextResponse.json({ count });
 }
+
+export const runtime = 'nodejs';

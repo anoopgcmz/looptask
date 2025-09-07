@@ -1,13 +1,13 @@
-import { Schema, model, models, type Document, type Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-export interface ISavedSearch extends Document {
-  userId: Types.ObjectId;
-  name: string;
-  query: string;
-  createdAt: Date;
-}
-
-const savedSearchSchema = new Schema<ISavedSearch>(
+const savedSearchSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     name: { type: String, required: true },
@@ -16,4 +16,9 @@ const savedSearchSchema = new Schema<ISavedSearch>(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-export default models.SavedSearch || model<ISavedSearch>('SavedSearch', savedSearchSchema);
+export type ISavedSearch = InferSchemaType<typeof savedSearchSchema>;
+
+export const SavedSearch: Model<ISavedSearch> =
+  (models.SavedSearch as Model<ISavedSearch>) ??
+  model<ISavedSearch>('SavedSearch', savedSearchSchema);
+

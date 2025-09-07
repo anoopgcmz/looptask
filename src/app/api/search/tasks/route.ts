@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, type FilterQuery, type PipelineStage } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task, { type ITask } from '@/models/Task';
-import Comment from '@/models/Comment';
-import TaskLoop from '@/models/TaskLoop';
+import { Task, type ITask } from '@/models/Task';
+import { Comment } from '@/models/Comment';
+import { TaskLoop } from '@/models/TaskLoop';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 import { meta } from '@/lib/mongo';
@@ -59,6 +59,8 @@ const querySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
 });
+
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   const session = await auth();

@@ -1,12 +1,12 @@
-import { Schema, model, models, type Document } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+} from 'mongoose';
 
-export interface IRateLimit extends Document {
-  key: string;
-  count: number;
-  windowEndsAt: Date;
-}
-
-const rateLimitSchema = new Schema<IRateLimit>(
+const rateLimitSchema = new Schema(
   {
     key: { type: String, required: true, index: true },
     count: { type: Number, default: 0 },
@@ -17,4 +17,9 @@ const rateLimitSchema = new Schema<IRateLimit>(
 
 rateLimitSchema.index({ windowEndsAt: 1 }, { expireAfterSeconds: 0 });
 
-export default models.RateLimit || model<IRateLimit>('RateLimit', rateLimitSchema);
+export type IRateLimit = InferSchemaType<typeof rateLimitSchema>;
+
+export const RateLimit: Model<IRateLimit> =
+  (models.RateLimit as Model<IRateLimit>) ??
+  model<IRateLimit>('RateLimit', rateLimitSchema);
+

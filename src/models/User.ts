@@ -2,9 +2,10 @@ import {
   Schema,
   model,
   models,
+  type InferSchemaType,
   type HydratedDocument,
-  type Types,
   type Model,
+  type Types,
 } from 'mongoose';
 import bcrypt from 'bcrypt';
 
@@ -18,36 +19,7 @@ export interface PushSubscription {
   };
 }
 
-export interface IUser {
-  name: string;
-  email: string;
-  username: string;
-  password: string;
-  organizationId: Types.ObjectId;
-  teamId?: Types.ObjectId | undefined;
-  timezone: string;
-  isActive: boolean;
-  role: 'ADMIN' | 'USER';
-  avatar?: string | undefined;
-  permissions: string[];
-  notificationSettings: {
-    email: boolean;
-    push: boolean;
-    digestFrequency: 'immediate' | 'daily' | 'weekly';
-    lastDigestAt?: Date | undefined;
-    types: {
-      ASSIGNMENT: boolean;
-      LOOP_STEP_READY: boolean;
-      TASK_CLOSED: boolean;
-      OVERDUE: boolean;
-    };
-  };
-  pushSubscriptions: PushSubscription[];
-}
-
-export type UserDocument = HydratedDocument<IUser>;
-
-const userSchema = new Schema<IUser>(
+const userSchema = new Schema(
   {
     name: { type: String, required: true },
     email: {
@@ -105,12 +77,15 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ email: 1, organizationId: 1 }, { unique: true });
 
+export type IUser = InferSchemaType<typeof userSchema>;
+export type UserDocument = HydratedDocument<IUser>;
+
 userSchema.pre('save', async function (this: UserDocument) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
   }
 });
 
-const UserModel = (models.User as Model<IUser>) || model<IUser>('User', userSchema);
+export const User: Model<IUser> =
+  (models.User as Model<IUser>) ?? model<IUser>('User', userSchema);
 
-export default UserModel;

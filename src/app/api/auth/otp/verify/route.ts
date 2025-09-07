@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifyAndConsumeOtp } from '@/lib/otp';
 import dbConnect from '@/lib/db';
-import User from '@/models/User';
+import { User } from '@/models/User';
 import { signIn } from '@/lib/auth';
 import bcrypt from 'bcrypt';
 
@@ -52,6 +52,13 @@ export async function POST(req: NextRequest) {
     },
     { upsert: true }
   );
-    await signIn('credentials', { email, otpVerified: true, callbackUrl: '/tasks', redirect: false });
-    return NextResponse.redirect(new URL('/tasks', req.url));
-  }
+  await signIn('credentials', {
+    email,
+    otpVerified: true,
+    callbackUrl: '/tasks',
+    redirect: false,
+  });
+  return NextResponse.redirect(new URL('/tasks', req.url));
+}
+
+export const runtime = 'nodejs';

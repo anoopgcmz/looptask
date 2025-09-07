@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import User from '@/models/User';
+import { User } from '@/models/User';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -27,6 +27,8 @@ const updateSchema = z.object({
   avatar: z.string().url().optional(),
   timezone: z.string().optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function PUT(req: NextRequest) {
   const session = await auth();

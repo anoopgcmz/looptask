@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
-import Objective from '@/models/Objective';
+import { Objective } from '@/models/Objective';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -26,4 +26,6 @@ export async function PATCH(
   await objective.save();
   return NextResponse.json(objective);
 }
+
+export const runtime = 'nodejs';
 

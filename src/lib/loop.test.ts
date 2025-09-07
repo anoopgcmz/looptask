@@ -8,14 +8,14 @@ const notifyAssignment = vi.fn();
 vi.mock('@/lib/notify', () => ({ notifyLoopStepReady, notifyAssignment }));
 
 const findOne = vi.fn();
-vi.mock('@/models/TaskLoop', () => ({ default: { findOne } }));
+vi.mock('@/models/TaskLoop', () => ({ TaskLoop: { findOne } }));
 
 interface Task { _id: Types.ObjectId }
 const findTaskById = vi.fn<[string], Promise<Task | null>>();
-vi.mock('@/models/Task', () => ({ default: { findById: findTaskById } }));
+vi.mock('@/models/Task', () => ({ Task: { findById: findTaskById } }));
 
 const createHistory = vi.fn();
-vi.mock('@/models/LoopHistory', () => ({ default: { create: createHistory } }));
+vi.mock('@/models/LoopHistory', () => ({ LoopHistory: { create: createHistory } }));
 
 import { completeStep } from './loop';
 

@@ -11,14 +11,14 @@ const orgCreate = vi.fn().mockResolvedValue([
 ]);
 vi.mock('@/models/Organization', () => ({
   __esModule: true,
-  default: { deleteMany: orgDeleteMany, create: orgCreate },
+  Organization: { deleteMany: orgDeleteMany, create: orgCreate },
 }));
 
 const teamDeleteMany = vi.fn().mockResolvedValue(undefined);
 const teamCreate = vi.fn().mockResolvedValue({ _id: 'team1', name: 'Team' });
 vi.mock('@/models/Team', () => ({
   __esModule: true,
-  default: { deleteMany: teamDeleteMany, create: teamCreate },
+  Team: { deleteMany: teamDeleteMany, create: teamCreate },
 }));
 
 const userDeleteMany = vi.fn().mockResolvedValue(undefined);
@@ -30,14 +30,14 @@ const userCreate = vi.fn().mockResolvedValue([
 ]);
 vi.mock('@/models/User', () => ({
   __esModule: true,
-  default: { deleteMany: userDeleteMany, create: userCreate },
+  User: { deleteMany: userDeleteMany, create: userCreate },
 }));
 
 const taskDeleteMany = vi.fn().mockResolvedValue(undefined);
 const taskCreate = vi.fn().mockResolvedValue({ _id: 't1' });
 vi.mock('@/models/Task', () => ({
   __esModule: true,
-  default: { deleteMany: taskDeleteMany, create: taskCreate },
+  Task: { deleteMany: taskDeleteMany, create: taskCreate },
 }));
 
 import { seed } from './seed';

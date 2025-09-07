@@ -4,8 +4,8 @@ import { Types } from 'mongoose';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import dbConnect from '@/lib/db';
-import Attachment from '@/models/Attachment';
-import Task from '@/models/Task';
+import { Attachment } from '@/models/Attachment';
+import { Task } from '@/models/Task';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
@@ -17,7 +17,7 @@ export const GET = withOrganization(
     session: Session
   ) => {
     const { params } = context;
-    const { id } = await params;
+const { id } = await params;
     await dbConnect();
     const task = await Task.findById(id);
     if (
@@ -73,6 +73,8 @@ export const POST = withOrganization(
     return NextResponse.json(attachment, { status: 201 });
   }
 );
+
+export const runtime = 'nodejs';
 
 export const DELETE = withOrganization(
   async (

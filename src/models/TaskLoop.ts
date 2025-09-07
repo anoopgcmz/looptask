@@ -1,28 +1,13 @@
-import { Schema, model, models, type Document, Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  Types,
+} from 'mongoose';
 
-export interface ILoopStep {
-  taskId: Types.ObjectId;
-  assignedTo: Types.ObjectId;
-  description: string;
-  status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
-  estimatedTime?: number;
-  actualTime?: number;
-  completedAt?: Date;
-  comments?: string;
-  dependencies?: Types.ObjectId[];
-}
-
-export interface ITaskLoop extends Document {
-  taskId: Types.ObjectId;
-  sequence: ILoopStep[];
-  currentStep: number;
-  isActive: boolean;
-  parallel: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const loopStepSchema = new Schema<ILoopStep>(
+const loopStepSchema = new Schema(
   {
     taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -55,7 +40,7 @@ const loopStepSchema = new Schema<ILoopStep>(
   }
 );
 
-const taskLoopSchema = new Schema<ITaskLoop>(
+const taskLoopSchema = new Schema(
   {
     taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
     sequence: [loopStepSchema],
@@ -72,4 +57,10 @@ taskLoopSchema.index({ 'sequence.description': 'text' });
 taskLoopSchema.index({ createdAt: -1 });
 taskLoopSchema.index({ updatedAt: -1 });
 
-export default models.TaskLoop || model<ITaskLoop>('TaskLoop', taskLoopSchema);
+export type ILoopStep = InferSchemaType<typeof loopStepSchema>;
+export type ITaskLoop = InferSchemaType<typeof taskLoopSchema>;
+
+export const TaskLoop: Model<ITaskLoop> =
+  (models.TaskLoop as Model<ITaskLoop>) ??
+  model<ITaskLoop>('TaskLoop', taskLoopSchema);
+

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import dbConnect from '@/lib/db';
-import Notification, { type INotification } from '@/models/Notification';
+import { Notification, type INotification } from '@/models/Notification';
 import { auth } from '@/lib/auth';
 import { Types, type FilterQuery } from 'mongoose';
 
@@ -16,6 +16,8 @@ const querySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   const session = await auth();

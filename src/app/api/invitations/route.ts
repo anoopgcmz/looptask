@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import dbConnect from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
-import Invitation from '@/models/Invitation';
+import { Invitation } from '@/models/Invitation';
 import { sendInvitationEmail } from '@/lib/email';
 import { Types } from 'mongoose';
 
@@ -12,6 +12,8 @@ const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(['ADMIN', 'USER']).optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();

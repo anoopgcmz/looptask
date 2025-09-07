@@ -1,16 +1,13 @@
-import { Schema, model, models, type Document, type Types, type Model } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-export interface INotification extends Document {
-  userId: Types.ObjectId;
-  type: string;
-  message: string;
-  taskId?: Types.ObjectId;
-  read: boolean;
-  readAt?: Date | null;
-  createdAt: Date;
-}
-
-const notificationSchema = new Schema<INotification>(
+const notificationSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     type: { type: String, required: true },
@@ -30,4 +27,7 @@ const NotificationModel =
   (models.Notification as Model<INotification>) ||
   model<INotification>('Notification', notificationSchema);
 
-export default NotificationModel;
+export type INotification = InferSchemaType<typeof notificationSchema>;
+
+export const Notification: Model<INotification> = NotificationModel;
+

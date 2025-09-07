@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
-import TaskLoop from '@/models/TaskLoop';
-import Comment from '@/models/Comment';
+import { Task } from '@/models/Task';
+import { TaskLoop } from '@/models/TaskLoop';
+import { Comment } from '@/models/Comment';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -14,6 +14,8 @@ const querySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   sort: z.enum(['recent', 'oldest']).optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   const session = await auth();

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Objective from '@/models/Objective';
+import { Objective } from '@/models/Objective';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -15,6 +15,8 @@ const upsertSchema = z.object({
   linkedTaskIds: z.array(z.string()).optional(),
   status: z.enum(['OPEN', 'DONE']).optional(),
 });
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();

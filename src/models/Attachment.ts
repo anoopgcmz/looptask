@@ -1,14 +1,13 @@
-import { Schema, model, models, type Document, Types } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  Types,
+} from 'mongoose';
 
-export interface IAttachment extends Document {
-  taskId: Types.ObjectId;
-  userId: Types.ObjectId;
-  filename: string;
-  url: string;
-  createdAt: Date;
-}
-
-const attachmentSchema = new Schema<IAttachment>(
+const attachmentSchema = new Schema(
   {
     taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -20,4 +19,9 @@ const attachmentSchema = new Schema<IAttachment>(
 
 attachmentSchema.index({ taskId: 1, createdAt: -1 });
 
-export default models.Attachment || model<IAttachment>('Attachment', attachmentSchema);
+export type IAttachment = InferSchemaType<typeof attachmentSchema>;
+
+export const Attachment: Model<IAttachment> =
+  (models.Attachment as Model<IAttachment>) ??
+  model<IAttachment>('Attachment', attachmentSchema);
+

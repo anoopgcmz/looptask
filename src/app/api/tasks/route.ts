@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
+import { Task } from '@/models/Task';
 import type { ITask, TaskStatus } from '@/models/Task';
-import ActivityLog from '@/models/ActivityLog';
-import User from '@/models/User';
+import { ActivityLog } from '@/models/ActivityLog';
+import { User } from '@/models/User';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
 import { scheduleTaskJobs } from '@/lib/agenda';
 import { problem } from '@/lib/http';
@@ -33,6 +33,8 @@ const createTaskSchema: z.ZodType<TaskPayload> = z
     dueDate: z.coerce.date().optional(),
     steps: z.array(stepSchema).optional(),
   });
+
+export const runtime = 'nodejs';
 
 export const POST = withOrganization(async (req, session) => {
   let body: TaskPayload;

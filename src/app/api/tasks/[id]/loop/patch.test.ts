@@ -12,13 +12,13 @@ vi.mock('@/lib/notify', () => ({ notifyAssignment, notifyLoopStepReady }));
 
 interface Task { _id: Types.ObjectId; organizationId: Types.ObjectId }
 const findTaskById = vi.fn<[string], Promise<Task | null>>();
-vi.mock('@/models/Task', () => ({ default: { findById: findTaskById } }));
+vi.mock('@/models/Task', () => ({ Task: { findById: findTaskById } }));
 
 const findLoop = vi.fn();
-vi.mock('@/models/TaskLoop', () => ({ default: { findOne: findLoop } }));
+vi.mock('@/models/TaskLoop', () => ({ TaskLoop: { findOne: findLoop } }));
 
 const findUsers = vi.fn();
-vi.mock('@/models/User', () => ({ default: { find: findUsers } }));
+vi.mock('@/models/User', () => ({ User: { find: findUsers } }));
 
 vi.mock('@/lib/access', () => ({ canWriteTask: () => true }));
 

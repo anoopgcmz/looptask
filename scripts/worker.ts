@@ -1,7 +1,7 @@
 import agenda, { initAgenda, DEFAULT_TZ } from '@/lib/agenda';
-import User from '@/models/User';
-import Team, { type ITeam } from '@/models/Team';
-import Task from '@/models/Task';
+import { User } from '@/models/User';
+import { Team, type ITeam } from '@/models/Team';
+import { Task } from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
 import { Types } from 'mongoose';

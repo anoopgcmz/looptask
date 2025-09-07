@@ -1,12 +1,12 @@
-import { Schema, model, models, type Document, type Model } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+} from 'mongoose';
 
-export interface IOrganization extends Document {
-  name: string;
-  domain: string;
-  settings?: unknown;
-}
-
-const organizationSchema = new Schema<IOrganization>(
+const organizationSchema = new Schema(
   {
     name: { type: String, required: true },
     domain: { type: String, required: true, unique: true, index: true, lowercase: true },
@@ -15,8 +15,9 @@ const organizationSchema = new Schema<IOrganization>(
   { timestamps: true }
 );
 
-const OrganizationModel =
-  (models.Organization as Model<IOrganization>) ||
+export type IOrganization = InferSchemaType<typeof organizationSchema>;
+
+export const Organization: Model<IOrganization> =
+  (models.Organization as Model<IOrganization>) ??
   model<IOrganization>('Organization', organizationSchema);
 
-export default OrganizationModel;

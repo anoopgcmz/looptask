@@ -1,4 +1,11 @@
-import { Schema, model, models, type Document, Types, type Model } from 'mongoose';
+import {
+  Schema,
+  model,
+  models,
+  type InferSchemaType,
+  type Model,
+  Types,
+} from 'mongoose';
 
 export type TaskStatus =
   | 'OPEN'
@@ -13,33 +20,10 @@ export type TaskVisibility = 'PRIVATE' | 'TEAM';
 export interface IStep {
   title: string;
   ownerId: Types.ObjectId;
-  description?: string | undefined;
-  dueAt?: Date | undefined;
+  description?: string;
+  dueAt?: Date;
   status: 'OPEN' | 'DONE';
-  completedAt?: Date | undefined;
-}
-
-export interface ITask extends Document {
-  _id: Types.ObjectId;
-  title: string;
-  description?: string | undefined;
-  createdBy: Types.ObjectId;
-  ownerId?: Types.ObjectId | undefined;
-  helpers?: Types.ObjectId[] | undefined;
-  mentions?: Types.ObjectId[] | undefined;
-  organizationId: Types.ObjectId;
-  teamId?: Types.ObjectId | undefined;
-  status: TaskStatus;
-  priority: TaskPriority;
-  tags?: string[] | undefined;
-  visibility?: TaskVisibility | undefined;
-  dueDate?: Date | undefined;
-  steps?: IStep[] | undefined;
-  currentStepIndex?: number | undefined;
-  participantIds?: Types.ObjectId[] | undefined;
-  custom?: Record<string, unknown> | undefined;
-  createdAt: Date;
-  updatedAt: Date;
+  completedAt?: Date;
 }
 
 const stepSchema = new Schema<IStep>(
@@ -54,7 +38,7 @@ const stepSchema = new Schema<IStep>(
   { _id: false }
 );
 
-const taskSchema = new Schema<ITask>(
+const taskSchema = new Schema(
   {
     title: { type: String, required: true },
     description: String,
@@ -105,6 +89,8 @@ taskSchema.pre('save', function (next) {
   next();
 });
 
-const TaskModel = (models.Task as Model<ITask>) || model<ITask>('Task', taskSchema);
+export type ITask = InferSchemaType<typeof taskSchema>;
 
-export default TaskModel;
+export const Task: Model<ITask> =
+  (models.Task as Model<ITask>) ?? model<ITask>('Task', taskSchema);
+

@@ -3,10 +3,10 @@ import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
+import { Task } from '@/models/Task';
 import type { ITask } from '@/models/Task';
-import ActivityLog from '@/models/ActivityLog';
-import User from '@/models/User';
+import { ActivityLog } from '@/models/ActivityLog';
+import { User } from '@/models/User';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { scheduleTaskJobs } from '@/lib/agenda';
 import { emitTaskUpdated } from '@/lib/ws';
@@ -39,6 +39,8 @@ const patchSchema: z.ZodType<Partial<TaskPayload>> = z
     steps: z.array(stepSchema).optional(),
     currentStepIndex: z.number().int().optional(),
   });
+
+export const runtime = 'nodejs';
 
 const putSchema: z.ZodType<TaskPayload> = z
   .object({

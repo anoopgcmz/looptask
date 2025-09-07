@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { Types, type PipelineStage } from 'mongoose';
 import dbConnect from '@/lib/db';
-import Task from '@/models/Task';
+import { Task } from '@/models/Task';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
 
@@ -79,4 +79,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ suggestions: Array.from(suggestions).slice(0, 10) });
 }
+
+export const runtime = 'nodejs';
 

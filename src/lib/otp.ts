@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import dbConnect from '@/lib/db';
-import OtpToken from '@/models/OtpToken';
-import RateLimit from '@/models/RateLimit';
+import { OtpToken } from '@/models/OtpToken';
+import { RateLimit } from '@/models/RateLimit';
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESEND_COOLDOWN = 60; // seconds
