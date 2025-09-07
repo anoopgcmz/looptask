@@ -93,7 +93,7 @@ describe('PATCH /tasks/:id/loop assignedTo updates', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const res = await PATCH(req, { params: { id: taskId.toString() } });
+    const res = await PATCH(req, { params: Promise.resolve({ id: taskId.toString() }) });
     expect(res.status).toBe(200);
     expect(loop.sequence[0].assignedTo).toEqual(newUser);
     expect(loop.sequence[0].status).toBe('PENDING');

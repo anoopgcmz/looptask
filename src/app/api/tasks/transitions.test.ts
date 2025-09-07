@@ -101,7 +101,7 @@ describe('task flow with steps', () => {
         method: 'POST',
         body: JSON.stringify({ action: 'DONE' }),
       }),
-      { params: { id: taskId.toString() } }
+      { params: Promise.resolve({ id: taskId.toString() }) }
     );
     let t = tasks.get(taskId.toString());
     expect(t.currentStepIndex).toBe(1);
@@ -124,7 +124,7 @@ describe('task flow with steps', () => {
         method: 'POST',
         body: JSON.stringify({ action: 'DONE' }),
       }),
-      { params: { id: taskId.toString() } }
+      { params: Promise.resolve({ id: taskId.toString() }) }
     );
     t = tasks.get(taskId.toString());
     expect(t.currentStepIndex).toBe(2);
@@ -147,7 +147,7 @@ describe('task flow with steps', () => {
         method: 'POST',
         body: JSON.stringify({ action: 'DONE' }),
       }),
-      { params: { id: taskId.toString() } }
+      { params: Promise.resolve({ id: taskId.toString() }) }
     );
     t = tasks.get(taskId.toString());
     expect(t.status).toBe('DONE');
@@ -181,7 +181,7 @@ describe('task flow with steps', () => {
         method: 'POST',
         body: JSON.stringify({ action: 'DONE' }),
       }),
-      { params: { id: taskId.toString() } }
+      { params: Promise.resolve({ id: taskId.toString() }) }
     );
 
     const t = tasks.get(taskId.toString());
@@ -215,7 +215,7 @@ describe('simple task status transitions', () => {
         method: 'POST',
         body: JSON.stringify({ action: 'START' }),
       }),
-      { params: { id: taskId.toString() } }
+      { params: Promise.resolve({ id: taskId.toString() }) }
     );
     let t = tasks.get(taskId.toString());
     expect(t.status).toBe('IN_PROGRESS');
@@ -225,7 +225,7 @@ describe('simple task status transitions', () => {
         method: 'POST',
         body: JSON.stringify({ action: 'SEND_FOR_REVIEW' }),
       }),
-      { params: { id: taskId.toString() } }
+      { params: Promise.resolve({ id: taskId.toString() }) }
     );
     t = tasks.get(taskId.toString());
     expect(t.status).toBe('IN_REVIEW');
@@ -235,7 +235,7 @@ describe('simple task status transitions', () => {
         method: 'POST',
         body: JSON.stringify({ action: 'DONE' }),
       }),
-      { params: { id: taskId.toString() } }
+      { params: Promise.resolve({ id: taskId.toString() }) }
     );
     t = tasks.get(taskId.toString());
     expect(t.status).toBe('DONE');
