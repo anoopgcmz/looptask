@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
   }
   if (typeof raw.filters === 'string') {
     try {
-      const parsed = JSON.parse(raw.filters as string);
+      const parsed = JSON.parse(raw.filters as string) as unknown;
       if (Array.isArray(parsed)) {
         const dynamic: FilterQuery<ITask>[] = [];
         parsed.forEach(

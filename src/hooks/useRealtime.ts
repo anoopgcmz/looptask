@@ -5,7 +5,7 @@ export type ConnectionStatus = 'connecting' | 'connected' | 'offline';
 export interface RealtimeMessage {
   taskId: string;
   event: string;
-  patch?: any;
+  patch?: unknown;
   updatedAt?: string;
   [key: string]: unknown;
 }
@@ -49,7 +49,10 @@ function notifyStatus(s: ConnectionStatus) {
 function flushQueue() {
   const raw = localStorage.getItem('offlineQueue');
   if (!raw) return;
-  const queue: { url: string; init?: RequestInit }[] = JSON.parse(raw);
+  const parsed = JSON.parse(raw) as unknown;
+  const queue = Array.isArray(parsed)
+    ? (parsed as { url: string; init?: RequestInit }[])
+    : [];
   const process = async () => {
     while (queue.length) {
       const item = queue[0];
@@ -202,7 +205,10 @@ export function enqueue(url: string, init?: RequestInit): Promise<Response | Off
     return fetch(url, init);
   }
   const raw = localStorage.getItem('offlineQueue');
-  const queue = raw ? JSON.parse(raw) : [];
+  const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+  const queue: { url: string; init?: RequestInit }[] = Array.isArray(parsed)
+    ? (parsed as { url: string; init?: RequestInit }[])
+    : [];
   queue.push({ url, init });
   localStorage.setItem('offlineQueue', JSON.stringify(queue));
   return Promise.resolve<OfflineResponse>({ ok: false, offline: true });

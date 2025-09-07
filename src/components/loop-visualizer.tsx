@@ -1,6 +1,6 @@
 'use client';
 
-import { LoopStep } from '@/hooks/useLoopBuilder';
+import type { LoopStep } from '@/hooks/useLoopBuilder';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';

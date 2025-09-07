@@ -27,7 +27,7 @@ export default function useTyping(
         const data: unknown = JSON.parse(event.data);
         if (!isRealtimeMessage(data) || data.taskId !== taskId) return;
         if (data.event === 'comment.typing') {
-          const uid: string = (data as any).userId;
+          const uid = typeof data.userId === 'string' ? data.userId : undefined;
           if (!uid || uid === userId) return;
           if (!usersRef.current[uid]) {
             usersRef.current[uid] = { _id: uid };

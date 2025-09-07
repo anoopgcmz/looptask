@@ -6,8 +6,8 @@ test('signin with otp navigates to tasks', async ({ page }) => {
     route.fulfill({ json: { ok: true, code: captured } });
   });
   await page.route('**/api/auth/otp/verify', (route) => {
-    const data = JSON.parse(route.request().postData() || '{}');
-    expect(data.code).toBe(captured);
+    const data = JSON.parse(route.request().postData() || '{}') as unknown;
+    expect((data as { code: string }).code).toBe(captured);
     route.fulfill({ json: { ok: true } });
   });
   await page.goto('about:blank');

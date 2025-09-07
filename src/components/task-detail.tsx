@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
-import LoopVisualizer, { StepWithStatus, UserMap } from "@/components/loop-visualizer";
+import LoopVisualizer, { type StepWithStatus, type UserMap } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
-import useRealtime, { RealtimeMessage } from "@/hooks/useRealtime";
+import useRealtime, { type RealtimeMessage } from "@/hooks/useRealtime";
 import usePresence from "@/hooks/usePresence";
 import { Avatar } from "@/components/ui/avatar";
 
