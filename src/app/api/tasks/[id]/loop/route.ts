@@ -45,21 +45,19 @@ const loopStepStatus = z
   })
   .pipe(z.enum(['PENDING', 'ACTIVE', 'COMPLETED', 'BLOCKED']));
 
-const loopPatchSchema = z.object({
-  parallel: z.boolean().optional(),
-  sequence: z
-    .array(
-      z.object({
-        index: z.number().int(),
-        assignedTo: z.string().optional(),
-        description: z.string().optional(),
-        status: loopStepStatus.optional(),
-      })
-    )
-    .optional(),
+const loopPatchStepSchema = z.object({
+  index: z.number().int(),
+  assignedTo: z.string().optional(),
+  description: z.string().optional(),
+  status: loopStepStatus.optional(),
 });
 
-type LoopPatchStep = z.infer<typeof loopPatchSchema>['sequence'][number];
+const loopPatchSchema = z.object({
+  parallel: z.boolean().optional(),
+  sequence: z.array(loopPatchStepSchema).optional(),
+});
+
+type LoopPatchStep = z.infer<typeof loopPatchStepSchema>;
 
 export const POST = withOrganization(
   async (
