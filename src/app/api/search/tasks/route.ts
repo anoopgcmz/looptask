@@ -285,7 +285,7 @@ export async function GET(req: NextRequest) {
       pipeline.push({ $sort: { dueDate: 1 } });
     } else {
       pipeline.push({
-        $sort: { score: { $meta: 'searchScore' as unknown as string } },
+        $sort: { score: -1 },
       });
     }
     results = await Task.aggregate<SearchResult>(pipeline);
