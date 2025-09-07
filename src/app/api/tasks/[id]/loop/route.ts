@@ -198,13 +198,13 @@ export const PATCH = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot modify this loop');
     }
-      const loop = await TaskLoop.findOne({ taskId: id }).lean<ITaskLoop>();
-    if (!loop) return problem(404, 'Not Found', 'Loop not found');
+    const existingLoop = await TaskLoop.findOne({ taskId: id }).lean<ITaskLoop>();
+    if (!existingLoop) return problem(404, 'Not Found', 'Loop not found');
 
     const { sequence: steps, parallel } = body;
 
     if (steps) {
-      if (steps.length !== loop.sequence.length) {
+      if (steps.length !== existingLoop.sequence.length) {
         return problem(400, 'Invalid request', 'Sequence length mismatch');
       }
 
@@ -214,7 +214,7 @@ export const PATCH = withOrganization(
       steps.forEach((s, idx) => {
         if (seen.has(s.index)) {
           errors.push({ index: idx, message: 'Duplicate index' });
-        } else if (s.index < 0 || s.index >= loop.sequence.length) {
+        } else if (s.index < 0 || s.index >= existingLoop.sequence.length) {
           errors.push({ index: idx, message: 'Invalid index' });
         } else {
           seen.add(s.index);
