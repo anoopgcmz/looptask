@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import FilterBuilder from '@/components/filter-builder';
 import { useSession } from 'next-auth/react';
 import { getPresets } from '../filters';
-import type {
-  SearchResult,
-  SearchTasksResponse,
-  SavedSearch,
+import {
+  SearchTasksResponseSchema,
+  type SearchResult,
+  type SearchTasksResponse,
+  type SavedSearch,
 } from '@/types/api/search';
 
 export default function TaskSearchPage() {
@@ -49,7 +50,12 @@ export default function TaskSearchPage() {
     const run = async () => {
       const res = await fetch(`/api/search/tasks?${qs}`);
       if (!res.ok) return;
-      setData((await res.json()) as SearchTasksResponse);
+      const parsed = SearchTasksResponseSchema.safeParse(await res.json());
+      if (!parsed.success) {
+        console.error(parsed.error);
+        return;
+      }
+      setData(parsed.data);
     };
     void run();
   }, [params]);
