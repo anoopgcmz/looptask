@@ -30,7 +30,7 @@ async function main() {
     const interval = freq === 'weekly' ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
     if (now.getTime() - last.getTime() < interval) continue;
 
-    const notifications = await Notification.find({
+    const notifications: INotification[] = await Notification.find({
       userId: user._id,
       read: false,
       createdAt: { $gt: last },
@@ -38,7 +38,7 @@ async function main() {
     if (!notifications.length) continue;
 
     const listItems = notifications
-      .map((n: INotification) => `<li>${n.message}</li>`)
+      .map((n) => `<li>${n.message}</li>`)
       .join('');
     const html = template.replace('{{content}}', listItems);
     if (resend) {
