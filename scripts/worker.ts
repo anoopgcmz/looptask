@@ -5,14 +5,27 @@ import Task from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
 import { Types } from 'mongoose';
-import type { Job } from 'agenda';
+import type { Job, JobAttributesData } from 'agenda';
 
 type EveryOptions = Parameters<typeof agenda.every>[3];
 type EveryOptionsWithUnique = EveryOptions & {
   unique?: Record<string, unknown>;
 };
 
-agenda.define('task.dueSoon', async (job: Job<{ taskId: string; stepId?: string }>) => {
+interface TaskJobData extends JobAttributesData {
+  taskId: string;
+  stepId?: string;
+}
+
+interface UserJobData extends JobAttributesData {
+  userId: string;
+}
+
+interface TeamJobData extends JobAttributesData {
+  teamId: string;
+}
+
+agenda.define('task.dueSoon', async (job: Job<TaskJobData>) => {
   const { taskId, stepId } = job.attrs.data;
   const task = await Task.findById(taskId).lean<ITask>();
   if (!task) return;
@@ -30,7 +43,7 @@ agenda.define('task.dueSoon', async (job: Job<{ taskId: string; stepId?: string 
   }
 });
 
-agenda.define('task.dueNow', async (job: Job<{ taskId: string; stepId?: string }>) => {
+agenda.define('task.dueNow', async (job: Job<TaskJobData>) => {
   const { taskId, stepId } = job.attrs.data;
   const task = await Task.findById(taskId).lean<ITask>();
   if (!task) return;
@@ -49,11 +62,11 @@ agenda.define('task.dueNow', async (job: Job<{ taskId: string; stepId?: string }
   }
 });
 
-agenda.define('task.overdueDigest', async (job: Job) => {
+agenda.define('task.overdueDigest', async (job: Job<UserJobData>) => {
   console.log('task.overdueDigest', job.attrs.data);
 });
 
-agenda.define('dashboard.dailySnapshot', async (job: Job) => {
+agenda.define('dashboard.dailySnapshot', async (job: Job<TeamJobData>) => {
   console.log('dashboard.dailySnapshot', job.attrs.data);
 });
 
