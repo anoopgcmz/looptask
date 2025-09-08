@@ -21,15 +21,15 @@ export default function EditUserPage() {
   useEffect(() => {
     const load = async () => {
       const res = await fetch('/api/users/' + id);
-      const data = await res.json();
+      const data = (await res.json()) as Partial<typeof form>;
       setForm({
-        name: data.name || '',
-        email: data.email || '',
-        username: data.username || '',
+        name: data.name ?? '',
+        email: data.email ?? '',
+        username: data.username ?? '',
         password: '',
-        organizationId: data.organizationId || '',
-        teamId: data.teamId || '',
-        role: data.role || 'USER',
+        organizationId: data.organizationId ?? '',
+        teamId: data.teamId ?? '',
+        role: data.role ?? 'USER',
       });
     };
     if (id) void load();
@@ -54,8 +54,10 @@ export default function EditUserPage() {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.detail || 'Failed to save');
+        const err = (await res.json().catch(() => null)) as
+          | { detail?: string }
+          | null;
+        throw new Error(err?.detail ?? 'Failed to save');
       }
       setStatus({ success: 'Saved' });
     } catch (e: unknown) {
