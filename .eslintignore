@@ -1,5 +1,0 @@
-# Ignore Next.js build output
-.next
-out
-build
-node_modules
