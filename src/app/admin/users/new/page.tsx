@@ -33,8 +33,10 @@ function NewUserForm() {
       body: JSON.stringify({ ...form, organizationId: session?.organizationId }),
     });
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.detail || 'Failed to create user');
+      const data = (await res
+        .json()
+        .catch(() => ({}))) as { detail?: string };
+      setError(data.detail ?? 'Failed to create user');
       return;
     }
     router.push('/admin/users');

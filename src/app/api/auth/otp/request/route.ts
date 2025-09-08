@@ -3,7 +3,7 @@ import { generateOtp, createOtpToken, checkRateLimit } from '@/lib/otp';
 import { sendOtpEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
-  const { email } = await req.json();
+  const { email } = (await req.json()) as { email?: string };
   if (!email) {
     return NextResponse.json(
       {

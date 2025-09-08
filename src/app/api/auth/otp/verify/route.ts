@@ -8,7 +8,10 @@ import bcrypt from 'bcrypt';
 const SALT_ROUNDS = 10;
 
 export async function POST(req: NextRequest) {
-  const { email, code } = await req.json();
+  const { email, code } = (await req.json()) as {
+    email?: string;
+    code?: string;
+  };
   if (!email || !code) {
     return NextResponse.json(
       {
