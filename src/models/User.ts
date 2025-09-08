@@ -5,7 +5,6 @@ import {
   type InferSchemaType,
   type HydratedDocument,
   type Model,
-  type Types,
 } from 'mongoose';
 import bcrypt from 'bcrypt';
 

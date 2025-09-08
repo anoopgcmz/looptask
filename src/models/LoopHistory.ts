@@ -4,7 +4,6 @@ import {
   models,
   type InferSchemaType,
   type Model,
-  type Types,
 } from 'mongoose';
 
 const loopHistorySchema = new Schema(
