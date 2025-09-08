@@ -106,8 +106,9 @@ export async function completeStep(
   if (newlyActiveIndexes.length) {
       const task = await Task.findById(taskId).lean<Pick<ITask, '_id' | 'title' | 'status'>>();
       if (task) {
+        const sequence = updatedLoop.sequence as ILoopStep[];
         for (const idx of newlyActiveIndexes) {
-          const s = updatedLoop.sequence[idx];
+          const s = sequence[idx];
           const assignee = s.assignedTo as Types.ObjectId;
           await notifyAssignment([assignee], task, s.description);
           await notifyLoopStepReady([assignee], task, s.description);
