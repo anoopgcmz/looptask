@@ -4,7 +4,6 @@ import {
   models,
   type InferSchemaType,
   type Model,
-  type Types,
 } from 'mongoose';
 
 export type ObjectiveStatus = 'OPEN' | 'DONE';
