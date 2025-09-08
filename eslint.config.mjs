@@ -33,6 +33,12 @@ const eslintConfig = [
       "no-console": "warn",
     },
   },
+  {
+    files: ["**/*.d.ts"],
+    rules: {
+      "@typescript-eslint/no-empty-object-type": "off",
+    },
+  },
 ];
 
 export default eslintConfig;
