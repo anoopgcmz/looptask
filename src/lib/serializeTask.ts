@@ -1,9 +1,10 @@
 import type { ITask } from '@/models/Task';
 import type { TaskResponse } from '@/types/api/task';
+import { Types } from 'mongoose';
 
 export function serializeTask(task: ITask): TaskResponse {
-  return {
-    _id: task._id.toString(),
+    return {
+      _id: (task._id as Types.ObjectId).toString(),
     title: task.title,
     description: task.description,
     createdBy: task.createdBy.toString(),

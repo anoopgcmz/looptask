@@ -37,7 +37,8 @@ export async function completeStep(
       let activated = false;
       loop.sequence.forEach((s: ILoopStep, idx) => {
         if (s.status === 'COMPLETED') return;
-        const deps: Array<number | Types.ObjectId> = s.dependencies ?? [];
+        const deps: Array<number | Types.ObjectId> =
+          (s.dependencies ?? []) as Array<number | Types.ObjectId>;
         const depsMet = deps.every((d) => {
           if (typeof d === 'number') {
             return loop.sequence[d]?.status === 'COMPLETED';
@@ -105,12 +106,12 @@ export async function completeStep(
   if (newlyActiveIndexes.length) {
     const task = await Task.findById(taskId).lean<Pick<ITask, '_id' | 'title' | 'status'>>();
     if (task) {
-      for (const idx of newlyActiveIndexes) {
-        const s = updatedLoop.sequence[idx];
-        const assignee = s.assignedTo as Types.ObjectId;
-        await notifyAssignment([assignee], task, s.description);
-        await notifyLoopStepReady([assignee], task, s.description);
-      }
+        for (const idx of newlyActiveIndexes) {
+          const s = updatedLoop.sequence[idx] as ILoopStep;
+          const assignee = s.assignedTo as Types.ObjectId;
+          await notifyAssignment([assignee], task, s.description);
+          await notifyLoopStepReady([assignee], task, s.description);
+        }
     }
   }
 
