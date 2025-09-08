@@ -30,20 +30,28 @@ vi.mock('@/models/OtpToken', () => ({
   },
 }));
 
-const rates = new Map<string, unknown>();
+const rates = new Map<string, Record<string, unknown>>();
 vi.mock('@/models/RateLimit', () => ({
   RateLimit: {
-    findOne: vi.fn(async ({ key }: unknown) => rates.get(key) || null),
-    updateOne: vi.fn(async ({ key }: unknown, update: unknown, opts?: unknown) => {
-      const record = rates.get(key);
-      if (opts?.upsert && (!record || record.windowEndsAt < new Date())) {
-        rates.set(key, { key, ...(update.$set || {}) });
-        return;
+    findOne: vi.fn(async ({ key }: { key: string }) => rates.get(key) || null),
+    updateOne: vi.fn(
+      async (
+        { key }: { key: string },
+        update: { $set?: Record<string, unknown>; $inc?: { count: number } },
+        opts?: { upsert?: boolean }
+      ) => {
+        const record = rates.get(key) as
+          | { count?: number; windowEndsAt: Date }
+          | undefined;
+        if (opts?.upsert && (!record || record.windowEndsAt < new Date())) {
+          rates.set(key, { key, ...(update.$set ?? {}) });
+          return;
+        }
+        if (update.$inc && record) {
+          record.count = ((record.count as number) ?? 0) + update.$inc.count;
+        }
       }
-      if (update.$inc && record) {
-        record.count += update.$inc.count;
-      }
-    }),
+    ),
   },
 }));
 

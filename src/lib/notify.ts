@@ -2,6 +2,7 @@ import type { Types } from 'mongoose';
 import { Resend } from 'resend';
 import { Notification } from '@/models/Notification';
 import { User } from '@/models/User';
+import type { IUser } from '@/models/User';
 import dbConnect from '@/lib/db';
 import { RateLimit } from '@/models/RateLimit';
 import { emitNotification } from '@/lib/ws';
@@ -98,11 +99,11 @@ async function createAndEmail(
   notifications.forEach((n) =>
     emitNotification({ notification: n.toObject(), userId: n.userId.toString() })
   );
-  const users = await User.find({ _id: { $in: recipients } });
+  const users = await User.find({ _id: { $in: recipients } }).lean<IUser>();
   const pushUsers = users.filter((u) => {
     const settings = u.notificationSettings;
     if (!settings || settings.push === false) return false;
-    const perType = settings.types?.[type];
+    const perType = settings.types?.[type as keyof IUser['notificationSettings']['types']];
     return perType !== false;
   });
   const pushPayload = { title: subject, body: text, type };
@@ -112,7 +113,7 @@ async function createAndEmail(
     const emailUsers = users.filter((u) => {
       const settings = u.notificationSettings;
       if (!settings || settings.email === false) return false;
-      const perType = settings.types?.[type];
+      const perType = settings.types?.[type as keyof IUser['notificationSettings']['types']];
       return perType !== false;
     });
     await Promise.all(
