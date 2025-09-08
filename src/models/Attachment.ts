@@ -4,7 +4,6 @@ import {
   models,
   type InferSchemaType,
   type Model,
-  Types,
 } from 'mongoose';
 
 const attachmentSchema = new Schema(
