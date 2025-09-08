@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { LoopStep } from '@/hooks/useLoopBuilder';
+import type { LoopStep } from '@/hooks/useLoopBuilder';
 import { Avatar } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

@@ -4,7 +4,7 @@ import { Team, type ITeam } from '@/models/Team';
 import { Task } from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import { notifyDueSoon, notifyDueNow, notifyOverdue } from '@/lib/notify';
-import { Types } from 'mongoose';
+import type { Types } from 'mongoose';
 
 // The agenda library no longer exports the Job type.  Define a minimal
 // interface that matches the shape used in this worker so that the script can

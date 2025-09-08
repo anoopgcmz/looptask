@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { Objective } from '@/models/Objective';
 import { auth } from '@/lib/auth';

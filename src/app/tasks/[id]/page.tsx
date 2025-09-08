@@ -8,7 +8,8 @@ import Link from 'next/link';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
-import Timeline, { TimelineEvent } from "@/components/timeline/timeline";
+import type { TimelineEvent } from "@/components/timeline/timeline";
+import Timeline from "@/components/timeline/timeline";
 import DeleteTaskModal from '@/components/delete-task-modal';
 import type { TaskStatus } from '@/models/Task';
 

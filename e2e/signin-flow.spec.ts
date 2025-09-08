@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('signin with otp navigates to tasks', async ({ page }) => {
-  let captured = '123456';
+  const captured = '123456';
   await page.route('**/api/auth/otp/request', (route) => {
     route.fulfill({ json: { ok: true, code: captured } });
   });

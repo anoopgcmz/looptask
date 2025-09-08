@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import type { Types } from 'mongoose';
 import { Resend } from 'resend';
 import { Notification } from '@/models/Notification';
 import { User } from '@/models/User';
