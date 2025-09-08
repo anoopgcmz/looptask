@@ -104,15 +104,15 @@ export async function completeStep(
   if (!updatedLoop) return null;
 
   if (newlyActiveIndexes.length) {
-    const task = await Task.findById(taskId).lean<Pick<ITask, '_id' | 'title' | 'status'>>();
-    if (task) {
+      const task = await Task.findById(taskId).lean<Pick<ITask, '_id' | 'title' | 'status'>>();
+      if (task) {
         for (const idx of newlyActiveIndexes) {
-          const s = updatedLoop.sequence[idx] as ILoopStep;
+          const s = updatedLoop.sequence[idx];
           const assignee = s.assignedTo as Types.ObjectId;
           await notifyAssignment([assignee], task, s.description);
           await notifyLoopStepReady([assignee], task, s.description);
         }
-    }
+      }
   }
 
   return updatedLoop;

@@ -53,24 +53,29 @@ export default function TaskDetail({ id }: { id: string }) {
   const refreshTask = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
     if (res.ok) {
-      const data = await res.json();
-      setTask(data);
-      setTaskVersion(new Date(data.updatedAt).getTime());
+      const json: unknown = await res.json();
+      if (json && typeof json === "object" && "updatedAt" in json) {
+        const taskData = json as Task;
+        setTask(taskData);
+        setTaskVersion(new Date(taskData.updatedAt).getTime());
+      }
     }
   }, [id]);
 
   const refreshLoop = useCallback(async () => {
     setLoopLoading(true);
     try {
-      const res = await fetch(`/api/tasks/${id}/loop`);
-      if (res.ok) {
-        const loopData = await res.json();
+    const res = await fetch(`/api/tasks/${id}/loop`);
+    if (res.ok) {
+      const json: unknown = await res.json();
+      if (json && typeof json === "object" && "updatedAt" in json) {
+        const loopData = json as TaskLoop;
         setLoop(loopData);
         setLoopVersion(new Date(loopData.updatedAt).getTime());
 
         const ids = Array.from(
           new Set(
-            (loopData.sequence || [])
+            (loopData.sequence ?? [])
               .map((s: LoopStep) => s.assignedTo)
               .filter((v: string | undefined): v is string => !!v)
           )
@@ -81,26 +86,32 @@ export default function TaskDetail({ id }: { id: string }) {
             { credentials: 'include' }
           );
           if (userRes.ok) {
-            const data = await userRes.json();
-            const map: UserMap = Array.isArray(data)
-              ? data.reduce(
-                  (acc: UserMap, u: User) => {
-                    acc[u._id] = u;
-                    return acc;
-                  },
-                  {} as UserMap
-                )
-              : data;
+            const userJson: unknown = await userRes.json();
+            let map: UserMap = {} as UserMap;
+            if (Array.isArray(userJson)) {
+              map = userJson.reduce(
+                (acc: UserMap, u: User) => {
+                  acc[u._id] = u;
+                  return acc;
+                },
+                {} as UserMap
+              );
+            } else if (userJson && typeof userJson === "object") {
+              map = userJson as UserMap;
+            }
             setUsers(map);
           }
         }
       } else {
         setLoop(null);
       }
-    } finally {
-      setLoopLoading(false);
+    } else {
+      setLoop(null);
     }
-  }, [id]);
+  } finally {
+    setLoopLoading(false);
+  }
+}, [id]);
 
   useEffect(() => {
     void refreshTask();
