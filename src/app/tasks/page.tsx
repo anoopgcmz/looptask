@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import TaskCard from '@/components/task-card';
-import { useSession } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 import type { TaskResponse as Task } from '@/types/api/task';
 
 const statusTabs = [
@@ -20,7 +20,7 @@ const statusTabs = [
 
 const PAGE_SIZE = 20;
 
-export default function TasksPage() {
+function TasksPageInner() {
   const { data: session } = useSession();
   const [filters, setFilters] = useState({
     assignee: '',
@@ -285,6 +285,14 @@ export default function TasksPage() {
         ))}
       </Tabs>
     </div>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <SessionProvider>
+      <TasksPageInner />
+    </SessionProvider>
   );
 }
 
