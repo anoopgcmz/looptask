@@ -109,4 +109,7 @@ agenda.define('dashboard.dailySnapshot', async (job: Job<JobAttributesData>) => 
     );
   }
   console.log('Worker started');
-})();
+})().catch((error) => {
+  console.error('Worker failed', error);
+  process.exitCode = 1;
+});

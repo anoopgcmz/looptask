@@ -3,7 +3,7 @@ import { POST } from './[id]/transition/route';
 
 // mock mongoose before import
 vi.mock('mongoose', async () => {
-  const actual = await vi.importActual<typeof import('mongoose')>('mongoose');
+  const actual = await vi.importActual('mongoose');
   return {
     ...actual,
     startSession: vi.fn(async () => ({

@@ -94,7 +94,7 @@ export default function MembersPage() {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, []);
 
   const handleUpdated = (updated: User) => {

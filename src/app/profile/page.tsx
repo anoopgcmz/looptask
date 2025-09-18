@@ -41,7 +41,7 @@ export default function ProfilePage() {
         setLoading(false);
       }
     };
-    loadUser();
+    void loadUser();
   }, [reset]);
 
   const onSubmit = async (data: FormData) => {

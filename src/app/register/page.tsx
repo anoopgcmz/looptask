@@ -45,7 +45,7 @@ export default function RegisterPage() {
         setOrgLoading(false);
       }
     };
-    loadOrganizations();
+    void loadOrganizations();
   }, []);
 
   const onSubmit = async (data: FormData) => {
