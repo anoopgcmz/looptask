@@ -11,23 +11,38 @@ export async function GET(req: NextRequest) {
   if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
-  if (session.role !== 'ADMIN') {
-    return problem(403, 'Forbidden', 'Admin access required.');
-  }
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q') || '';
+  const ids = searchParams.getAll('id').filter((v) => v);
+
   await dbConnect();
+
   const query: FilterQuery<IUser> = {
     organizationId: new Types.ObjectId(session.organizationId),
   };
-  if (q) {
+
+  if (ids.length) {
+    const parsedIds = ids
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+    if (!parsedIds.length) {
+      return NextResponse.json([]);
+    }
+    query._id = { $in: parsedIds };
+  } else if (q) {
     query.$or = [
       { name: { $regex: q, $options: 'i' } },
       { email: { $regex: q, $options: 'i' } },
       { username: { $regex: q, $options: 'i' } },
     ];
   }
-  const users = await User.find(query).lean();
+
+  const isAdmin = session.role === 'ADMIN';
+  const selection = isAdmin
+    ? '-password -pushSubscriptions'
+    : '_id name avatar teamId role';
+
+  const users = await User.find(query).select(selection).lean();
   return NextResponse.json(users);
 }
 
