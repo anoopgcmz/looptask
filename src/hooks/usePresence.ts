@@ -28,7 +28,7 @@ export default function usePresence(taskId: string) {
           if (!viewersRef.current[uid]) {
             viewersRef.current[uid] = { _id: uid };
             update();
-            (async () => {
+            void (async () => {
               try {
                 const res = await fetch(`/api/users/${uid}`);
                 if (!res.ok) return;

@@ -76,7 +76,7 @@ export default function SettingsPage() {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, [resetTimezone, resetNotifications]);
 
   const onPasswordSubmit = async (data: PasswordFormData) => {

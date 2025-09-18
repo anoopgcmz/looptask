@@ -31,7 +31,7 @@ export default function useTyping(
           if (!uid || uid === userId) return;
           if (!usersRef.current[uid]) {
             usersRef.current[uid] = { _id: uid };
-            (async () => {
+            void (async () => {
               try {
                 const res = await fetch(`/api/users/${uid}`);
                 if (!res.ok) return;

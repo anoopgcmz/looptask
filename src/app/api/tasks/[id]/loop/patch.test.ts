@@ -24,7 +24,7 @@ vi.mock('@/lib/access', () => ({ canWriteTask: () => true }));
 
 const startSession = vi.fn();
 vi.mock('mongoose', async () => {
-  const actual = await vi.importActual<typeof import('mongoose')>('mongoose');
+  const actual = await vi.importActual('mongoose');
   return { ...actual, startSession };
 });
 
