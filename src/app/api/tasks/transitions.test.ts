@@ -37,16 +37,28 @@ const tasks = new Map<string, Task>();
 
 vi.mock('@/models/Task', () => ({
   Task: {
-    findById: vi.fn(async (id: string): Promise<Task | null> => {
-      const doc = tasks.get(id);
-      if (!doc) return null;
+    findById: vi.fn((id: string | mongoose.Types.ObjectId) => {
+      const key = typeof id === 'string' ? id : id.toString();
+      const doc = tasks.get(key);
+      if (!doc) {
+        return {
+          lean: vi.fn(async () => null),
+          session: vi.fn(() => null),
+        };
+      }
       doc.save = async function () {
-        tasks.set(id, doc);
+        tasks.set(key, doc);
       };
       doc.session = function () {
         return doc;
       };
-      return doc;
+      doc.toObject = function () {
+        return { ...doc };
+      };
+      return {
+        lean: vi.fn(async () => doc),
+        session: vi.fn(() => doc),
+      };
     }),
   },
 }));
@@ -56,6 +68,7 @@ vi.mock('@/models/ActivityLog', () => ({
 }));
 
 let currentUserId = '';
+const { Types } = mongoose;
 const orgId = new Types.ObjectId();
 vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => ({ userId: currentUserId, organizationId: orgId.toString() })) }));
 
@@ -66,8 +79,6 @@ vi.mock('@/lib/notify', () => ({
   notifyTaskClosed: vi.fn(),
   notifyAssignment: vi.fn(),
 }));
-
-const { Types } = mongoose;
 
 describe('task flow with steps', () => {
   beforeEach(() => {
@@ -93,6 +104,8 @@ describe('task flow with steps', () => {
         { title: 'Step 3', ownerId: u3, status: 'OPEN' },
       ],
       currentStepIndex: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     currentUserId = u1.toString();
@@ -173,6 +186,8 @@ describe('task flow with steps', () => {
       ],
       currentStepIndex: 1,
       participantIds: [u1, u2, u3],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     currentUserId = u2.toString();
@@ -187,6 +202,37 @@ describe('task flow with steps', () => {
     const t = tasks.get(taskId.toString());
     expect(t.status).toBe('DONE');
     expect(notifyTaskClosed).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns conflict when completing an already done step', async () => {
+    const u1 = new Types.ObjectId();
+    const taskId = new Types.ObjectId();
+    tasks.set(taskId.toString(), {
+      _id: taskId,
+      title: 'Test',
+      createdBy: u1,
+      ownerId: u1,
+      organizationId: orgId,
+      status: 'FLOW_IN_PROGRESS',
+      steps: [{ title: 'Step 1', ownerId: u1, status: 'DONE' }],
+      currentStepIndex: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    currentUserId = u1.toString();
+    const res = await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'DONE' }),
+      }),
+      { params: Promise.resolve({ id: taskId.toString() }) }
+    );
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual(
+      expect.objectContaining({ detail: 'Step already completed' })
+    );
   });
 });
 
@@ -207,6 +253,8 @@ describe('simple task status transitions', () => {
       status: 'OPEN',
       steps: [],
       currentStepIndex: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     currentUserId = u1.toString();
