@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { SessionProvider } from 'next-auth/react';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
@@ -239,13 +240,14 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   const actions = ACTIONS[task.status];
 
   return (
-    <div className="p-4">
-      <Link
-        href="/tasks"
-        className="text-blue-500 underline mb-4 inline-block"
-      >
-        &larr; Back to Tasks
-      </Link>
+    <SessionProvider>
+      <div className="p-4">
+        <Link
+          href="/tasks"
+          className="text-blue-500 underline mb-4 inline-block"
+        >
+          &larr; Back to Tasks
+        </Link>
         <div className="flex gap-8">
           <div className="flex-1 flex flex-col gap-4">
             <div className="flex items-center gap-2">
@@ -253,87 +255,88 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
               <StatusBadge status={task.status} />
             </div>
             <div className="flex gap-2">
-          {actions.map((a) => (
-            <button
-              key={a.action}
-              onClick={() => void handleTransition(a.action)}
-              className="border rounded px-2 py-1 text-sm"
-            >
-              {a.label}
-            </button>
-          ))}
-          <DeleteTaskModal onConfirm={deleteTask}>
-            <button className="border rounded px-2 py-1 text-sm text-red-600">
-              Delete Task
-            </button>
-          </DeleteTaskModal>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm">Owner:</span>
-          <div className="relative flex-1">
-            <input
-              className="border rounded px-2 py-1 text-sm w-full"
-              value={userQuery}
-              onChange={(e) => setUserQuery(e.target.value)}
-              placeholder={ownerName || 'Search users'}
-            />
-            {ownerErrors.ownerId ? (
-              <span className="text-xs text-red-600">
-                {ownerErrors.ownerId.message}
-              </span>
-            ) : null}
-            {users.length ? (
-              <ul className="absolute z-10 bg-white border mt-1 w-full max-h-40 overflow-auto">
-                {users.map((u) => (
-                  <li
-                    key={u._id}
-                    className="p-1 cursor-pointer hover:bg-gray-100"
-                    onClick={() => void handleOwnerSelect(u)}
-                  >
-                    {u.name || u.email}
+              {actions.map((a) => (
+                <button
+                  key={a.action}
+                  onClick={() => void handleTransition(a.action)}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  {a.label}
+                </button>
+              ))}
+              <DeleteTaskModal onConfirm={deleteTask}>
+                <button className="border rounded px-2 py-1 text-sm text-red-600">
+                  Delete Task
+                </button>
+              </DeleteTaskModal>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Owner:</span>
+              <div className="relative flex-1">
+                <input
+                  className="border rounded px-2 py-1 text-sm w-full"
+                  value={userQuery}
+                  onChange={(e) => setUserQuery(e.target.value)}
+                  placeholder={ownerName || 'Search users'}
+                />
+                {ownerErrors.ownerId ? (
+                  <span className="text-xs text-red-600">
+                    {ownerErrors.ownerId.message}
+                  </span>
+                ) : null}
+                {users.length ? (
+                  <ul className="absolute z-10 bg-white border mt-1 w-full max-h-40 overflow-auto">
+                    {users.map((u) => (
+                      <li
+                        key={u._id}
+                        className="p-1 cursor-pointer hover:bg-gray-100"
+                        onClick={() => void handleOwnerSelect(u)}
+                      >
+                        {u.name || u.email}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </div>
+            <TaskDetail key={task.ownerId} id={id} />
+            <div className="flex flex-col gap-2">
+              <h2 className="font-semibold">Attachments</h2>
+              <form onSubmit={submitUpload(onUploadSubmit)} className="flex flex-col gap-2">
+                <input type="file" {...registerUpload('file')} />
+                {uploadErrors.file ? (
+                  <span className="text-xs text-red-600">
+                    {uploadErrors.file.message as string}
+                  </span>
+                ) : null}
+                <button type="submit" className="border rounded px-2 py-1 text-sm">
+                  Upload
+                </button>
+              </form>
+              <ul className="list-disc pl-4">
+                {attachments.map((a) => (
+                  <li key={a._id} className="flex items-center gap-2">
+                    <a href={a.url} target="_blank" rel="noreferrer" className="underline">
+                      {a.filename}
+                    </a>
+                    <button
+                      onClick={() => void handleDelete(a._id)}
+                      className="text-xs text-red-600"
+                    >
+                      delete
+                    </button>
                   </li>
                 ))}
               </ul>
-            ) : null}
+            </div>
+            <CommentThread taskId={id} />
           </div>
+          <aside className="w-64">
+            <Timeline events={history} />
+          </aside>
         </div>
-        <TaskDetail key={task.ownerId} id={id} />
-        <div className="flex flex-col gap-2">
-          <h2 className="font-semibold">Attachments</h2>
-          <form onSubmit={submitUpload(onUploadSubmit)} className="flex flex-col gap-2">
-            <input type="file" {...registerUpload('file')} />
-            {uploadErrors.file ? (
-              <span className="text-xs text-red-600">
-                {uploadErrors.file.message as string}
-              </span>
-            ) : null}
-            <button type="submit" className="border rounded px-2 py-1 text-sm">
-              Upload
-            </button>
-          </form>
-          <ul className="list-disc pl-4">
-            {attachments.map((a) => (
-              <li key={a._id} className="flex items-center gap-2">
-                <a href={a.url} target="_blank" rel="noreferrer" className="underline">
-                  {a.filename}
-                </a>
-                <button
-                  onClick={() => void handleDelete(a._id)}
-                  className="text-xs text-red-600"
-                >
-                  delete
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <CommentThread taskId={id} />
       </div>
-      <aside className="w-64">
-        <Timeline events={history} />
-      </aside>
-    </div>
-  </div>
+    </SessionProvider>
   );
 }
 
