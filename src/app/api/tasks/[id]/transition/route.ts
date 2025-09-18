@@ -74,6 +74,7 @@ export async function POST(
 
     const mongoSession = await startSession();
     let updated: ITask | null = null;
+    let failure: 'NONE' | 'STEP_MISSING' | 'STEP_DONE' = 'NONE';
     await mongoSession.withTransaction(async () => {
       const t = (await Task.findById(task._id).session(
         mongoSession
@@ -82,7 +83,14 @@ export async function POST(
       if (!t.steps) throw new Error('Task steps missing');
       const idx = t.currentStepIndex ?? 0;
       const step = t.steps[idx];
-      if (!step || step.status === 'DONE') return;
+      if (!step) {
+        failure = 'STEP_MISSING';
+        return;
+      }
+      if (step.status === 'DONE') {
+        failure = 'STEP_DONE';
+        return;
+      }
       step.status = 'DONE';
       step.completedAt = new Date();
 
@@ -109,7 +117,15 @@ export async function POST(
       );
       updated = t;
     });
-    if (!updated) return problem(500, 'Error', 'Transition failed');
+    if (!updated) {
+      if (failure === 'STEP_MISSING') {
+        return problem(404, 'Not Found', 'Current step not found');
+      }
+      if (failure === 'STEP_DONE') {
+        return problem(409, 'Conflict', 'Step already completed');
+      }
+      return problem(500, 'Error', 'Transition failed');
+    }
     const recipients = (updated.participantIds || []).filter(
       (id: Types.ObjectId) => id.toString() !== actorId
     );
