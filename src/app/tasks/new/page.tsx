@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { SessionProvider, useSession } from 'next-auth/react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -17,8 +18,10 @@ interface FlowStep {
   due: string;
 }
 
-export default function NewTaskPage() {
+function NewTaskPageInner() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const currentUserId = session?.userId ?? '';
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
@@ -34,12 +37,22 @@ export default function NewTaskPage() {
 
   const [flowTitle, setFlowTitle] = useState('');
   const [steps, setSteps] = useState<FlowStep[]>([
-    { title: '', description: '', ownerId: '', due: '' },
+    { title: '', description: '', ownerId: currentUserId, due: '' },
   ]);
   const [flowError, setFlowError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+    setSteps((prev) =>
+      prev.map((step) => (step.ownerId ? step : { ...step, ownerId: currentUserId })),
+    );
+  }, [currentUserId]);
+
   const addStep = () =>
-    setSteps((prev) => [...prev, { title: '', description: '', ownerId: '', due: '' }]);
+    setSteps((prev) => [
+      ...prev,
+      { title: '', description: '', ownerId: currentUserId, due: '' },
+    ]);
 
   const updateStep = (
     index: number,
@@ -129,5 +142,13 @@ export default function NewTaskPage() {
         <Button type="submit">Create Task</Button>
       </form>
     </div>
+  );
+}
+
+export default function NewTaskPage() {
+  return (
+    <SessionProvider>
+      <NewTaskPageInner />
+    </SessionProvider>
   );
 }
