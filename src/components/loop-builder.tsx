@@ -7,19 +7,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
-import useLoopBuilder, { type LoopStep, type TemplateStep } from '@/hooks/useLoopBuilder';
+import useLoopBuilder, { type LoopStep } from '@/hooks/useLoopBuilder';
 import { registerLoopBuilder } from '@/lib/loopBuilder';
 import LoopTimeline from '@/components/loop-timeline';
 
 interface User {
   _id: string;
   name: string;
-}
-
-interface Template {
-  _id: string;
-  name: string;
-  steps: TemplateStep[];
 }
 
 export default function LoopBuilder() {
@@ -33,12 +27,8 @@ export default function LoopBuilder() {
     updateStep,
     removeStep,
     reorderSteps,
-    setFromTemplate,
   } = useLoopBuilder();
   const [users, setUsers] = useState<User[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [templateName, setTemplateName] = useState('');
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -49,12 +39,8 @@ export default function LoopBuilder() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [usersRes, tmplRes] = await Promise.all([
-          fetch('/api/users', { credentials: 'include' }),
-          fetch('/api/loop-templates', { credentials: 'include' }),
-        ]);
-        if (usersRes.ok) setUsers((await usersRes.json()) as User[]);
-        if (tmplRes.ok) setTemplates((await tmplRes.json()) as Template[]);
+        const res = await fetch('/api/users', { credentials: 'include' });
+        if (res.ok) setUsers((await res.json()) as User[]);
       } catch {
         // ignore
       }
@@ -91,13 +77,20 @@ export default function LoopBuilder() {
       }),
     });
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      if (Array.isArray(data.errors)) {
+      const data = (await res.json().catch(() => null)) as unknown;
+      if (
+        data &&
+        typeof data === 'object' &&
+        'errors' in data &&
+        Array.isArray((data as { errors?: unknown }).errors)
+      ) {
         const map: Record<string, string> = {};
-        data.errors.forEach((e: { index: number; message: string }) => {
-          const id = orderedSteps[e.index]?.id;
-          if (id) map[id] = e.message;
-        });
+        (data as { errors: { index: number; message: string }[] }).errors.forEach(
+          (e) => {
+            const id = orderedSteps[e.index]?.id;
+            if (id) map[id] = e.message;
+          }
+        );
         setErrors(map);
         setMode('edit');
         return;
@@ -125,76 +118,11 @@ export default function LoopBuilder() {
     });
   };
 
-  const handleSaveTemplate = async () => {
-    const orderedSteps = [...steps].sort((a, b) => a.index - b.index);
-    await fetch('/api/loop-templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: templateName,
-        steps: orderedSteps.map((s) => ({
-          assignedTo: s.assignedTo,
-          description: s.description,
-          estimatedTime: s.estimatedTime,
-          dependencies: s.dependencies.map((d) =>
-            orderedSteps.findIndex((os) => os.id === d)
-          ),
-        })),
-      }),
-    });
-    setTemplateName('');
-    try {
-      const res = await fetch('/api/loop-templates', { credentials: 'include' });
-      if (res.ok) setTemplates((await res.json()) as Template[]);
-    } catch {
-      // ignore
-    }
-  };
-
-  const handleApplyTemplate = () => {
-    const tmpl = templates.find((t) => t._id === selectedTemplate);
-    if (!tmpl) return;
-    setFromTemplate(tmpl.steps);
-  };
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && closeBuilder()}>
       <DialogContent>
         {mode === 'edit' ? (
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="flex h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
-              >
-                <option value="">Select template</option>
-                {templates.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="outline"
-                onClick={handleApplyTemplate}
-                disabled={!selectedTemplate}
-              >
-                Apply
-              </Button>
-              <Input
-                placeholder="Template name"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-              />
-              <Button
-                variant="outline"
-                onClick={handleSaveTemplate}
-                disabled={!templateName || !steps.length}
-              >
-                Save Template
-              </Button>
-            </div>
             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={steps.map((s: LoopStep) => s.id)}>
                 {steps.map((step) => (
