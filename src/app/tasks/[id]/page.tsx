@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -79,8 +79,8 @@ function createResolver<T>(schema: z.ZodSchema<T>) {
   };
 }
 
-export default function TaskPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [task, setTask] = useState<Task | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
