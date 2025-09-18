@@ -20,6 +20,9 @@ const eslintConfig = [
       "**/build/**",
       "**/next-env.d.ts",
     ],
+  },
+  {
+    files: ["**/*.{ts,tsx,cts,mts}"],
     languageOptions: {
       parserOptions: {
         project: "./tsconfig.json",
