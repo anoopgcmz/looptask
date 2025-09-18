@@ -1,5 +1,6 @@
 'use client';
 
+import { use } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 
@@ -8,7 +9,12 @@ interface FormData {
   password: string;
 }
 
-export default function AcceptInvitePage({ params }: { params: { token: string } }) {
+export default function AcceptInvitePage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = use(params);
   const {
     register,
     handleSubmit,
@@ -22,7 +28,7 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
       const res = await fetch('/api/invitations/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: params.token, ...data }),
+        body: JSON.stringify({ token, ...data }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
