@@ -12,13 +12,6 @@ export interface LoopStep {
   index: number;
 }
 
-export interface TemplateStep {
-  assignedTo: string;
-  description: string;
-  estimatedTime?: number;
-  dependencies?: number[];
-}
-
 export default function useLoopBuilder() {
   const [open, setOpen] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
@@ -68,20 +61,6 @@ export default function useLoopBuilder() {
     );
   };
 
-  const setFromTemplate = (tmpl: TemplateStep[]) => {
-    setSteps(() => {
-      const ids = tmpl.map(() => Math.random().toString(36).slice(2));
-      return tmpl.map((s, idx) => ({
-        id: ids[idx],
-        assignedTo: s.assignedTo,
-        description: s.description,
-        estimatedTime: s.estimatedTime,
-        dependencies: s.dependencies?.map((d) => ids[d]) ?? [],
-        index: idx,
-      }));
-    });
-  };
-
   return {
     open,
     openBuilder,
@@ -92,7 +71,6 @@ export default function useLoopBuilder() {
     updateStep,
     removeStep,
     reorderSteps,
-    setFromTemplate,
   };
 }
 
