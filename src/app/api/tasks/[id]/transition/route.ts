@@ -33,6 +33,7 @@ export async function POST(
   const session = await auth();
   if (!session?.userId || !session.organizationId)
     return problem(401, 'Unauthorized', 'You must be signed in.');
+  const isAdmin = session.role === 'ADMIN';
 
   let body: z.infer<typeof bodySchema>;
   try {
@@ -50,8 +51,12 @@ export async function POST(
   const actorId = session.userId;
   const isCreator = task.createdBy.toString() === actorId;
   const isOwner = task.ownerId?.toString() === actorId;
-  if (!isCreator && !isOwner) {
-    return problem(403, 'Forbidden', 'You cannot transition this task');
+  if (!isCreator && !isOwner && !isAdmin) {
+    return problem(
+      403,
+      'Forbidden',
+      'Only the creator, current owner, or an admin may transition this task'
+    );
   }
 
   if (task.steps?.length) {
@@ -59,8 +64,12 @@ export async function POST(
     if (body.action !== 'DONE') {
       return problem(400, 'Invalid action', 'Only DONE is allowed for step tasks');
     }
-    if (!isOwner) {
-      return problem(403, 'Forbidden', 'Only current step owner may complete the step');
+    if (!isOwner && !isAdmin) {
+      return problem(
+        403,
+        'Forbidden',
+        'Only the current step owner or an admin may complete the step'
+      );
     }
 
     const mongoSession = await startSession();
