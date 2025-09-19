@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, startSession } from 'mongoose';
+import type { ClientSession } from 'mongoose';
+import { MongoServerError } from 'mongodb';
 import dbConnect from '@/lib/db';
 import { Task, type IStep } from '@/models/Task';
 import { ActivityLog } from '@/models/ActivityLog';
@@ -59,6 +61,16 @@ export async function POST(
     );
   }
 
+  const isTransactionUnsupportedError = (err: unknown): err is MongoServerError => {
+    if (!(err instanceof MongoServerError)) return false;
+    if (err.code === 303 || err.code === 112) return true;
+    const message = err.message?.toLowerCase?.() ?? '';
+    return (
+      message.includes('transactions are not supported') ||
+      message.includes('transaction numbers are only allowed on a replica set member or mongos')
+    );
+  };
+
   if (task.steps?.length) {
     // Only DONE is meaningful when steps exist
     if (body.action !== 'DONE') {
@@ -72,24 +84,21 @@ export async function POST(
       );
     }
 
-    const mongoSession = await startSession();
-    let updated: ITask | null = null;
-    let failure: 'NONE' | 'STEP_MISSING' | 'STEP_DONE' = 'NONE';
-    await mongoSession.withTransaction(async () => {
-      const t = (await Task.findById(task._id).session(
-        mongoSession
-      )) as ITask | null;
+    const performStepTransition = async (
+      session?: ClientSession
+    ): Promise<{ updated: ITask | null; failure: 'NONE' | 'STEP_MISSING' | 'STEP_DONE' }> => {
+      const t = (session
+        ? ((await Task.findById(task._id).session(session)) as ITask | null)
+        : ((await Task.findById(task._id)) as ITask | null));
       if (!t) throw new Error('Task not found');
       if (!t.steps) throw new Error('Task steps missing');
       const idx = t.currentStepIndex ?? 0;
       const step = t.steps[idx];
       if (!step) {
-        failure = 'STEP_MISSING';
-        return;
+        return { updated: null, failure: 'STEP_MISSING' };
       }
       if (step.status === 'DONE') {
-        failure = 'STEP_DONE';
-        return;
+        return { updated: null, failure: 'STEP_DONE' };
       }
       step.status = 'DONE';
       step.completedAt = new Date();
@@ -103,20 +112,47 @@ export async function POST(
         t.ownerId = t.steps[nextIdx].ownerId;
         t.status = 'FLOW_IN_PROGRESS';
       }
-      await t.save({ session: mongoSession });
-      await ActivityLog.create(
-        [
-          {
-            taskId: t._id,
-            actorId: new Types.ObjectId(actorId),
-            type: 'TRANSITIONED',
-            payload: { action: body.action },
-          },
-        ],
-        { session: mongoSession }
-      );
-      updated = t;
-    });
+      if (session) {
+        await t.save({ session });
+      } else {
+        await t.save();
+      }
+      const activity = [
+        {
+          taskId: t._id,
+          actorId: new Types.ObjectId(actorId),
+          type: 'TRANSITIONED',
+          payload: { action: body.action },
+        },
+      ];
+      if (session) {
+        await ActivityLog.create(activity, { session });
+      } else {
+        await ActivityLog.create(activity);
+      }
+      return { updated: t, failure: 'NONE' };
+    };
+
+    const mongoSession = await startSession();
+    let result: { updated: ITask | null; failure: 'NONE' | 'STEP_MISSING' | 'STEP_DONE' } = {
+      updated: null,
+      failure: 'NONE',
+    };
+    try {
+      await mongoSession.withTransaction(async () => {
+        result = await performStepTransition(mongoSession);
+      });
+    } catch (error) {
+      if (isTransactionUnsupportedError(error)) {
+        result = await performStepTransition();
+      } else {
+        throw error;
+      }
+    } finally {
+      await mongoSession.endSession();
+    }
+
+    const { updated, failure } = result;
     if (!updated) {
       if (failure === 'STEP_MISSING') {
         return problem(404, 'Not Found', 'Current step not found');
@@ -173,24 +209,49 @@ export async function POST(
         break;
     }
 
-    const mongoSession = await startSession();
-    let updated: ITask | null = null;
-    await mongoSession.withTransaction(async () => {
-      const t = await Task.findById(task._id).session(mongoSession);
+    const performSimpleTransition = async (
+      session?: ClientSession
+    ): Promise<ITask | null> => {
+      const t = (session
+        ? ((await Task.findById(task._id).session(session)) as ITask | null)
+        : ((await Task.findById(task._id)) as ITask | null));
       if (!t) throw new Error('Task not found');
       t.status = newStatus;
-      await t.save({ session: mongoSession });
-      await ActivityLog.create(
-        {
-          taskId: t._id,
-          actorId: new Types.ObjectId(actorId),
-          type: 'TRANSITIONED',
-          payload: { action: body.action },
-        },
-        { session: mongoSession }
-      );
-      updated = t;
-    });
+      if (session) {
+        await t.save({ session });
+      } else {
+        await t.save();
+      }
+      const activity = {
+        taskId: t._id,
+        actorId: new Types.ObjectId(actorId),
+        type: 'TRANSITIONED',
+        payload: { action: body.action },
+      };
+      if (session) {
+        await ActivityLog.create(activity, { session });
+      } else {
+        await ActivityLog.create(activity);
+      }
+      return t;
+    };
+
+    const mongoSession = await startSession();
+    let updated: ITask | null = null;
+    try {
+      await mongoSession.withTransaction(async () => {
+        updated = await performSimpleTransition(mongoSession);
+      });
+    } catch (error) {
+      if (isTransactionUnsupportedError(error)) {
+        updated = await performSimpleTransition();
+      } else {
+        throw error;
+      }
+    } finally {
+      await mongoSession.endSession();
+    }
+
     const recipients = (updated.participantIds || []).filter(
       (id: Types.ObjectId) => id.toString() !== actorId
     );
