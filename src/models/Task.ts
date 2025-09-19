@@ -53,7 +53,7 @@ const taskSchema = new Schema(
       enum: ['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'REVISIONS', 'FLOW_IN_PROGRESS', 'DONE'],
       default: 'OPEN',
     },
-    priority: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
+    priority: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'LOW' },
     tags: [{ type: String }],
     visibility: { type: String, enum: ['PRIVATE', 'TEAM'], default: 'PRIVATE' },
     dueDate: Date,
