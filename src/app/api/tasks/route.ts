@@ -87,7 +87,7 @@ export const POST = withOrganization(async (req, session) => {
     organizationId: new Types.ObjectId(session.organizationId),
     teamId: body.teamId ? new Types.ObjectId(body.teamId) : undefined,
     status,
-    priority: body.priority ?? 'MEDIUM',
+    priority: body.priority ?? 'LOW',
     tags: body.tags ?? [],
     visibility: body.visibility ?? 'PRIVATE',
     dueDate: body.dueDate,
