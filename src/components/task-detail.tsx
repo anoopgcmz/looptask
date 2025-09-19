@@ -180,6 +180,32 @@ export default function TaskDetail({ id }: { id: string }) {
     setTask({ ...task, [field]: value });
   };
 
+  const priorityOptions = ["LOW", "MEDIUM", "HIGH"] as const;
+
+  const handlePriorityChange = async (value: string) => {
+    if (!task) return;
+    if (!priorityOptions.includes(value as (typeof priorityOptions)[number])) return;
+    if (task.priority === value) return;
+
+    const previousPriority = task.priority;
+
+    setTask((prev) => (prev ? { ...prev, priority: value } : prev));
+
+    try {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: value }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update priority");
+      }
+    } catch {
+      setTask((prev) => (prev ? { ...prev, priority: previousPriority } : prev));
+    }
+  };
+
   if (!task) {
     return <div>Loading...</div>;
   }
@@ -224,12 +250,20 @@ export default function TaskDetail({ id }: { id: string }) {
         onChange={(e) => setTask({ ...task, dueDate: e.target.value })}
         onBlur={(e) => void updateField("dueDate", e.target.value)}
       />
-      <input
+      <select
         className="border p-2"
         value={task.priority ?? ""}
-        onChange={(e) => setTask({ ...task, priority: e.target.value })}
-        onBlur={(e) => void updateField("priority", e.target.value)}
-      />
+        onChange={(e) => void handlePriorityChange(e.target.value)}
+      >
+        <option value="" disabled>
+          Select priority
+        </option>
+        {priorityOptions.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
       <div>Owner: {task.ownerId}</div>
       <div>Tags: {task.tags?.join(", ")}</div>
       <div>Status: {task.status}</div>
