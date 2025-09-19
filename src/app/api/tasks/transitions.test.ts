@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MongoServerError } from 'mongodb';
 import { POST } from './[id]/transition/route';
 
 const startSessionMock = vi.hoisted(
@@ -315,10 +314,10 @@ describe('simple task status transitions', () => {
       updatedAt: new Date(),
     });
 
-    const error = new MongoServerError({
+    const error = {
       message: 'Transaction numbers are only allowed on a replica set member or mongos',
       code: 303,
-    } as Record<string, unknown>);
+    };
     const withTransaction = vi.fn(async () => {
       throw error;
     });
@@ -329,7 +328,7 @@ describe('simple task status transitions', () => {
     });
 
     currentUserId = u1.toString();
-    await POST(
+    const res = await POST(
       new Request('http://test', {
         method: 'POST',
         body: JSON.stringify({ action: 'START' }),
@@ -341,5 +340,52 @@ describe('simple task status transitions', () => {
     expect(t.status).toBe('IN_PROGRESS');
     expect(withTransaction).toHaveBeenCalled();
     expect(endSession).toHaveBeenCalled();
+    expect(res.status).toBe(200);
+  });
+
+  it('falls back when transactions unsupported via codeName', async () => {
+    const u1 = new Types.ObjectId();
+    const taskId = new Types.ObjectId();
+    tasks.set(taskId.toString(), {
+      _id: taskId,
+      title: 'Test',
+      createdBy: u1,
+      ownerId: u1,
+      organizationId: orgId,
+      status: 'OPEN',
+      steps: [],
+      currentStepIndex: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const error = {
+      message: 'Cannot start transaction on standalone',
+      code: 20,
+      codeName: 'IllegalOperation',
+    };
+    const withTransaction = vi.fn(async () => {
+      throw error;
+    });
+    const endSession = vi.fn();
+    startSessionMock.mockResolvedValueOnce({
+      withTransaction,
+      endSession,
+    });
+
+    currentUserId = u1.toString();
+    const res = await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'START' }),
+      }),
+      { params: Promise.resolve({ id: taskId.toString() }) }
+    );
+
+    const t = tasks.get(taskId.toString());
+    expect(t.status).toBe('IN_PROGRESS');
+    expect(withTransaction).toHaveBeenCalled();
+    expect(endSession).toHaveBeenCalled();
+    expect(res.status).toBe(200);
   });
 });

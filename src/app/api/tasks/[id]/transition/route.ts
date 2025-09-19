@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { Types, startSession } from 'mongoose';
 import type { ClientSession } from 'mongoose';
-import { MongoServerError } from 'mongodb';
 import dbConnect from '@/lib/db';
 import { Task, type IStep } from '@/models/Task';
 import { ActivityLog } from '@/models/ActivityLog';
@@ -61,13 +60,43 @@ export async function POST(
     );
   }
 
-  const isTransactionUnsupportedError = (err: unknown): err is MongoServerError => {
-    if (!(err instanceof MongoServerError)) return false;
-    if (err.code === 303 || err.code === 112) return true;
-    const message = err.message?.toLowerCase?.() ?? '';
+  const isTransactionUnsupportedError = (err: unknown): boolean => {
+    if (!err || typeof err !== 'object') return false;
+
+    const { code, codeName, message } = err as {
+      code?: unknown;
+      codeName?: unknown;
+      message?: unknown;
+    };
+
+    let numericCode: number | undefined;
+    if (typeof code === 'number') {
+      numericCode = code;
+    } else if (typeof code === 'string') {
+      const parsed = Number(code);
+      if (Number.isFinite(parsed)) {
+        numericCode = parsed;
+      }
+    }
+
+    if (numericCode !== undefined && [20, 112, 303].includes(numericCode)) {
+      return true;
+    }
+
+    const normalizedCodeName =
+      typeof codeName === 'string' ? codeName.toLowerCase() : '';
+    if (normalizedCodeName && ['illegaloperation'].includes(normalizedCodeName)) {
+      return true;
+    }
+
+    const normalizedMessage =
+      typeof message === 'string' ? message.toLowerCase() : '';
+
     return (
-      message.includes('transactions are not supported') ||
-      message.includes('transaction numbers are only allowed on a replica set member or mongos')
+      normalizedMessage.includes('transactions are not supported') ||
+      normalizedMessage.includes(
+        'transaction numbers are only allowed on a replica set member or mongos'
+      )
     );
   };
 
