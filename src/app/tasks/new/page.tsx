@@ -36,6 +36,7 @@ function NewTaskPageInner() {
   }, []);
 
   const [flowTitle, setFlowTitle] = useState('');
+  const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
   const [steps, setSteps] = useState<FlowStep[]>([
     { title: '', description: '', ownerId: currentUserId, due: '' },
   ]);
@@ -70,6 +71,7 @@ function NewTaskPageInner() {
     try {
       const body = {
         title: flowTitle,
+        priority,
         steps: steps.map((s: FlowStep) => ({
           title: s.title,
           description: s.description,
@@ -104,6 +106,15 @@ function NewTaskPageInner() {
           value={flowTitle}
           onChange={(e) => setFlowTitle(e.target.value)}
         />
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
+          className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+        >
+          <option value="LOW">Low Priority</option>
+          <option value="MEDIUM">Medium Priority</option>
+          <option value="HIGH">High Priority</option>
+        </select>
         {steps.map((step, i) => (
           <div key={i} className="border p-4 rounded space-y-2">
             <Input
