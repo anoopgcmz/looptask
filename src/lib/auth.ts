@@ -13,6 +13,10 @@ import dbConnect from '@/lib/db';
 import { User } from '@/models/User';
 import { RefreshToken, type ClientMetadata } from '@/models/RefreshToken';
 
+declare global {
+  var __NEXTAUTH_SECRET: string | undefined;
+}
+
 interface AuthUser {
   id: string;
   email: string;
@@ -41,10 +45,16 @@ const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
 const ensureSecret = () => {
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) {
+  if (secret) {
+    return secret;
+  }
+  if (process.env.NODE_ENV === 'production') {
     throw new Error('NEXTAUTH_SECRET is not configured.');
   }
-  return secret;
+  if (!globalThis.__NEXTAUTH_SECRET) {
+    globalThis.__NEXTAUTH_SECRET = crypto.randomBytes(32).toString('hex');
+  }
+  return globalThis.__NEXTAUTH_SECRET;
 };
 
 const hashRefreshToken = (token: string) =>
