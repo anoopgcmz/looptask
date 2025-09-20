@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,9 +18,10 @@ export interface TaskCardProps {
     status: string;
   };
   onChange?: () => void;
+  href?: string;
 }
 
-export default function TaskCard({ task, onChange }: TaskCardProps) {
+export default function TaskCard({ task, onChange, href }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   const handleMarkComplete = async () => {
@@ -49,24 +51,51 @@ export default function TaskCard({ task, onChange }: TaskCardProps) {
   };
 
   return (
-    <div className="rounded border p-4 flex flex-col gap-2 bg-white">
-      <div className="flex items-center gap-3">
-        {task.assignee && (
-          <Avatar
-            src={task.assigneeAvatar}
-            fallback={task.assignee.charAt(0)}
-          />
-        )}
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-gray-700">{task.title}</span>
-          <div className="text-xs text-gray-500 flex gap-2">
-            {task.assignee && <span>{task.assignee}</span>}
-            {task.dueDate && <span>Due {task.dueDate}</span>}
-            {task.priority && <span>{task.priority}</span>}
-            <Badge>{task.status}</Badge>
+    <div className="flex flex-col gap-2 rounded-lg border bg-white p-4 shadow-sm">
+      {href ? (
+        <Link
+          href={href}
+          className="flex w-full items-center gap-3 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+        >
+          {task.assignee && (
+            <Avatar
+              src={task.assigneeAvatar}
+              fallback={task.assignee.charAt(0)}
+            />
+          )}
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-gray-700">
+              {task.title}
+            </span>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+              {task.assignee && <span>{task.assignee}</span>}
+              {task.dueDate && <span>Due {task.dueDate}</span>}
+              {task.priority && <span>{task.priority}</span>}
+              <Badge>{task.status}</Badge>
+            </div>
+          </div>
+        </Link>
+      ) : (
+        <div className="flex w-full items-center gap-3">
+          {task.assignee && (
+            <Avatar
+              src={task.assigneeAvatar}
+              fallback={task.assignee.charAt(0)}
+            />
+          )}
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-gray-700">
+              {task.title}
+            </span>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+              {task.assignee && <span>{task.assignee}</span>}
+              {task.dueDate && <span>Due {task.dueDate}</span>}
+              {task.priority && <span>{task.priority}</span>}
+              <Badge>{task.status}</Badge>
+            </div>
           </div>
         </div>
-      </div>
+      )}
       <div className="mt-2">
         <div className="hidden sm:flex gap-2">
           <Button onClick={() => void handleMarkComplete()} className="text-xs">
