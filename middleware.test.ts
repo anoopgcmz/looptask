@@ -31,20 +31,37 @@ describe('middleware', () => {
     expect(response.status).toBe(200);
   });
 
-  it('redirects to login when hitting a protected page without a session', async () => {
-    vi.mocked(getToken).mockResolvedValue(null);
+  const protectedPaths = [
+    '/dashboard',
+    '/tasks',
+    '/tasks/123',
+    '/tasks/123/edit',
+    '/profile',
+    '/settings',
+  ];
 
-    const response = await middleware(createRequest('/dashboard'));
+  it.each(protectedPaths)(
+    'redirects to login when hitting %s without a session',
+    async (path) => {
+      vi.mocked(getToken).mockResolvedValue(null);
 
-    expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toContain('/login');
-  });
+      const response = await middleware(createRequest(path));
 
-  it('lets authenticated users access protected pages', async () => {
-    vi.mocked(getToken).mockResolvedValue({ sub: 'user' });
+      expect(response.status).toBe(307);
+      const location = response.headers.get('location');
+      expect(location).toBeTruthy();
+      expect(location).toContain('/login');
+    }
+  );
 
-    const response = await middleware(createRequest('/dashboard'));
+  it.each(protectedPaths)(
+    'allows authenticated users to access %s',
+    async (path) => {
+      vi.mocked(getToken).mockResolvedValue({ sub: 'user' });
 
-    expect(response.status).toBe(200);
-  });
+      const response = await middleware(createRequest(path));
+
+      expect(response.status).toBe(200);
+    }
+  );
 });
