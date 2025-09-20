@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import FilterBuilder from '@/components/filter-builder';
-import { useSession } from 'next-auth/react';
+import useAuth from '@/hooks/useAuth';
 import { getPresets } from './filters';
 import type {
   SearchItem,
@@ -16,8 +16,8 @@ import type {
 export default function GlobalSearchPage() {
   const params = useSearchParams();
   const router = useRouter();
-  const { data: session } = useSession();
-  const presets = getPresets(session?.userId);
+  const { user } = useAuth();
+  const presets = getPresets(user?.userId);
   const [data, setData] = useState<GlobalSearchResponse>();
   const [saved, setSaved] = useState<SavedSearch[]>([]);
   const [q, setQ] = useState(params.get('q') ?? '');

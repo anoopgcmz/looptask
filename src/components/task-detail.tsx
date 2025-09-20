@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
 import LoopVisualizer, { type StepWithStatus, type UserMap } from "@/components/loop-visualizer";
@@ -9,6 +8,7 @@ import LoopProgress from "@/components/loop-progress";
 import useRealtime, { type RealtimeMessage } from "@/hooks/useRealtime";
 import usePresence from "@/hooks/usePresence";
 import { Avatar } from "@/components/ui/avatar";
+import useAuth from "@/hooks/useAuth";
 
 interface User {
   _id: string;
@@ -51,7 +51,7 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
   const [taskVersion, setTaskVersion] = useState(0);
   const [loopVersion, setLoopVersion] = useState(0);
   const viewers = usePresence(id);
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
   const refreshTask = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
@@ -175,9 +175,9 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
 
   const canEdit = useMemo(() => {
     if (typeof canEditProp === "boolean") return canEditProp;
-    if (!session?.userId || !task) return false;
-    return session.userId === task.createdBy || session.userId === task.ownerId;
-  }, [canEditProp, session?.userId, task]);
+    if (!user?.userId || !task) return false;
+    return user.userId === task.createdBy || user.userId === task.ownerId;
+  }, [canEditProp, task, user?.userId]);
 
   const updateField = async (field: keyof Task, value: string) => {
     if (!task || !canEdit) return;

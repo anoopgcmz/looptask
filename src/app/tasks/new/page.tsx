@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SessionProvider, useSession } from 'next-auth/react';
+import { SessionProvider } from 'next-auth/react';
+import useAuth from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -20,11 +21,18 @@ interface FlowStep {
 
 function NewTaskPageInner() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const currentUserId = session?.userId ?? '';
+  const { user, status, isLoading } = useAuth();
+  const currentUserId = user?.userId ?? '';
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
+    if (status === 'unauthenticated' && !isLoading) {
+      router.push('/login');
+    }
+  }, [isLoading, router, status]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
     const load = async () => {
       const res = await fetch('/api/users', { credentials: 'include' });
       if (res.ok) {
@@ -33,7 +41,7 @@ function NewTaskPageInner() {
       }
     };
     void load();
-  }, []);
+  }, [status]);
 
   const [flowTitle, setFlowTitle] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
@@ -97,6 +105,14 @@ function NewTaskPageInner() {
       setFlowError(message);
     }
   };
+
+  if (status === 'loading') {
+    return <div className="p-4">Loading…</div>;
+  }
+
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   return (
     <div className="p-4">

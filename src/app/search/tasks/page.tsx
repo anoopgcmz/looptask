@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import FilterBuilder from '@/components/filter-builder';
-import { useSession } from 'next-auth/react';
+import useAuth from '@/hooks/useAuth';
 import { getPresets } from '../filters';
 import {
   SearchTasksResponseSchema,
@@ -15,8 +15,8 @@ import {
 export default function TaskSearchPage() {
   const params = useSearchParams();
   const router = useRouter();
-  const { data: session } = useSession();
-  const presets = getPresets(session?.userId);
+  const { user } = useAuth();
+  const presets = getPresets(user?.userId);
   const [data, setData] = useState<SearchTasksResponse>();
   const [saved, setSaved] = useState<SavedSearch[]>([]);
 
