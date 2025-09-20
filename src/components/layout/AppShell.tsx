@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -213,25 +214,37 @@ export default function AppShell({ children }: AppShellProps) {
         aria-label="Primary"
         onKeyDown={handleSidebarKeyDown}
       >
-        <ul className="app-sidebar__nav" aria-label="Primary navigation">
-          {navigationLinks.map((link, index) => {
-            const isActive = pathname?.startsWith(link.href);
+        <div className="app-sidebar__nav-container">
+          <ul className="app-sidebar__nav" aria-label="Primary navigation">
+            {navigationLinks.map((link, index) => {
+              const isActive = pathname?.startsWith(link.href);
 
-            return (
-              <li key={link.href}>
-                <Link
-                  ref={index === 0 ? firstLinkRef : undefined}
-                  href={link.href}
-                  className={`app-sidebar__link ${isActive ? "app-sidebar__link--active" : ""}`}
-                  aria-current={isActive ? "page" : undefined}
-                  tabIndex={isSidebarVisible ? 0 : -1}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+              return (
+                <li key={link.href}>
+                  <Link
+                    ref={index === 0 ? firstLinkRef : undefined}
+                    href={link.href}
+                    className={`app-sidebar__link ${isActive ? "app-sidebar__link--active" : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                    tabIndex={isSidebarVisible ? 0 : -1}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <button
+            type="button"
+            className="app-sidebar__logout"
+            onClick={() => {
+              void signOut();
+            }}
+            tabIndex={isSidebarVisible ? 0 : -1}
+          >
+            Log out
+          </button>
+        </div>
       </nav>
 
       <div className="app-shell__content">
