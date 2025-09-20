@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { SessionProvider, useSession } from 'next-auth/react';
 import type { TaskResponse as Task } from '@/types/api/task';
-import TaskCard from '@/components/task-card';
+import TaskKanbanColumn from '@/components/task-kanban-column';
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -228,71 +227,18 @@ function TasksPageInner() {
           const columnTasks = tasks[s.value] ?? [];
           const isInitialLoading =
             loading && columnTasks.length === 0 && pages[s.value] === 1;
+          const isLoadingMore = loading && !isInitialLoading;
           return (
-            <section
+            <TaskKanbanColumn
               key={s.value}
-              className="flex flex-col overflow-hidden rounded-xl border bg-slate-50 shadow-sm md:max-h-[70vh]"
-            >
-              <header className="flex items-center justify-between border-b bg-white px-4 py-3">
-                <div className="text-sm font-semibold uppercase tracking-wide text-slate-600">
-                  {s.label}
-                </div>
-                <span className="text-xs text-slate-400">{columnTasks.length}</span>
-              </header>
-              <div className="flex-1 overflow-hidden">
-                <div className="flex h-full flex-col px-4 py-3 md:overflow-y-auto">
-                  {isInitialLoading ? (
-                    <ul className="space-y-3">
-                      {[...Array(3)].map((_, i) => (
-                        <li
-                          key={i}
-                          className="h-24 rounded-lg bg-slate-200/70 animate-pulse"
-                        />
-                      ))}
-                    </ul>
-                  ) : columnTasks.length ? (
-                    <div className="space-y-3">
-                      {columnTasks.map((t) => (
-                        <motion.div
-                          key={t._id}
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 6 }}
-                        >
-                          <TaskCard
-                            task={{
-                              _id: t._id,
-                              title: t.title,
-                              assignee: t.assignee || t.ownerId,
-                              dueDate: t.dueDate,
-                              priority: t.priority,
-                              status: t.status,
-                            }}
-                            href={`/tasks/${t._id}`}
-                            onChange={loadTasks}
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="py-6 text-center text-sm text-slate-400">
-                      No tasks found.
-                    </div>
-                  )}
-                </div>
-              </div>
-              {hasMore[s.value] && (
-                <div className="border-t bg-white px-4 py-3">
-                  <button
-                    className="w-full rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={() => void loadMore(s.value)}
-                    disabled={loading}
-                  >
-                    {loading ? 'Loading…' : 'Load more'}
-                  </button>
-                </div>
-              )}
-            </section>
+              label={s.label}
+              tasks={columnTasks}
+              isLoading={isInitialLoading}
+              hasMore={hasMore[s.value]}
+              isLoadingMore={isLoadingMore}
+              onLoadMore={() => loadMore(s.value)}
+              onTaskChange={loadTasks}
+            />
           );
         })}
       </div>

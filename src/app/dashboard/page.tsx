@@ -1,20 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SessionProvider, useSession } from 'next-auth/react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import TaskKanbanColumn from '@/components/task-kanban-column';
 import type { TaskResponse as Task } from '@/types/api/task';
-
-const statusLabels: Record<string, string> = {
-  OPEN: 'Open',
-  IN_PROGRESS: 'In Progress',
-  IN_REVIEW: 'In Review',
-  REVISIONS: 'Revisions',
-  FLOW_IN_PROGRESS: 'Flow In Progress',
-  DONE: 'Done',
-};
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -33,9 +23,11 @@ function DashboardInner() {
     IN_PROGRESS: [],
     DONE: [],
   });
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    async function loadTasks() {
+  const loadTasks = useCallback(async () => {
+    setLoading(true);
+    try {
       const results = await Promise.all(
         statusTabs.map(async (s) => {
           try {
@@ -54,55 +46,40 @@ function DashboardInner() {
         next[s.value] = results[i] as Task[];
       });
       setTasks(next);
+    } finally {
+      setLoading(false);
     }
-    void loadTasks();
   }, []);
 
+  useEffect(() => {
+    void loadTasks();
+  }, [loadTasks]);
+
   return (
-    <div className="p-4">
+    <div className="p-4 md:p-6">
       <motion.h1
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-2xl font-semibold"
+        className="text-xl font-semibold text-slate-800"
       >
         Hi, {session?.user?.name || session?.user?.email || 'there'}
       </motion.h1>
-      <Tabs defaultValue="OPEN" className="mt-6">
-        <TabsList>
-          {statusTabs.map((s) => (
-            <TabsTrigger key={s.value} value={s.value}>
-              {s.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {statusTabs.map((s) => (
-          <TabsContent key={s.value} value={s.value}>
-            <ul className="space-y-2">
-              {tasks[s.value]?.map((t) => (
-                <motion.li
-                  key={t._id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  className="rounded border hover:bg-gray-50"
-                >
-                  <Link
-                    href={`/tasks/${t._id}`}
-                    className="block p-2"
-                  >
-                    {t.title}
-                    {s.query.length > 1 && (
-                      <span className="ml-2 text-xs text-gray-500">
-                        {statusLabels[t.status] ?? t.status}
-                      </span>
-                    )}
-                  </Link>
-                </motion.li>
-              ))}
-            </ul>
-          </TabsContent>
-        ))}
-      </Tabs>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {statusTabs.map((s) => {
+          const columnTasks = tasks[s.value] ?? [];
+          const isInitialLoading = loading && columnTasks.length === 0;
+
+          return (
+            <TaskKanbanColumn
+              key={s.value}
+              label={s.label}
+              tasks={columnTasks}
+              isLoading={isInitialLoading}
+              onTaskChange={loadTasks}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
