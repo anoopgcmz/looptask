@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { openLoopBuilder } from "@/lib/loopBuilder";
 import LoopVisualizer, { type StepWithStatus, type UserMap } from "@/components/loop-visualizer";
@@ -23,6 +24,7 @@ interface Task {
   tags?: string[];
   status?: string;
   updatedAt?: string;
+  createdBy?: string;
 }
 
 interface LoopStep {
@@ -41,7 +43,7 @@ interface TaskLoop {
   updatedAt?: string;
 }
 
-export default function TaskDetail({ id }: { id: string }) {
+export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; canEdit?: boolean }) {
   const [task, setTask] = useState<Task | null>(null);
   const [loop, setLoop] = useState<TaskLoop | null>(null);
   const [users, setUsers] = useState<UserMap>({});
@@ -49,6 +51,7 @@ export default function TaskDetail({ id }: { id: string }) {
   const [taskVersion, setTaskVersion] = useState(0);
   const [loopVersion, setLoopVersion] = useState(0);
   const viewers = usePresence(id);
+  const { data: session } = useSession();
 
   const refreshTask = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
@@ -170,8 +173,14 @@ export default function TaskDetail({ id }: { id: string }) {
   );
   const { status } = useRealtime({ onMessage: handleMessage });
 
+  const canEdit = useMemo(() => {
+    if (typeof canEditProp === "boolean") return canEditProp;
+    if (!session?.userId || !task) return false;
+    return session.userId === task.createdBy || session.userId === task.ownerId;
+  }, [canEditProp, session?.userId, task]);
+
   const updateField = async (field: keyof Task, value: string) => {
-    if (!task) return;
+    if (!task || !canEdit) return;
     await fetch(`/api/tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -183,7 +192,7 @@ export default function TaskDetail({ id }: { id: string }) {
   const priorityOptions = ["LOW", "MEDIUM", "HIGH"] as const;
 
   const handlePriorityChange = async (value: string) => {
-    if (!task) return;
+    if (!task || !canEdit) return;
     if (!priorityOptions.includes(value as (typeof priorityOptions)[number])) return;
     if (task.priority === value) return;
 
@@ -221,8 +230,13 @@ export default function TaskDetail({ id }: { id: string }) {
         <input
           className="border p-2 flex-1"
           value={task.title ?? ""}
-          onChange={(e) => setTask({ ...task, title: e.target.value })}
-          onBlur={(e) => void updateField("title", e.target.value)}
+          onChange={
+            canEdit ? (e) => setTask({ ...task, title: e.target.value }) : undefined
+          }
+          onBlur={
+            canEdit ? (e) => void updateField("title", e.target.value) : undefined
+          }
+          readOnly={!canEdit}
         />
         {viewers.length > 0 && (
           <div className="flex -space-x-2 ml-2">
@@ -240,20 +254,32 @@ export default function TaskDetail({ id }: { id: string }) {
       <textarea
         className="border p-2"
         value={task.description ?? ""}
-        onChange={(e) => setTask({ ...task, description: e.target.value })}
-        onBlur={(e) => void updateField("description", e.target.value)}
+        onChange={
+          canEdit ? (e) => setTask({ ...task, description: e.target.value }) : undefined
+        }
+        onBlur={
+          canEdit ? (e) => void updateField("description", e.target.value) : undefined
+        }
+        readOnly={!canEdit}
       />
       <input
         className="border p-2"
         type="date"
         value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
-        onChange={(e) => setTask({ ...task, dueDate: e.target.value })}
-        onBlur={(e) => void updateField("dueDate", e.target.value)}
+        onChange={
+          canEdit ? (e) => setTask({ ...task, dueDate: e.target.value }) : undefined
+        }
+        onBlur={
+          canEdit ? (e) => void updateField("dueDate", e.target.value) : undefined
+        }
+        readOnly={!canEdit}
+        disabled={!canEdit}
       />
       <select
         className="border p-2"
         value={task.priority ?? ""}
-        onChange={(e) => void handlePriorityChange(e.target.value)}
+        onChange={canEdit ? (e) => void handlePriorityChange(e.target.value) : undefined}
+        disabled={!canEdit}
       >
         <option value="" disabled>
           Select priority
@@ -296,13 +322,15 @@ export default function TaskDetail({ id }: { id: string }) {
       ) : (
         <div className="text-sm text-gray-500">No loop defined yet.</div>
       )}
-      <Button
-        onClick={() => openLoopBuilder(id)}
-        variant="outline"
-        className="text-xs self-start"
-      >
-        Add to Loop
-      </Button>
+      {canEdit ? (
+        <Button
+          onClick={() => openLoopBuilder(id)}
+          variant="outline"
+          className="text-xs self-start"
+        >
+          Add to Loop
+        </Button>
+      ) : null}
     </div>
   );
 }
