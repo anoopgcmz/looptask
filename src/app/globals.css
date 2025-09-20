@@ -227,16 +227,6 @@ body {
 }
 
 @media (min-width: 1024px) {
-  .app-shell--sidebar-open .app-shell__content {
-    margin-left: var(--sidebar-width);
-  }
-
-  .app-shell--sidebar-open .app-header,
-  .app-shell--sidebar-open .app-footer {
-    padding-left: calc(var(--sidebar-width) + 1.5rem);
-    padding-right: 1.5rem;
-  }
-
   .app-sidebar {
     bottom: var(--layout-footer-height);
     box-shadow: none;
