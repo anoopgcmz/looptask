@@ -35,9 +35,7 @@ export function closeSidebarOnNavigation({
   isDesktop: boolean;
   closeSidebar: () => void;
 }) {
-  if (!isDesktop) {
-    closeSidebar();
-  }
+  closeSidebar();
 }
 
 export default function AppShell({ children }: AppShellProps) {
