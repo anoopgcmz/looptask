@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { Avatar } from "@/components/ui/avatar";
+
 type AppShellProps = {
   children: React.ReactNode;
 };
@@ -11,6 +13,12 @@ type AppShellProps = {
 type NavigationLink = {
   href: string;
   label: string;
+};
+
+type User = {
+  name: string;
+  email: string;
+  avatar?: string | null;
 };
 
 const NAVIGATION_LINKS: NavigationLink[] = [
@@ -27,6 +35,9 @@ export default function AppShell({ children }: AppShellProps) {
   const hasDetectedNonDesktopRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [userError, setUserError] = useState<string | null>(null);
   const navId = "app-shell-sidebar";
 
   useEffect(() => {
@@ -91,6 +102,59 @@ export default function AppShell({ children }: AppShellProps) {
     [isDesktop],
   );
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchUser() {
+      try {
+        setIsLoadingUser(true);
+        setUserError(null);
+        const response = await fetch("/api/users/me");
+        if (!response.ok) {
+          throw new Error("Failed to fetch user");
+        }
+        const data = (await response.json()) as User;
+        if (isMounted) {
+          setUser(data);
+        }
+      } catch (error: unknown) {
+        if (isMounted) {
+          const message =
+            error instanceof Error && error.message
+              ? error.message
+              : "Unable to load user";
+          setUserError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingUser(false);
+        }
+      }
+    }
+
+    void fetchUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const avatarFallback = useMemo(() => {
+    if (!user?.name) {
+      return undefined;
+    }
+
+    const parts = user.name.trim().split(/\s+/);
+    if (parts.length === 0) {
+      return undefined;
+    }
+
+    const firstInitial = parts[0]?.charAt(0) ?? "";
+    const lastInitial = parts.length > 1 ? parts[parts.length - 1]?.charAt(0) ?? "" : "";
+
+    return `${firstInitial}${lastInitial}`.toUpperCase() || undefined;
+  }, [user?.name]);
+
   const navigationLinks = useMemo(() => NAVIGATION_LINKS, []);
   const isSidebarVisible = sidebarOpen;
 
@@ -128,7 +192,11 @@ export default function AppShell({ children }: AppShellProps) {
             <span className="app-header__name">LoopTask</span>
           </div>
         </div>
-        <div className="app-header__actions" aria-label="Global navigation" />
+        <div className="app-header__actions" aria-label="User menu">
+          {!isLoadingUser && !userError && user ? (
+            <Avatar src={user.avatar ?? undefined} fallback={avatarFallback} className="h-10 w-10" />
+          ) : null}
+        </div>
       </header>
 
       <div
@@ -145,10 +213,7 @@ export default function AppShell({ children }: AppShellProps) {
         aria-label="Primary"
         onKeyDown={handleSidebarKeyDown}
       >
-        <p className="app-sidebar__title" id="app-sidebar-title">
-          Navigation
-        </p>
-        <ul className="app-sidebar__nav" aria-labelledby="app-sidebar-title">
+        <ul className="app-sidebar__nav" aria-label="Primary navigation">
           {navigationLinks.map((link, index) => {
             const isActive = pathname?.startsWith(link.href);
 
