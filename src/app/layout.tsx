@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import AppShell from '@/components/layout/AppShell';
 import LoopBuilder from '@/components/loop-builder';
 import PushNotificationInitializer from '@/components/PushNotificationInitializer';
 import "./globals.css";
@@ -27,19 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--color-background)]`}>
-        <div className="app-shell">
-          <header className="app-header">
-            <div className="app-header__branding">
-              <span className="app-header__logo" aria-hidden>⬡</span>
-              <span className="app-header__name">LoopTask</span>
-            </div>
-            <div className="app-header__actions" aria-label="Global navigation" />
-          </header>
-          <main className="app-main">{children}</main>
-          <footer className="app-footer">
-            <p>© {new Date().getFullYear()} LoopTask. All rights reserved.</p>
-          </footer>
-        </div>
+        <AppShell>{children}</AppShell>
         <LoopBuilder />
         <PushNotificationInitializer />
       </body>
