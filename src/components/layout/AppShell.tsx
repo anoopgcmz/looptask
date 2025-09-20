@@ -25,6 +25,7 @@ type User = {
 const NAVIGATION_LINKS: NavigationLink[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tasks", label: "Tasks" },
+  { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -258,17 +259,13 @@ export default function AppShell({ children }: AppShellProps) {
         <div className="app-sidebar__nav-container">
           {!isLoadingUser && !userError && user ? (
             <div className="app-sidebar__profile">
-              <Link
-                href="/profile"
-                className="app-sidebar__profile-avatar"
-                tabIndex={isSidebarVisible ? 0 : -1}
-              >
+              <div className="app-sidebar__profile-avatar" aria-hidden>
                 <Avatar
                   src={user.avatar ?? undefined}
                   fallback={avatarFallback}
                   className="h-14 w-14"
                 />
-              </Link>
+              </div>
               {userGreeting ? (
                 <p className="app-sidebar__profile-greeting">{userGreeting}</p>
               ) : null}
