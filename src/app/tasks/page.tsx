@@ -3,10 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import TaskCard from '@/components/task-card';
 import { SessionProvider, useSession } from 'next-auth/react';
 import type { TaskResponse as Task } from '@/types/api/task';
+import TaskCard from '@/components/task-card';
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -141,28 +140,28 @@ function TasksPageInner() {
   }, [searchInput]);
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center">
-        <h1 className="text-xl">Tasks</h1>
+    <div className="p-4 md:p-6">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <h1 className="text-xl font-semibold text-slate-800">Tasks</h1>
         <input
           type="text"
           placeholder="Search"
-          className="ml-4 border p-1"
+          className="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <Link
           href="/tasks/new"
-          className="ml-auto bg-blue-500 text-white px-2 py-1"
+          className="ml-auto inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
         >
           Create Task
         </Link>
       </div>
-      <div className="mb-4 flex flex-wrap gap-4">
+      <div className="mb-6 flex flex-wrap gap-4">
         <div>
-          <label className="block text-sm mb-1">Sort By</label>
+          <label className="mb-1 block text-sm font-medium text-slate-600">Sort By</label>
           <select
-            className="border p-1"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.sort}
             onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value }))}
           >
@@ -174,9 +173,9 @@ function TasksPageInner() {
           </select>
         </div>
         <div>
-          <label className="block text-sm mb-1">Assignee</label>
+          <label className="mb-1 block text-sm font-medium text-slate-600">Assignee</label>
           <select
-            className="border p-1"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.assignee}
             onChange={(e) =>
               setFilters((f) => ({ ...f, assignee: e.target.value }))
@@ -187,9 +186,9 @@ function TasksPageInner() {
           </select>
         </div>
         <div>
-          <label className="block text-sm mb-1">Priority</label>
+          <label className="mb-1 block text-sm font-medium text-slate-600">Priority</label>
           <select
-            className="border p-1"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.priority}
             onChange={(e) =>
               setFilters((f) => ({ ...f, priority: e.target.value }))
@@ -202,10 +201,10 @@ function TasksPageInner() {
           </select>
         </div>
         <div>
-          <label className="block text-sm mb-1">From</label>
+          <label className="mb-1 block text-sm font-medium text-slate-600">From</label>
           <input
             type="date"
-            className="border p-1"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.dueFrom}
             onChange={(e) =>
               setFilters((f) => ({ ...f, dueFrom: e.target.value }))
@@ -213,10 +212,10 @@ function TasksPageInner() {
           />
         </div>
         <div>
-          <label className="block text-sm mb-1">To</label>
+          <label className="mb-1 block text-sm font-medium text-slate-600">To</label>
           <input
             type="date"
-            className="border p-1"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.dueTo}
             onChange={(e) =>
               setFilters((f) => ({ ...f, dueTo: e.target.value }))
@@ -224,66 +223,79 @@ function TasksPageInner() {
           />
         </div>
       </div>
-      <Tabs defaultValue="OPEN">
-        <TabsList>
-          {statusTabs.map((s) => (
-            <TabsTrigger key={s.value} value={s.value}>
-              {s.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {statusTabs.map((s) => (
-          <TabsContent key={s.value} value={s.value}>
-            {loading ? (
-              <ul className="space-y-2">
-                {[...Array(3)].map((_, i) => (
-                  <li
-                    key={i}
-                    className="h-24 rounded bg-gray-200 animate-pulse"
-                  />
-                ))}
-              </ul>
-            ) : tasks[s.value]?.length ? (
-              <>
-                <ul className="space-y-2">
-                  {tasks[s.value]?.map((t) => (
-                    <motion.li
-                      key={t._id}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                    >
-                      <TaskCard
-                        task={{
-                          _id: t._id,
-                          title: t.title,
-                          assignee: t.assignee || t.ownerId,
-                          dueDate: t.dueDate,
-                          priority: t.priority,
-                          status: t.status,
-                        }}
-                        onChange={loadTasks}
-                      />
-                    </motion.li>
-                  ))}
-                </ul>
-                {hasMore[s.value] && (
-                  <button
-                    className="mt-4 border px-4 py-2"
-                    onClick={() => void loadMore(s.value)}
-                  >
-                    Load more
-                  </button>
-                )}
-              </>
-            ) : (
-              <div className="p-4 text-center text-sm text-gray-500">
-                No tasks found.
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {statusTabs.map((s) => {
+          const columnTasks = tasks[s.value] ?? [];
+          const isInitialLoading =
+            loading && columnTasks.length === 0 && pages[s.value] === 1;
+          return (
+            <section
+              key={s.value}
+              className="flex flex-col overflow-hidden rounded-xl border bg-slate-50 shadow-sm md:max-h-[70vh]"
+            >
+              <header className="flex items-center justify-between border-b bg-white px-4 py-3">
+                <div className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+                  {s.label}
+                </div>
+                <span className="text-xs text-slate-400">{columnTasks.length}</span>
+              </header>
+              <div className="flex-1 overflow-hidden">
+                <div className="flex h-full flex-col px-4 py-3 md:overflow-y-auto">
+                  {isInitialLoading ? (
+                    <ul className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <li
+                          key={i}
+                          className="h-24 rounded-lg bg-slate-200/70 animate-pulse"
+                        />
+                      ))}
+                    </ul>
+                  ) : columnTasks.length ? (
+                    <div className="space-y-3">
+                      {columnTasks.map((t) => (
+                        <motion.div
+                          key={t._id}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 6 }}
+                        >
+                          <TaskCard
+                            task={{
+                              _id: t._id,
+                              title: t.title,
+                              assignee: t.assignee || t.ownerId,
+                              dueDate: t.dueDate,
+                              priority: t.priority,
+                              status: t.status,
+                            }}
+                            href={`/tasks/${t._id}`}
+                            onChange={loadTasks}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center text-sm text-slate-400">
+                      No tasks found.
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+              {hasMore[s.value] && (
+                <div className="border-t bg-white px-4 py-3">
+                  <button
+                    className="w-full rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => void loadMore(s.value)}
+                    disabled={loading}
+                  >
+                    {loading ? 'Loading…' : 'Load more'}
+                  </button>
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }
