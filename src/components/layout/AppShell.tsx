@@ -186,6 +186,24 @@ export default function AppShell({ children }: AppShellProps) {
   const navigationLinks = useMemo(() => NAVIGATION_LINKS, []);
   const isSidebarVisible = sidebarOpen;
 
+  const userGreeting = useMemo(() => {
+    if (!user?.name) {
+      return null;
+    }
+
+    const trimmedName = user.name.trim();
+    if (!trimmedName) {
+      return null;
+    }
+
+    const parts = trimmedName.split(/\s+/);
+    const firstName = parts[0];
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : undefined;
+    const displayName = lastName ? `${firstName} ${lastName}` : firstName;
+
+    return `Hi, ${displayName}`;
+  }, [user?.name]);
+
   return (
     <div className={`app-shell ${sidebarOpen ? "app-shell--sidebar-open" : ""}`}>
       <header className="app-header">
@@ -220,11 +238,7 @@ export default function AppShell({ children }: AppShellProps) {
             <span className="app-header__name">LoopTask</span>
           </div>
         </div>
-        <div className="app-header__actions" aria-label="User menu">
-          {!isLoadingUser && !userError && user ? (
-            <Avatar src={user.avatar ?? undefined} fallback={avatarFallback} className="h-10 w-10" />
-          ) : null}
-        </div>
+        <div className="app-header__actions" aria-label="User menu" />
       </header>
 
       <div
@@ -242,6 +256,24 @@ export default function AppShell({ children }: AppShellProps) {
         onKeyDown={handleSidebarKeyDown}
       >
         <div className="app-sidebar__nav-container">
+          {!isLoadingUser && !userError && user ? (
+            <div className="app-sidebar__profile">
+              <Link
+                href="/profile"
+                className="app-sidebar__profile-avatar"
+                tabIndex={isSidebarVisible ? 0 : -1}
+              >
+                <Avatar
+                  src={user.avatar ?? undefined}
+                  fallback={avatarFallback}
+                  className="h-14 w-14"
+                />
+              </Link>
+              {userGreeting ? (
+                <p className="app-sidebar__profile-greeting">{userGreeting}</p>
+              ) : null}
+            </div>
+          ) : null}
           <ul className="app-sidebar__nav" aria-label="Primary navigation">
             {navigationLinks.map((link, index) => {
               const isActive = pathname?.startsWith(link.href);
