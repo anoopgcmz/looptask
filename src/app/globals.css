@@ -137,7 +137,10 @@ body {
 
 .app-shell__overlay {
   position: fixed;
-  inset: 0;
+  top: var(--layout-header-height);
+  right: 0;
+  bottom: var(--layout-footer-height);
+  left: 0;
   background: rgba(15, 23, 42, 0.35);
   z-index: 35;
 }
@@ -150,7 +153,7 @@ body {
   position: fixed;
   top: var(--layout-header-height);
   left: 0;
-  bottom: 0;
+  bottom: var(--layout-footer-height);
   width: var(--sidebar-width);
   padding: 1.75rem 1.5rem;
   background: var(--color-surface);
@@ -228,7 +231,6 @@ body {
 
 @media (min-width: 1024px) {
   .app-sidebar {
-    bottom: var(--layout-footer-height);
     box-shadow: none;
   }
 }
