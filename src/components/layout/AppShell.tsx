@@ -296,7 +296,7 @@ export default function AppShell({ children }: AppShellProps) {
             type="button"
             className="app-sidebar__logout"
             onClick={() => {
-              void signOut();
+              void signOut({ callbackUrl: "/login", redirect: true });
             }}
             tabIndex={isSidebarVisible ? 0 : -1}
           >
