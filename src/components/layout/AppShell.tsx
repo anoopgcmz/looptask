@@ -29,6 +29,8 @@ const NAVIGATION_LINKS: NavigationLink[] = [
   { href: "/settings", label: "Settings" },
 ];
 
+const AUTH_ROUTES = new Set(["/signin", "/signin/verify", "/login", "/"]);
+
 export function closeSidebarOnNavigation({
   isDesktop,
   closeSidebar,
@@ -36,11 +38,29 @@ export function closeSidebarOnNavigation({
   isDesktop: boolean;
   closeSidebar: () => void;
 }) {
+  void isDesktop;
   closeSidebar();
 }
 
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+
+  if (AUTH_ROUTES.has(pathname)) {
+    return <>{children}</>;
+  }
+
+  return (
+    <AuthenticatedAppShell pathname={pathname}>{children}</AuthenticatedAppShell>
+  );
+}
+
+function AuthenticatedAppShell({
+  children,
+  pathname,
+}: {
+  children: React.ReactNode;
+  pathname: string;
+}) {
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const previousOpenRef = useRef(false);
