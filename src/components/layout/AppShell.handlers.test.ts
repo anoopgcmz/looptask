@@ -11,11 +11,11 @@ describe("closeSidebarOnNavigation", () => {
     expect(closeSidebar).toHaveBeenCalledTimes(1);
   });
 
-  it("does not close the sidebar on desktop", () => {
+  it("closes the sidebar on desktop", () => {
     const closeSidebar = vi.fn();
 
     closeSidebarOnNavigation({ isDesktop: true, closeSidebar });
 
-    expect(closeSidebar).not.toHaveBeenCalled();
+    expect(closeSidebar).toHaveBeenCalledTimes(1);
   });
 });
