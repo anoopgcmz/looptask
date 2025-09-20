@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { SessionProvider, useSession } from 'next-auth/react';
+import { SessionProvider } from 'next-auth/react';
+import useAuth from '@/hooks/useAuth';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
@@ -83,7 +84,7 @@ function createResolver<T>(schema: z.ZodSchema<T>) {
 
 function TaskPageContent({ id }: { id: string }) {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { user, isLoading, status } = useAuth();
   const [task, setTask] = useState<Task | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [history, setHistory] = useState<TimelineEvent[]>([]);
@@ -120,10 +121,11 @@ function TaskPageContent({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => {
+    if (status !== 'authenticated') return;
     void load();
     void loadAttachments();
     void loadHistory();
-  }, [load, loadAttachments, loadHistory]);
+  }, [load, loadAttachments, loadHistory, status]);
 
   useEffect(() => {
     if (!task?.ownerId) return;
@@ -138,9 +140,15 @@ function TaskPageContent({ id }: { id: string }) {
   }, [task?.ownerId]);
 
   const canEdit = useMemo(() => {
-    if (!session?.userId || !task) return false;
-    return session.userId === task.createdBy || session.userId === task.ownerId;
-  }, [session?.userId, task]);
+    if (!user?.userId || !task) return false;
+    return user.userId === task.createdBy || user.userId === task.ownerId;
+  }, [task, user?.userId]);
+
+  useEffect(() => {
+    if (status === 'unauthenticated' && !isLoading) {
+      router.push('/login');
+    }
+  }, [isLoading, router, status]);
 
   useEffect(() => {
     if (!canEdit) {
@@ -158,6 +166,14 @@ function TaskPageContent({ id }: { id: string }) {
     };
     void loadUsers();
   }, [userQuery, canEdit]);
+
+  if (isLoading && status === 'loading') {
+    return <div className="p-4">Loading task…</div>;
+  }
+
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   const onOwnerSubmit = async (
     { ownerId }: { ownerId: string },

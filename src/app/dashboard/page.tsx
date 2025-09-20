@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { SessionProvider, useSession } from 'next-auth/react';
+import { SessionProvider } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import TaskKanbanColumn from '@/components/task-kanban-column';
 import type { TaskResponse as Task } from '@/types/api/task';
+import useAuth from '@/hooks/useAuth';
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -17,7 +18,7 @@ const statusTabs = [
 ];
 
 function DashboardInner() {
-  const { data: session } = useSession();
+  const { user, status } = useAuth();
   const [tasks, setTasks] = useState<Record<string, Task[]>>({
     OPEN: [],
     IN_PROGRESS: [],
@@ -55,6 +56,14 @@ function DashboardInner() {
     void loadTasks();
   }, [loadTasks]);
 
+  if (status === 'loading') {
+    return <div className="p-4 md:p-6">Loading dashboard…</div>;
+  }
+
+  if (status === 'unauthenticated') {
+    return null;
+  }
+
   return (
     <div className="p-4 md:p-6">
       <motion.h1
@@ -62,7 +71,7 @@ function DashboardInner() {
         animate={{ opacity: 1, y: 0 }}
         className="text-xl font-semibold text-slate-800"
       >
-        Hi, {session?.user?.name || session?.user?.email || 'there'}
+        Hi, {user?.name || user?.email || 'there'}
       </motion.h1>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statusTabs.map((s) => {

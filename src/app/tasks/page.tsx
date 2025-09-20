@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { SessionProvider, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { SessionProvider } from 'next-auth/react';
 import type { TaskResponse as Task } from '@/types/api/task';
 import TaskKanbanColumn from '@/components/task-kanban-column';
+import useAuth from '@/hooks/useAuth';
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -19,7 +21,8 @@ const statusTabs = [
 const PAGE_SIZE = 20;
 
 function TasksPageInner() {
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { user, status, isLoading } = useAuth();
   const [filters, setFilters] = useState({
     assignee: '',
     priority: '',
@@ -130,13 +133,28 @@ function TasksPageInner() {
   );
 
   useEffect(() => {
+    if (status === 'unauthenticated' && !isLoading) {
+      router.push('/login');
+    }
+  }, [isLoading, router, status]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
     void loadTasks();
-  }, [loadTasks]);
+  }, [loadTasks, status]);
 
   useEffect(() => {
     const handle = setTimeout(() => setSearch(searchInput), 300);
     return () => clearTimeout(handle);
   }, [searchInput]);
+
+  if (status === 'loading') {
+    return <div className="p-4 md:p-6">Loading tasks…</div>;
+  }
+
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   return (
     <div className="p-4 md:p-6">
@@ -181,7 +199,7 @@ function TasksPageInner() {
             }
           >
             <option value="">All</option>
-            {session?.userId && <option value={session.userId}>Me</option>}
+            {user?.userId && <option value={user.userId}>Me</option>}
           </select>
         </div>
         <div>
@@ -238,7 +256,7 @@ function TasksPageInner() {
               isLoadingMore={isLoadingMore}
               onLoadMore={() => loadMore(s.value)}
               onTaskChange={loadTasks}
-              currentUserId={session?.userId}
+              currentUserId={user?.userId}
             />
           );
         })}

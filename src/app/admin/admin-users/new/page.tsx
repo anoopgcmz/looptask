@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SessionProvider, useSession } from 'next-auth/react';
+import { SessionProvider } from 'next-auth/react';
+import useAuth from '@/hooks/useAuth';
 
 function NewAdminForm() {
-  const { data: session } = useSession();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -30,7 +31,7 @@ function NewAdminForm() {
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, organizationId: session?.organizationId, role: 'ADMIN' }),
+      body: JSON.stringify({ ...form, organizationId: user?.organizationId, role: 'ADMIN' }),
     });
     if (!res.ok) {
       const data = (await res

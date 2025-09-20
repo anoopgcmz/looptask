@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useSession } from 'next-auth/react';
+import useAuth from '@/hooks/useAuth';
 import useTyping from '@/hooks/useTyping';
 import useRealtime from '@/hooks/useRealtime';
 
@@ -31,8 +31,8 @@ export default function CommentThread({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
 
-  const { data: session } = useSession();
-  const { typingUsers, emit } = useTyping(taskId, session?.userId, !parentId);
+  const { user } = useAuth();
+  const { typingUsers, emit } = useTyping(taskId, user?.userId, !parentId);
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
   const { enqueue } = useRealtime();
 
@@ -86,14 +86,19 @@ export default function CommentThread({
                 emit();
               }, 300);
             }}
-            placeholder="Add a comment..."
+            placeholder={user ? 'Add a comment...' : 'Sign in to comment'}
+            disabled={!user}
           />
           {typingUsers.map((u) => (
             <p key={u._id} className="mt-1 text-xs text-gray-500">
               {`${u.name ?? 'Someone'} is typing...`}
             </p>
           ))}
-          <Button className="mt-1 text-xs" onClick={() => void handleCreate(null)}>
+          <Button
+            className="mt-1 text-xs"
+            onClick={() => void handleCreate(null)}
+            disabled={!user || !newContent.trim()}
+          >
             Comment
           </Button>
         </div>
@@ -118,6 +123,7 @@ export default function CommentThread({
               <Button
                 className="mt-1 text-xs"
                 onClick={() => void handleCreate(c._id)}
+                disabled={!user || !replyContent.trim()}
               >
                 Submit
               </Button>
