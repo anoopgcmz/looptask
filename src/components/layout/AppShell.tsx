@@ -28,6 +28,18 @@ const NAVIGATION_LINKS: NavigationLink[] = [
   { href: "/settings", label: "Settings" },
 ];
 
+export function closeSidebarOnNavigation({
+  isDesktop,
+  closeSidebar,
+}: {
+  isDesktop: boolean;
+  closeSidebar: () => void;
+}) {
+  if (!isDesktop) {
+    closeSidebar();
+  }
+}
+
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
@@ -92,6 +104,23 @@ export default function AppShell({ children }: AppShellProps) {
   const handleToggle = useCallback(() => {
     setSidebarOpen((previous) => !previous);
   }, []);
+
+  const handleNavigationLinkActivation = useCallback(() => {
+    closeSidebarOnNavigation({
+      isDesktop,
+      closeSidebar: () => setSidebarOpen(false),
+    });
+  }, [isDesktop]);
+
+  const handleNavigationLinkKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLAnchorElement>) => {
+      if (event.key === " " || event.key === "Spacebar") {
+        event.preventDefault();
+        handleNavigationLinkActivation();
+      }
+    },
+    [handleNavigationLinkActivation],
+  );
 
   const handleSidebarKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
@@ -227,6 +256,8 @@ export default function AppShell({ children }: AppShellProps) {
                     className={`app-sidebar__link ${isActive ? "app-sidebar__link--active" : ""}`}
                     aria-current={isActive ? "page" : undefined}
                     tabIndex={isSidebarVisible ? 0 : -1}
+                    onClick={handleNavigationLinkActivation}
+                    onKeyDown={handleNavigationLinkKeyDown}
                   >
                     {link.label}
                   </Link>
