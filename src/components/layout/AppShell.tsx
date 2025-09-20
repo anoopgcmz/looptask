@@ -24,6 +24,7 @@ export default function AppShell({ children }: AppShellProps) {
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const previousOpenRef = useRef(false);
+  const hasDetectedNonDesktopRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const navId = "app-shell-sidebar";
@@ -35,17 +36,22 @@ export default function AppShell({ children }: AppShellProps) {
 
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
 
-    const handleMediaChange = (event: MediaQueryListEvent) => {
-      setIsDesktop(event.matches);
-      if (event.matches) {
+    const applyLayoutFromMatch = (matches: boolean) => {
+      setIsDesktop(matches);
+      if (matches) {
+        hasDetectedNonDesktopRef.current = false;
         setSidebarOpen(true);
       } else {
+        hasDetectedNonDesktopRef.current = true;
         setSidebarOpen(false);
       }
     };
 
-    setIsDesktop(mediaQuery.matches);
-    setSidebarOpen(mediaQuery.matches);
+    const handleMediaChange = (event: MediaQueryListEvent) => {
+      applyLayoutFromMatch(event.matches);
+    };
+
+    applyLayoutFromMatch(mediaQuery.matches);
     mediaQuery.addEventListener("change", handleMediaChange);
 
     return () => {
@@ -54,7 +60,7 @@ export default function AppShell({ children }: AppShellProps) {
   }, []);
 
   useEffect(() => {
-    if (!isDesktop) {
+    if (!isDesktop && hasDetectedNonDesktopRef.current) {
       setSidebarOpen(false);
     }
   }, [pathname, isDesktop]);
