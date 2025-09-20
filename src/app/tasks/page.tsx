@@ -238,6 +238,7 @@ function TasksPageInner() {
               isLoadingMore={isLoadingMore}
               onLoadMore={() => loadMore(s.value)}
               onTaskChange={loadTasks}
+              currentUserId={session?.userId}
             />
           );
         })}

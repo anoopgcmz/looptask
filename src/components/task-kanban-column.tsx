@@ -12,6 +12,7 @@ export interface TaskKanbanColumnProps {
   isLoadingMore?: boolean;
   onLoadMore?: () => void | Promise<void>;
   onTaskChange?: () => void | Promise<void>;
+  currentUserId?: string;
 }
 
 export default function TaskKanbanColumn({
@@ -22,6 +23,7 @@ export default function TaskKanbanColumn({
   isLoadingMore = false,
   onLoadMore,
   onTaskChange,
+  currentUserId,
 }: TaskKanbanColumnProps) {
   const cardTasks = tasks ?? [];
   const isEmpty = !isLoading && cardTasks.length === 0;
@@ -50,6 +52,11 @@ export default function TaskKanbanColumn({
             <div className="space-y-3">
               {cardTasks.map((task) => {
                 const extendedTask = task as Task & { assignee?: string };
+                const canEdit = Boolean(
+                  currentUserId &&
+                    (currentUserId === task.createdBy ||
+                      currentUserId === task.ownerId)
+                );
                 return (
                   <motion.div
                     key={task._id}
@@ -68,6 +75,7 @@ export default function TaskKanbanColumn({
                       }}
                       href={`/tasks/${task._id}`}
                       onChange={onTaskChange}
+                      canEdit={canEdit}
                     />
                   </motion.div>
                 );

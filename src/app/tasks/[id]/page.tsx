@@ -1,11 +1,11 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
@@ -19,6 +19,7 @@ interface Task {
   title: string;
   status: TaskStatus;
   ownerId?: string;
+  createdBy?: string;
 }
 
 interface Attachment {
@@ -80,9 +81,9 @@ function createResolver<T>(schema: z.ZodSchema<T>) {
   };
 }
 
-export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+function TaskPageContent({ id }: { id: string }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [task, setTask] = useState<Task | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [history, setHistory] = useState<TimelineEvent[]>([]);
@@ -136,7 +137,16 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
     void loadOwner();
   }, [task?.ownerId]);
 
+  const canEdit = useMemo(() => {
+    if (!session?.userId || !task) return false;
+    return session.userId === task.createdBy || session.userId === task.ownerId;
+  }, [session?.userId, task]);
+
   useEffect(() => {
+    if (!canEdit) {
+      setUsers([]);
+      return;
+    }
     const loadUsers = async () => {
       const q = userQuery.trim();
       if (!q) {
@@ -147,13 +157,13 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
       if (res.ok) setUsers(await res.json());
     };
     void loadUsers();
-  }, [userQuery]);
+  }, [userQuery, canEdit]);
 
   const onOwnerSubmit = async (
     { ownerId }: { ownerId: string },
     u: User
   ) => {
-    if (!task) return;
+    if (!task || !canEdit) return;
     const previous = task;
     setTask({ ...task, ownerId });
     setOwnerName(u.name || u.email || '');
@@ -173,12 +183,13 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   };
 
   const handleOwnerSelect = (u: User) => {
+    if (!canEdit) return;
     setOwnerValue('ownerId', u._id, { shouldValidate: true });
     void submitOwner((data) => onOwnerSubmit(data, u))();
   };
 
   const handleTransition = async (action: string) => {
-    if (!task) return;
+    if (!task || !canEdit) return;
     const previous = task;
     const predicted = TRANSITION_MAP[task.status]?.[action] ?? task.status;
     setTask({ ...task, status: predicted });
@@ -196,6 +207,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   };
 
   const onUploadSubmit = async ({ file }: { file: FileList }) => {
+    if (!canEdit) return;
     const f = file.item(0);
     if (!f) return;
     const tempId = `temp-${Date.now()}`;
@@ -219,6 +231,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   };
 
   const handleDelete = async (attachmentId: string) => {
+    if (!canEdit) return;
     const previous = attachments;
     setAttachments((prev) => prev.filter((a) => a._id !== attachmentId));
     const res = await fetch(`/api/tasks/${id}/attachments?id=${attachmentId}`, {
@@ -230,6 +243,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   };
 
   const deleteTask = async () => {
+    if (!canEdit) return;
     const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     if (res.ok) {
       router.push('/tasks');
@@ -240,20 +254,20 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
   const actions = ACTIONS[task.status];
 
   return (
-    <SessionProvider>
-      <div className="p-4">
-        <Link
-          href="/tasks"
-          className="text-blue-500 underline mb-4 inline-block"
-        >
-          &larr; Back to Tasks
-        </Link>
-        <div className="flex gap-8">
-          <div className="flex-1 flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">{task.title}</h1>
-              <StatusBadge status={task.status} />
-            </div>
+    <div className="p-4">
+      <Link
+        href="/tasks"
+        className="text-blue-500 underline mb-4 inline-block"
+      >
+        &larr; Back to Tasks
+      </Link>
+      <div className="flex gap-8">
+        <div className="flex-1 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold">{task.title}</h1>
+            <StatusBadge status={task.status} />
+          </div>
+          {canEdit ? (
             <div className="flex gap-2">
               {actions.map((a) => (
                 <button
@@ -270,8 +284,10 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
                 </button>
               </DeleteTaskModal>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Owner:</span>
+          ) : null}
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Owner:</span>
+            {canEdit ? (
               <div className="relative flex-1">
                 <input
                   className="border rounded px-2 py-1 text-sm w-full"
@@ -298,10 +314,16 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
                   </ul>
                 ) : null}
               </div>
-            </div>
-            <TaskDetail key={task.ownerId} id={id} />
-            <div className="flex flex-col gap-2">
-              <h2 className="font-semibold">Attachments</h2>
+            ) : (
+              <span className="text-sm font-medium">
+                {ownerName || 'Unassigned'}
+              </span>
+            )}
+          </div>
+          <TaskDetail key={task.ownerId} id={id} canEdit={canEdit} />
+          <div className="flex flex-col gap-2">
+            <h2 className="font-semibold">Attachments</h2>
+            {canEdit ? (
               <form onSubmit={submitUpload(onUploadSubmit)} className="flex flex-col gap-2">
                 <input type="file" {...registerUpload('file')} />
                 {uploadErrors.file ? (
@@ -313,29 +335,41 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
                   Upload
                 </button>
               </form>
-              <ul className="list-disc pl-4">
-                {attachments.map((a) => (
-                  <li key={a._id} className="flex items-center gap-2">
-                    <a href={a.url} target="_blank" rel="noreferrer" className="underline">
-                      {a.filename}
-                    </a>
+            ) : null}
+            <ul className="list-disc pl-4">
+              {attachments.map((a) => (
+                <li key={a._id} className="flex items-center gap-2">
+                  <a href={a.url} target="_blank" rel="noreferrer" className="underline">
+                    {a.filename}
+                  </a>
+                  {canEdit ? (
                     <button
                       onClick={() => void handleDelete(a._id)}
                       className="text-xs text-red-600"
                     >
                       delete
                     </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <CommentThread taskId={id} />
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </div>
-          <aside className="w-64">
-            <Timeline events={history} />
-          </aside>
+          <CommentThread taskId={id} />
         </div>
+        <aside className="w-64">
+          <Timeline events={history} />
+        </aside>
       </div>
+    </div>
+  );
+}
+
+export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+
+  return (
+    <SessionProvider>
+      <TaskPageContent id={id} />
     </SessionProvider>
   );
 }
