@@ -15,7 +15,7 @@ const refreshTokenSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     hashedToken: { type: String, required: true, unique: true },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
     client: {
       ip: { type: String },
       userAgent: { type: String },
