@@ -15,6 +15,9 @@
   --priority-high: #ff5630;
   --priority-medium: #ffab00;
   --priority-low: #36b37e;
+
+  --layout-header-height: 4.5rem;
+  --layout-footer-height: 3.5rem;
 }
 
 @theme inline {
@@ -31,4 +34,85 @@ body {
     BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.6;
   letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--layout-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.06);
+  z-index: 40;
+}
+
+.app-header__branding {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.app-header__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.75rem;
+  background: radial-gradient(circle at 20% 20%, #93c5fd, #1d4ed8);
+  color: #fff;
+  font-size: 1.125rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.app-header__name {
+  font-size: 1.125rem;
+}
+
+.app-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 3rem;
+  min-height: 2.5rem;
+}
+
+.app-main {
+  position: relative;
+  margin: var(--layout-header-height) auto var(--layout-footer-height);
+  padding: 1.75rem clamp(1.25rem, 3vw, 2.5rem);
+  width: min(1100px, 100%);
+  min-height: calc(100vh - var(--layout-header-height) - var(--layout-footer-height));
+  overflow-y: auto;
+}
+
+.app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--layout-footer-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.5rem;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
 }

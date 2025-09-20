@@ -27,7 +27,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--color-background)]`}>
-        {children}
+        <div className="app-shell">
+          <header className="app-header">
+            <div className="app-header__branding">
+              <span className="app-header__logo" aria-hidden>⬡</span>
+              <span className="app-header__name">LoopTask</span>
+            </div>
+            <div className="app-header__actions" aria-label="Global navigation" />
+          </header>
+          <main className="app-main">{children}</main>
+          <footer className="app-footer">
+            <p>© {new Date().getFullYear()} LoopTask. All rights reserved.</p>
+          </footer>
+        </div>
         <LoopBuilder />
         <PushNotificationInitializer />
       </body>
