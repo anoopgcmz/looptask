@@ -54,8 +54,12 @@ const getBadgeVariant = (value?: string): BadgeProps['variant'] => {
 };
 
 export default function TaskCard({ task, onChange, href, canEdit = true }: TaskCardProps) {
+  const normalizedStatus = task.status?.trim().toUpperCase();
+  const isDone = normalizedStatus === 'DONE';
+  const showActions = canEdit && !isDone;
+
   const handleEdit = async () => {
-    if (!canEdit) return;
+    if (!showActions) return;
     const title = prompt('New title', task.title);
     if (title) {
       await fetch(`/api/tasks/${task._id}`, {
@@ -68,7 +72,7 @@ export default function TaskCard({ task, onChange, href, canEdit = true }: TaskC
   };
 
   const handleDelete = async () => {
-    if (!canEdit) return;
+    if (!showActions) return;
     await fetch(`/api/tasks/${task._id}`, { method: 'DELETE' });
     onChange?.();
   };
@@ -107,7 +111,7 @@ export default function TaskCard({ task, onChange, href, canEdit = true }: TaskC
       ) : (
         cardContent
       )}
-      {canEdit ? (
+      {showActions ? (
         <div className="mt-2 flex justify-end gap-2 sm:justify-start">
           <button
             type="button"
