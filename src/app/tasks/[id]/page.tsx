@@ -285,6 +285,13 @@ function TaskPageContent({ id }: { id: string }) {
             </div>
             {canEdit ? (
               <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push(`/tasks/${id}/edit`)}
+                >
+                  Edit Task
+                </Button>
                 {actions.map((a, index) => (
                   <Button
                     key={a.action}
