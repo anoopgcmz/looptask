@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type CSSProperties, useMemo } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 export interface TaskFormUser {
@@ -170,11 +169,6 @@ export default function TaskForm({
     );
   }, [currentUserId]);
 
-  const selectedPriority = useMemo(
-    () => PRIORITY_OPTIONS.find((option) => option.value === priority),
-    [priority],
-  );
-
   const addStep = () =>
     setSteps((prev) => [
       ...prev,
@@ -276,30 +270,32 @@ export default function TaskForm({
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-[#4B5563]" htmlFor="priority">
-                Priority
-              </label>
-              <div className="relative">
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full"
-                  style={{ backgroundColor: selectedPriority?.color ?? '#6B7280' }}
-                />
-                <Select
-                  id="priority"
-                  value={priority}
-                  onChange={(e) =>
-                    setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')
-                  }
-                  className="flex h-10 w-full appearance-none rounded-lg border border-[#E5E7EB] bg-white pl-9 pr-10 text-sm transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
-                  style={{ color: selectedPriority?.color ?? '#6B7280' }}
-                >
-                  {PRIORITY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value} style={{ color: option.color }}>
-                      ● {option.label}
-                    </option>
-                  ))}
-                </Select>
+              <span className="block text-sm font-medium text-[#4B5563]">Priority</span>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Priority">
+                {PRIORITY_OPTIONS.map((option) => {
+                  const isActive = priority === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setPriority(option.value)}
+                      aria-pressed={isActive}
+                      className={cn(
+                        'flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition',
+                        isActive
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-600 shadow-sm'
+                          : 'border-[#E5E7EB] text-[#4B5563] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600',
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: option.color }}
+                      />
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
