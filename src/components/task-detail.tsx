@@ -366,53 +366,53 @@ export default function TaskDetail({
           </div>
         </div>
       </Card>
-      <Card className="flex flex-col gap-4">
-        {loopLoading ? (
-          <div className="text-sm text-gray-500">Loading loop...</div>
-        ) : loop ? (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Loop Progress
-              </span>
-              <LoopProgress
-                total={loop.sequence.length}
-                completed={
-                  loop.sequence.filter((s: LoopStep) => s.status === 'COMPLETED').length
-                }
-              />
+      {fieldsEditable ? (
+        <Card className="flex flex-col gap-4">
+          {loopLoading ? (
+            <div className="text-sm text-gray-500">Loading loop...</div>
+          ) : loop ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Loop Progress
+                </span>
+                <LoopProgress
+                  total={loop.sequence.length}
+                  completed={
+                    loop.sequence.filter((s: LoopStep) => s.status === 'COMPLETED').length
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Loop Steps
+                </span>
+                <LoopVisualizer
+                  steps={
+                    loop.sequence.map((s: LoopStep, idx) => ({
+                      id: String(idx),
+                      assignedTo: s.assignedTo ?? '',
+                      description: s.description,
+                      estimatedTime: s.estimatedTime,
+                      dependencies: s.dependencies ?? [],
+                      index: idx,
+                      status: s.status,
+                    })) as StepWithStatus[]
+                  }
+                  users={users}
+                />
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Loop Steps
-              </span>
-              <LoopVisualizer
-                steps={
-                  loop.sequence.map((s: LoopStep, idx) => ({
-                    id: String(idx),
-                    assignedTo: s.assignedTo ?? '',
-                    description: s.description,
-                    estimatedTime: s.estimatedTime,
-                    dependencies: s.dependencies ?? [],
-                    index: idx,
-                    status: s.status,
-                  })) as StepWithStatus[]
-                }
-                users={users}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="text-sm text-gray-500">No loop defined yet.</div>
-        )}
-        {canEdit ? (
+          ) : (
+            <div className="text-sm text-gray-500">No loop defined yet.</div>
+          )}
           <div className="flex justify-end">
             <Button onClick={() => openLoopBuilder(id)} className="px-5">
               Manage Loop
             </Button>
           </div>
-        ) : null}
-      </Card>
+        </Card>
+      ) : null}
     </div>
   );
 }
