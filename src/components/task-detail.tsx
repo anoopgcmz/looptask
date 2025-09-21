@@ -175,7 +175,7 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
     },
     [id, taskVersion, loopVersion]
   );
-  const { status } = useRealtime({ onMessage: handleMessage });
+  useRealtime({ onMessage: handleMessage });
 
   const canEdit = useMemo(() => {
     if (typeof canEditProp === "boolean") return canEditProp;
@@ -225,11 +225,6 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      {status !== "connected" && (
-        <div className="bg-red-500 text-white text-center p-1 text-xs">
-          Offline
-        </div>
-      )}
       <Card className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
