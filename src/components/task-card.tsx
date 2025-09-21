@@ -4,8 +4,6 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { openLoopBuilder } from '@/lib/loopBuilder';
 
 export interface TaskCardProps {
   task: {
@@ -56,18 +54,6 @@ const getBadgeVariant = (value?: string): BadgeProps['variant'] => {
 };
 
 export default function TaskCard({ task, onChange, href, canEdit = true }: TaskCardProps) {
-  const [menuOpen, setMenuOpen] = React.useState(false);
-
-  const handleMarkComplete = async () => {
-    if (!canEdit) return;
-    await fetch(`/api/tasks/${task._id}/transition`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'DONE' }),
-    });
-    onChange?.();
-  };
-
   const handleEdit = async () => {
     if (!canEdit) return;
     const title = prompt('New title', task.title);
@@ -122,99 +108,52 @@ export default function TaskCard({ task, onChange, href, canEdit = true }: TaskC
         cardContent
       )}
       {canEdit ? (
-        <div className="mt-2">
-          <div className="hidden sm:flex gap-2">
-            <Button onClick={() => void handleMarkComplete()} className="text-xs">
-              Mark Complete
-            </Button>
-            <Button
-              onClick={() => void handleEdit()}
-              variant="outline"
-              className="text-xs"
+        <div className="mt-2 flex justify-end gap-2 sm:justify-start">
+          <button
+            type="button"
+            onClick={() => void handleEdit()}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E5E7EB] text-[#4B5563] transition-colors hover:bg-[rgba(79,70,229,0.08)] hover:text-[#4338CA] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30 focus:ring-offset-2 focus:ring-offset-white"
+            aria-label="Edit task"
+            title="Edit task"
+          >
+            <span className="sr-only">Edit task</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
             >
-              Edit
-            </Button>
-            <Button
-              onClick={() => void handleDelete()}
-              variant="outline"
-              className="text-xs"
+              <path d="M16.862 4.487l1.651-1.651a1.875 1.875 0 112.652 2.652L7.1 19.554a3 3 0 01-1.265.757l-2.5.75.75-2.5a3 3 0 01.757-1.265L16.862 4.487z" />
+              <path d="M15 5.25l3 3" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#FECACA] text-[#DC2626] transition-colors hover:bg-[#FEE2E2] hover:text-[#B91C1C] focus:outline-none focus:ring-2 focus:ring-[#DC2626]/30 focus:ring-offset-2 focus:ring-offset-white"
+            aria-label="Delete task"
+            title="Delete task"
+          >
+            <span className="sr-only">Delete task</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
             >
-              Delete
-            </Button>
-            <Button
-              onClick={() => openLoopBuilder(task._id)}
-              variant="outline"
-              className="text-xs"
-            >
-              Add to Loop
-            </Button>
-          </div>
-          <div className="relative sm:hidden">
-            <Button
-              onClick={() => setMenuOpen((o) => !o)}
-              variant="outline"
-              className="p-2"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              aria-label="More actions"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4"
-              >
-                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6-2a2 2 0 100 4 2 2 0 000-4zm6 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </Button>
-            {menuOpen && (
-              <div
-                className="absolute right-0 z-10 mt-2 w-40 rounded border bg-white shadow-md"
-                role="menu"
-              >
-                <button
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    void handleMarkComplete();
-                  }}
-                  role="menuitem"
-                >
-                  Mark Complete
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    void handleEdit();
-                  }}
-                  role="menuitem"
-                >
-                  Edit
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    void handleDelete();
-                  }}
-                  role="menuitem"
-                >
-                  Delete
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    openLoopBuilder(task._id);
-                  }}
-                  role="menuitem"
-                >
-                  Add to Loop
-                </button>
-              </div>
-            )}
-          </div>
+              <path d="M9.75 9.75l.347 8.347a1 1 0 00.996.903h2.214a1 1 0 00.996-.903L14.65 9.75" />
+              <path d="M19.5 6h-15" />
+              <path d="M16.5 6l-.427-1.708A2 2 0 0014.127 3h-4.254a2 2 0 00-1.946 1.292L7.5 6" />
+            </svg>
+          </button>
         </div>
       ) : null}
     </div>
