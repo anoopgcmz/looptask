@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 export interface TaskFormUser {
   _id: string;
   name: string;
+  role?: string;
 }
 
 export interface TaskFormStepInput {
@@ -135,7 +136,7 @@ export default function TaskForm({
         const res = await fetch('/api/users', { credentials: 'include' });
         if (!res.ok) return;
         const data = (await res.json()) as TaskFormUser[];
-        if (isMounted) setUsers(data);
+        if (isMounted) setUsers(data.filter((user) => user.role !== 'ADMIN'));
       } catch {
         // swallow fetch errors; list will remain empty
       }
@@ -426,7 +427,7 @@ function StepCard({
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-owner-${step.id}`}>
-              Assignee
+              Step Owner
             </label>
             <select
               id={`step-owner-${step.id}`}
@@ -434,7 +435,7 @@ function StepCard({
               onChange={(e) => onUpdate(step.id, 'ownerId', e.target.value)}
               className="flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
             >
-              <option value="">Select assignee</option>
+              <option value="">Select owner</option>
               {users.map((user) => (
                 <option key={user._id} value={user._id}>
                   {user.name}
