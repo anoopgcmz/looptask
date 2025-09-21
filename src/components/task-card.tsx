@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { openLoopBuilder } from '@/lib/loopBuilder';
 
@@ -21,6 +21,39 @@ export interface TaskCardProps {
   href?: string;
   canEdit?: boolean;
 }
+
+const getBadgeVariant = (value?: string): BadgeProps['variant'] => {
+  if (!value) return 'secondary';
+
+  const normalized = value.toLowerCase();
+  const sanitized = normalized.replace(/[_-]/g, ' ');
+
+  if (['success', 'done', 'completed', 'complete'].includes(sanitized)) {
+    return 'success';
+  }
+
+  if (
+    ['in progress', 'in-progress', 'progress', 'doing'].some(
+      (state) => sanitized === state
+    )
+  ) {
+    return 'inProgress';
+  }
+
+  if (['backlog', 'todo', 'to do'].includes(sanitized)) {
+    return 'backlog';
+  }
+
+  if (['urgent', 'high'].includes(sanitized)) {
+    return 'urgent';
+  }
+
+  if (['low', 'low priority'].includes(sanitized)) {
+    return 'low';
+  }
+
+  return 'secondary';
+};
 
 export default function TaskCard({ task, onChange, href, canEdit = true }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -54,51 +87,39 @@ export default function TaskCard({ task, onChange, href, canEdit = true }: TaskC
     onChange?.();
   };
 
+  const cardContent = (
+    <div className="flex w-full items-center gap-3">
+      {task.assignee && (
+        <Avatar
+          src={task.assigneeAvatar}
+          fallback={task.assignee.charAt(0)}
+        />
+      )}
+      <div className="flex flex-col">
+        <span className="text-sm font-semibold text-[#111827]">{task.title}</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[#4B5563]">
+          {task.assignee && <span>{task.assignee}</span>}
+          {task.dueDate && <span>Due {task.dueDate}</span>}
+          {task.priority && (
+            <Badge variant={getBadgeVariant(task.priority)}>{task.priority}</Badge>
+          )}
+          <Badge variant={getBadgeVariant(task.status)}>{task.status}</Badge>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg border bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-3 rounded-[12px] border border-[#E5E7EB] bg-white p-4 shadow-sm transition-all hover:border-indigo-200 hover:shadow-[0_12px_24px_rgba(79,70,229,0.12)] focus-within:border-indigo-200 focus-within:shadow-[0_12px_24px_rgba(79,70,229,0.12)]">
       {href ? (
         <Link
           href={href}
-          className="flex w-full items-center gap-3 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
         >
-          {task.assignee && (
-            <Avatar
-              src={task.assigneeAvatar}
-              fallback={task.assignee.charAt(0)}
-            />
-          )}
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-700">
-              {task.title}
-            </span>
-            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-              {task.assignee && <span>{task.assignee}</span>}
-              {task.dueDate && <span>Due {task.dueDate}</span>}
-              {task.priority && <span>{task.priority}</span>}
-              <Badge>{task.status}</Badge>
-            </div>
-          </div>
+          {cardContent}
         </Link>
       ) : (
-        <div className="flex w-full items-center gap-3">
-          {task.assignee && (
-            <Avatar
-              src={task.assigneeAvatar}
-              fallback={task.assignee.charAt(0)}
-            />
-          )}
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-700">
-              {task.title}
-            </span>
-            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-              {task.assignee && <span>{task.assignee}</span>}
-              {task.dueDate && <span>Due {task.dueDate}</span>}
-              {task.priority && <span>{task.priority}</span>}
-              <Badge>{task.status}</Badge>
-            </div>
-          </div>
-        </div>
+        cardContent
       )}
       {canEdit ? (
         <div className="mt-2">
