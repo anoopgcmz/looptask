@@ -6,6 +6,7 @@ import useAuth from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface User {
   _id: string;
@@ -94,12 +95,16 @@ function NewTaskPageInner() {
         body: JSON.stringify(body),
       });
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        setFlowError(err.detail || 'Failed to create task');
+        const err = (await resp.json().catch(() => ({}))) as { detail?: string };
+        setFlowError(err.detail ?? 'Failed to create task');
         return;
       }
-      const task = await resp.json();
-      router.push(`/tasks/${task._id}`);
+      const task = (await resp.json()) as { _id?: string };
+      if (typeof task._id === 'string') {
+        router.push(`/tasks/${task._id}`);
+      } else {
+        router.push('/tasks');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create task';
       setFlowError(message);
@@ -115,57 +120,118 @@ function NewTaskPageInner() {
   }
 
   return (
-    <div className="p-4">
-      <form onSubmit={submitFlow} className="space-y-4">
-        <Input
-          placeholder="Title"
-          value={flowTitle}
-          onChange={(e) => setFlowTitle(e.target.value)}
-        />
-        <select
-          value={priority}
-          onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
-          className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-        >
-          <option value="LOW">Low Priority</option>
-          <option value="MEDIUM">Medium Priority</option>
-          <option value="HIGH">High Priority</option>
-        </select>
-        {steps.map((step, i) => (
-          <div key={i} className="border p-4 rounded space-y-2">
-            <Input
-              placeholder="Task Name"
-              value={step.title}
-              onChange={(e) => updateStep(i, 'title', e.target.value)}
-            />
-            <Textarea
-              placeholder="Description"
-              value={step.description}
-              onChange={(e) => updateStep(i, 'description', e.target.value)}
-            />
-            <select
-              value={step.ownerId}
-              onChange={(e) => updateStep(i, 'ownerId', e.target.value)}
-              className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-            >
-              <option value="">Assignee</option>
-              {users.map((u) => (
-                <option key={u._id} value={u._id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-            <Input
-              type="date"
-              value={step.due}
-              onChange={(e) => updateStep(i, 'due', e.target.value)}
-            />
+    <div className="min-h-screen bg-[#F9FAFB] px-8 py-6">
+      <form onSubmit={submitFlow} className="mx-auto max-w-3xl space-y-6">
+        <Card className="space-y-5">
+          <h2 className="text-lg font-semibold text-[#111827]">Task Info</h2>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#4B5563]" htmlFor="flow-title">
+                Title
+              </label>
+              <Input
+                id="flow-title"
+                placeholder="Enter task title"
+                value={flowTitle}
+                onChange={(e) => setFlowTitle(e.target.value)}
+                className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#4B5563]" htmlFor="priority">
+                Priority
+              </label>
+              <select
+                id="priority"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
+                className="flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
+              >
+                <option value="LOW">Low Priority</option>
+                <option value="MEDIUM">Medium Priority</option>
+                <option value="HIGH">High Priority</option>
+              </select>
+            </div>
           </div>
-        ))}
-        <Button type="button" onClick={addStep}>
-          Add Step
-        </Button>
-        {flowError && <p className="text-red-600 text-sm">{flowError}</p>}
+        </Card>
+
+        <Card className="space-y-5">
+          <h2 className="text-lg font-semibold text-[#111827]">Steps</h2>
+          <div className="space-y-6">
+            {steps.map((step, i) => (
+              <div key={i} className="space-y-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                <div className="space-y-2">
+                  <label
+                    className="block text-sm font-medium text-[#4B5563]"
+                    htmlFor={`step-title-${i}`}
+                  >
+                    Step Name
+                  </label>
+                  <Input
+                    id={`step-title-${i}`}
+                    placeholder="Enter step name"
+                    value={step.title}
+                    onChange={(e) => updateStep(i, 'title', e.target.value)}
+                    className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    className="block text-sm font-medium text-[#4B5563]"
+                    htmlFor={`step-description-${i}`}
+                  >
+                    Description
+                  </label>
+                  <Textarea
+                    id={`step-description-${i}`}
+                    placeholder="Describe the work to be completed"
+                    value={step.description}
+                    onChange={(e) => updateStep(i, 'description', e.target.value)}
+                    className="min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    className="block text-sm font-medium text-[#4B5563]"
+                    htmlFor={`step-owner-${i}`}
+                  >
+                    Assignee
+                  </label>
+                  <select
+                    id={`step-owner-${i}`}
+                    value={step.ownerId}
+                    onChange={(e) => updateStep(i, 'ownerId', e.target.value)}
+                    className="flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
+                  >
+                    <option value="">Select assignee</option>
+                    {users.map((u) => (
+                      <option key={u._id} value={u._id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-due-${i}`}>
+                    Due Date
+                  </label>
+                  <Input
+                    id={`step-due-${i}`}
+                    type="date"
+                    value={step.due}
+                    onChange={(e) => updateStep(i, 'due', e.target.value)}
+                    className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button type="button" variant="outline" onClick={addStep}>
+            Add Step
+          </Button>
+        </Card>
+
+        {flowError && <p className="text-sm text-red-600">{flowError}</p>}
         <Button type="submit">Create Task</Button>
       </form>
     </div>
