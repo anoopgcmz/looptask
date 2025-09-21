@@ -59,11 +59,54 @@ export default function TaskDetail({
   const [task, setTask] = useState<Task | null>(null);
   const [loop, setLoop] = useState<TaskLoop | null>(null);
   const [users, setUsers] = useState<UserMap>({});
+  const [ownerName, setOwnerName] = useState<string | null>(null);
   const [loopLoading, setLoopLoading] = useState(true);
   const [taskVersion, setTaskVersion] = useState(0);
   const [loopVersion, setLoopVersion] = useState(0);
   const viewers = usePresence(id);
   const { user } = useAuth();
+
+  const loadUsers = useCallback(async (ids: string[]) => {
+    const uniqueIds = Array.from(
+      new Set(ids.filter((value): value is string => Boolean(value)))
+    );
+
+    if (!uniqueIds.length) return {} as UserMap;
+
+    try {
+      const res = await fetch(
+        `/api/users?${uniqueIds
+          .map((userId) => `id=${encodeURIComponent(userId)}`)
+          .join("&")}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) return {} as UserMap;
+
+      const json: unknown = await res.json();
+      let map: UserMap = {} as UserMap;
+      if (Array.isArray(json)) {
+        const result: UserMap = {} as UserMap;
+        for (const u of json) {
+          if (u && typeof u === "object" && "_id" in u) {
+            const user = u as User;
+            result[user._id] = user;
+          }
+        }
+        map = result;
+      } else if (json && typeof json === "object") {
+        map = json as UserMap;
+      }
+
+      if (Object.keys(map).length) {
+        setUsers((prev) => ({ ...prev, ...map }));
+      }
+
+      return map;
+    } catch {
+      return {} as UserMap;
+    }
+  }, []);
 
   const refreshTask = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
@@ -73,60 +116,48 @@ export default function TaskDetail({
         const taskData = json as Task;
         setTask(taskData);
         setTaskVersion(new Date(taskData.updatedAt).getTime());
+
+        const idsToLoad = [taskData.ownerId, taskData.createdBy].filter(
+          (value): value is string => Boolean(value)
+        );
+        if (idsToLoad.length) {
+          void loadUsers(idsToLoad);
+        }
       }
     }
-  }, [id]);
+  }, [id, loadUsers]);
 
   const refreshLoop = useCallback(async () => {
     setLoopLoading(true);
     try {
-    const res = await fetch(`/api/tasks/${id}/loop`);
-    if (res.ok) {
-      const json: unknown = await res.json();
-      if (json && typeof json === "object" && "updatedAt" in json) {
-        const loopData = json as TaskLoop;
-        setLoop(loopData);
-        setLoopVersion(new Date(loopData.updatedAt).getTime());
+      const res = await fetch(`/api/tasks/${id}/loop`);
+      if (res.ok) {
+        const json: unknown = await res.json();
+        if (json && typeof json === "object" && "updatedAt" in json) {
+          const loopData = json as TaskLoop;
+          setLoop(loopData);
+          setLoopVersion(new Date(loopData.updatedAt).getTime());
 
-        const ids = Array.from(
-          new Set(
-            (loopData.sequence ?? [])
-              .map((s: LoopStep) => s.assignedTo)
-              .filter((v: string | undefined): v is string => !!v)
-          )
-        );
-        if (ids.length) {
-          const userRes = await fetch(
-            `/api/users?${ids.map((u) => `id=${u}`).join('&')}`,
-            { credentials: 'include' }
+          const ids = Array.from(
+            new Set(
+              (loopData.sequence ?? [])
+                .map((s: LoopStep) => s.assignedTo)
+                .filter((v: string | undefined): v is string => !!v)
+            )
           );
-          if (userRes.ok) {
-            const userJson: unknown = await userRes.json();
-            let map: UserMap = {} as UserMap;
-            if (Array.isArray(userJson)) {
-              map = userJson.reduce(
-                (acc: UserMap, u: User) => {
-                  acc[u._id] = u;
-                  return acc;
-                },
-                {} as UserMap
-              );
-            } else if (userJson && typeof userJson === "object") {
-              map = userJson as UserMap;
-            }
-            setUsers(map);
+          if (ids.length) {
+            void loadUsers(ids);
           }
+        } else {
+          setLoop(null);
         }
       } else {
         setLoop(null);
       }
-    } else {
-      setLoop(null);
+    } finally {
+      setLoopLoading(false);
     }
-  } finally {
-    setLoopLoading(false);
-  }
-}, [id]);
+  }, [id, loadUsers]);
 
   useEffect(() => {
     void refreshTask();
@@ -135,6 +166,21 @@ export default function TaskDetail({
   useEffect(() => {
     void refreshLoop();
   }, [refreshLoop]);
+
+  useEffect(() => {
+    const ownerId = task?.ownerId;
+    if (!ownerId) {
+      setOwnerName(null);
+      return;
+    }
+
+    const owner = users[ownerId];
+    if (owner?.name) {
+      setOwnerName(owner.name);
+    } else {
+      setOwnerName(ownerId);
+    }
+  }, [task?.ownerId, users]);
 
   const handleMessage = useCallback(
     (data: RealtimeMessage) => {
@@ -149,6 +195,13 @@ export default function TaskDetail({
               prev ? { ...prev, ...data.patch, updatedAt: data.updatedAt } : { ...data.patch, updatedAt: data.updatedAt }
             );
             setTaskVersion(tver);
+
+            if (data.patch && typeof data.patch === "object" && "ownerId" in data.patch) {
+              const nextOwnerId = (data.patch as Partial<Task>).ownerId;
+              if (nextOwnerId) {
+                void loadUsers([nextOwnerId]);
+              }
+            }
           }
           break;
         case "loop.updated":
@@ -162,16 +215,37 @@ export default function TaskDetail({
               const next: TaskLoop = { ...prev };
               if (Array.isArray(data.patch.sequence)) {
                 const seq = [...prev.sequence];
-                if (data.patch.sequence.every((s: unknown) => typeof s.index === "number")) {
-                  data.patch.sequence.forEach((s: unknown) => {
-                    seq[s.index] = { ...seq[s.index], ...s };
+                const updates = data.patch.sequence as unknown[];
+                if (
+                  updates.every(
+                    (
+                      s: unknown
+                    ): s is { index: number } & Partial<LoopStep> =>
+                      !!s &&
+                      typeof s === "object" &&
+                      "index" in s &&
+                      typeof (s as { index: unknown }).index === "number"
+                  )
+                ) {
+                  updates.forEach(({ index, ...rest }) => {
+                    const current = seq[index] ?? ({} as LoopStep);
+                    seq[index] = {
+                      ...current,
+                      ...(rest as Partial<LoopStep>),
+                    };
                   });
                   next.sequence = seq;
                 } else {
-                  next.sequence = data.patch.sequence as unknown;
+                  next.sequence = updates as unknown as LoopStep[];
                 }
               }
-              if (data.patch.parallel !== undefined) next.parallel = data.patch.parallel;
+              const parallelValue =
+                data.patch &&
+                typeof data.patch === "object" &&
+                "parallel" in data.patch
+                  ? (data.patch as { parallel?: TaskLoop["parallel"] }).parallel
+                  : undefined;
+              if (parallelValue !== undefined) next.parallel = parallelValue;
               return { ...next, updatedAt: data.updatedAt };
             });
             setLoopVersion(lver);
@@ -181,7 +255,7 @@ export default function TaskDetail({
           break;
       }
     },
-    [id, taskVersion, loopVersion]
+    [id, taskVersion, loopVersion, loadUsers]
   );
   useRealtime({ onMessage: handleMessage });
 
@@ -340,7 +414,7 @@ export default function TaskDetail({
             </label>
             <Input
               readOnly
-              value={task.ownerId ?? "Unassigned"}
+              value={ownerName ?? "Unassigned"}
               className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
             />
           </div>
