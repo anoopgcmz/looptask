@@ -78,6 +78,10 @@ function NewTaskPageInner() {
 
   const addStep = () => setSteps((prev) => [...prev, createStep(currentUserId)]);
 
+  const handleCancel = () => {
+    router.push('/tasks');
+  };
+
   const updateStep = (
     id: string,
     key: 'title' | 'description' | 'ownerId' | 'due',
@@ -197,13 +201,31 @@ function NewTaskPageInner() {
               ))}
             </SortableContext>
           </DndContext>
-          <Button type="button" variant="outline" onClick={addStep}>
-            Add Step
-          </Button>
         </Card>
 
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={addStep}
+            className="border-indigo-200 text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+          >
+            Add Step
+          </Button>
+        </div>
+
         {flowError && <p className="text-sm text-red-600">{flowError}</p>}
-        <Button type="submit">Create Task</Button>
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            className="border-[#E5E7EB] text-[#4B5563] hover:border-[#D1D5DB] hover:bg-[#F3F4F6] hover:text-[#1F2937]"
+          >
+            Cancel
+          </Button>
+          <Button type="submit">Create Task</Button>
+        </div>
       </form>
     </div>
   );
