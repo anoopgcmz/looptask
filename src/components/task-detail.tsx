@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { openLoopBuilder } from "@/lib/loopBuilder";
 import LoopVisualizer, { type StepWithStatus, type UserMap } from "@/components/loop-visualizer";
 import LoopProgress from "@/components/loop-progress";
@@ -226,111 +230,177 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
           Offline
         </div>
       )}
-      <div className="flex items-center justify-between gap-2">
-        <input
-          className="border p-2 flex-1"
-          value={task.title ?? ""}
-          onChange={
-            canEdit ? (e) => setTask({ ...task, title: e.target.value }) : undefined
-          }
-          onBlur={
-            canEdit ? (e) => void updateField("title", e.target.value) : undefined
-          }
-          readOnly={!canEdit}
-        />
-        {viewers.length > 0 && (
-          <div className="flex -space-x-2 ml-2">
-            {viewers.map((u) => (
-              <Avatar
-                key={u._id}
-                src={u.avatar}
-                fallback={u.name?.[0] || "?"}
-                className="w-8 h-8 border-2 border-white"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      <textarea
-        className="border p-2"
-        value={task.description ?? ""}
-        onChange={
-          canEdit ? (e) => setTask({ ...task, description: e.target.value }) : undefined
-        }
-        onBlur={
-          canEdit ? (e) => void updateField("description", e.target.value) : undefined
-        }
-        readOnly={!canEdit}
-      />
-      <input
-        className="border p-2"
-        type="date"
-        value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
-        onChange={
-          canEdit ? (e) => setTask({ ...task, dueDate: e.target.value }) : undefined
-        }
-        onBlur={
-          canEdit ? (e) => void updateField("dueDate", e.target.value) : undefined
-        }
-        readOnly={!canEdit}
-        disabled={!canEdit}
-      />
-      <select
-        className="border p-2"
-        value={task.priority ?? ""}
-        onChange={canEdit ? (e) => void handlePriorityChange(e.target.value) : undefined}
-        disabled={!canEdit}
-      >
-        <option value="" disabled>
-          Select priority
-        </option>
-        {priorityOptions.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <div>Owner: {task.ownerId}</div>
-      <div>Tags: {task.tags?.join(", ")}</div>
-      <div>Status: {task.status}</div>
-      {loopLoading ? (
-        <div>Loading loop...</div>
-      ) : loop ? (
+      <Card className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <LoopProgress
-            total={loop.sequence.length}
-            completed={
-              loop.sequence.filter((s: LoopStep) => s.status === 'COMPLETED').length
+          <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Task Title
+          </label>
+          <Input
+            className="flex-1 border-[#E5E7EB] bg-white text-base placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+            value={task.title ?? ""}
+            onChange={
+              canEdit ? (e) => setTask({ ...task, title: e.target.value }) : undefined
             }
-          />
-          <div className="font-semibold">Loop Steps</div>
-          <LoopVisualizer
-            steps={
-              loop.sequence.map((s: LoopStep, idx) => ({
-                id: String(idx),
-                assignedTo: s.assignedTo ?? '',
-                description: s.description,
-                estimatedTime: s.estimatedTime,
-                dependencies: s.dependencies ?? [],
-                index: idx,
-                status: s.status,
-              })) as StepWithStatus[]
+            onBlur={
+              canEdit ? (e) => void updateField("title", e.target.value) : undefined
             }
-            users={users}
+            readOnly={!canEdit}
+            placeholder="Add a task title"
           />
         </div>
-      ) : (
-        <div className="text-sm text-gray-500">No loop defined yet.</div>
-      )}
-      {canEdit ? (
-        <Button
-          onClick={() => openLoopBuilder(id)}
-          variant="outline"
-          className="text-xs self-start"
-        >
-          Add to Loop
-        </Button>
-      ) : null}
+        {viewers.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Active Viewers
+            </span>
+            <div className="flex -space-x-2">
+              {viewers.map((u) => (
+                <Avatar
+                  key={u._id}
+                  src={u.avatar}
+                  fallback={u.name?.[0] || "?"}
+                  className="w-8 h-8 border-2 border-white shadow-sm"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+      <Card className="flex flex-col gap-2">
+        <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Description
+        </label>
+        <Textarea
+          className="min-h-[120px] border-[#E5E7EB] text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+          value={task.description ?? ""}
+          onChange={
+            canEdit ? (e) => setTask({ ...task, description: e.target.value }) : undefined
+          }
+          onBlur={
+            canEdit ? (e) => void updateField("description", e.target.value) : undefined
+          }
+          readOnly={!canEdit}
+          placeholder="Describe the work that needs to be done"
+        />
+      </Card>
+      <Card className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Due Date
+            </label>
+            <Input
+              type="date"
+              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+              value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
+              onChange={
+                canEdit ? (e) => setTask({ ...task, dueDate: e.target.value }) : undefined
+              }
+              onBlur={
+                canEdit ? (e) => void updateField("dueDate", e.target.value) : undefined
+              }
+              readOnly={!canEdit}
+              disabled={!canEdit}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Priority
+            </label>
+            <Select
+              value={task.priority ?? ""}
+              onChange={canEdit ? (e) => void handlePriorityChange(e.target.value) : undefined}
+              disabled={!canEdit}
+            >
+              <option value="" disabled>
+                Select priority
+              </option>
+              {priorityOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Owner
+            </label>
+            <Input
+              readOnly
+              value={task.ownerId ?? "Unassigned"}
+              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Status
+            </label>
+            <Input
+              readOnly
+              value={task.status ?? "Unknown"}
+              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+            />
+          </div>
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Tags
+            </label>
+            <Input
+              readOnly
+              value={task.tags?.join(", ") || "No tags"}
+              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+            />
+          </div>
+        </div>
+      </Card>
+      <Card className="flex flex-col gap-4">
+        {loopLoading ? (
+          <div className="text-sm text-gray-500">Loading loop...</div>
+        ) : loop ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Loop Progress
+              </span>
+              <LoopProgress
+                total={loop.sequence.length}
+                completed={
+                  loop.sequence.filter((s: LoopStep) => s.status === 'COMPLETED').length
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Loop Steps
+              </span>
+              <LoopVisualizer
+                steps={
+                  loop.sequence.map((s: LoopStep, idx) => ({
+                    id: String(idx),
+                    assignedTo: s.assignedTo ?? '',
+                    description: s.description,
+                    estimatedTime: s.estimatedTime,
+                    dependencies: s.dependencies ?? [],
+                    index: idx,
+                    status: s.status,
+                  })) as StepWithStatus[]
+                }
+                users={users}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500">No loop defined yet.</div>
+        )}
+        {canEdit ? (
+          <div className="flex justify-end">
+            <Button onClick={() => openLoopBuilder(id)} className="px-5">
+              Manage Loop
+            </Button>
+          </div>
+        ) : null}
+      </Card>
     </div>
   );
 }
