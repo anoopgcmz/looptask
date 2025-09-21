@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast-provider';
 import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -54,6 +55,7 @@ const PRIORITY_OPTIONS: Array<{
 function NewTaskPageInner() {
   const router = useRouter();
   const { user, status, isLoading } = useAuth();
+  const { showToast } = useToast();
   const currentUserId = user?.userId ?? '';
   const [users, setUsers] = useState<User[]>([]);
 
@@ -143,6 +145,7 @@ function NewTaskPageInner() {
         return;
       }
       const task = (await resp.json()) as { _id?: string };
+      showToast({ message: 'Task created successfully', tone: 'success', duration: 5000 });
       if (typeof task._id === 'string') {
         router.push(`/tasks/${task._id}`);
       } else {
