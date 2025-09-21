@@ -32,6 +32,7 @@ function TasksPageInner() {
   });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [view, setView] = useState<'board' | 'list' | 'calendar'>('board');
   const [tasks, setTasks] = useState<Record<string, Task[]>>({
     OPEN: [],
     IN_PROGRESS: [],
@@ -48,6 +49,12 @@ function TasksPageInner() {
     DONE: true,
   });
   const [loading, setLoading] = useState(false);
+
+  const viewTabs: { value: 'board' | 'list' | 'calendar'; label: string }[] = [
+    { value: 'board', label: 'Board' },
+    { value: 'list', label: 'List' },
+    { value: 'calendar', label: 'Calendar' },
+  ];
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -156,6 +163,19 @@ function TasksPageInner() {
     return null;
   }
 
+  const listTasks = statusTabs.flatMap((s) => tasks[s.value] ?? []);
+
+  const formatDueDate = (dueDate?: string) => {
+    if (!dueDate) return '—';
+    const date = new Date(dueDate);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   return (
     <div className="p-4 md:p-6">
       <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -167,12 +187,34 @@ function TasksPageInner() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
-        <Link
-          href="/tasks/new"
-          className="ml-auto inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
-        >
-          Create Task
-        </Link>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+            {viewTabs.map((tab) => {
+              const isActive = view === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setView(tab.value)}
+                  className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${
+                    isActive
+                      ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100'
+                      : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
+                  }`}
+                  aria-pressed={isActive}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          <Link
+            href="/tasks/new"
+            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
+          >
+            Create Task
+          </Link>
+        </div>
       </div>
       <div className="mb-6 flex flex-wrap gap-4">
         <div>
@@ -240,27 +282,78 @@ function TasksPageInner() {
           />
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {statusTabs.map((s) => {
-          const columnTasks = tasks[s.value] ?? [];
-          const isInitialLoading =
-            loading && columnTasks.length === 0 && pages[s.value] === 1;
-          const isLoadingMore = loading && !isInitialLoading;
-          return (
-            <TaskKanbanColumn
-              key={s.value}
-              label={s.label}
-              tasks={columnTasks}
-              isLoading={isInitialLoading}
-              hasMore={hasMore[s.value]}
-              isLoadingMore={isLoadingMore}
-              onLoadMore={() => loadMore(s.value)}
-              onTaskChange={loadTasks}
-              currentUserId={user?.userId}
-            />
-          );
-        })}
-      </div>
+      {view === 'board' && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {statusTabs.map((s) => {
+            const columnTasks = tasks[s.value] ?? [];
+            const isInitialLoading =
+              loading && columnTasks.length === 0 && pages[s.value] === 1;
+            const isLoadingMore = loading && !isInitialLoading;
+            return (
+              <TaskKanbanColumn
+                key={s.value}
+                label={s.label}
+                tasks={columnTasks}
+                isLoading={isInitialLoading}
+                hasMore={hasMore[s.value]}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={() => loadMore(s.value)}
+                onTaskChange={loadTasks}
+                currentUserId={user?.userId}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {view === 'list' && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Priority</th>
+                <th className="px-4 py-3">Due</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white text-sm text-slate-700">
+              {listTasks.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-slate-500">
+                    No tasks found for the selected filters.
+                  </td>
+                </tr>
+              )}
+              {loading && listTasks.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-slate-500">
+                    Loading tasks…
+                  </td>
+                </tr>
+              )}
+              {listTasks.map((task) => (
+                <tr key={task._id} className="hover:bg-indigo-50/40">
+                  <td className="px-4 py-3 font-medium text-slate-800">{task.title}</td>
+                  <td className="px-4 py-3 uppercase tracking-wide text-xs text-slate-500">
+                    {task.status.replaceAll('_', ' ')}
+                  </td>
+                  <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    {task.priority}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-500">{formatDueDate(task.dueDate)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {view === 'calendar' && (
+        <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 p-10 text-center text-sm font-medium text-indigo-700">
+          Calendar view is coming soon. Switch back to the board or list to continue managing tasks.
+        </div>
+      )}
     </div>
   );
 }
