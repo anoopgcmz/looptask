@@ -12,10 +12,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-surface)] focus:ring-opacity-30 disabled:opacity-50 disabled:pointer-events-none h-9 px-5 py-2.5 tracking-tight',
+          'inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-surface)] focus:ring-opacity-30 disabled:pointer-events-none h-9 px-5 py-2.5 tracking-tight',
           variant === 'default'
-            ? 'bg-[var(--color-primary)] text-white hover:opacity-90 hover:shadow-none'
-            : 'border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-primary)] hover:bg-white hover:opacity-90',
+            ? 'bg-[#4F46E5] text-white hover:bg-[#4338CA] disabled:bg-[#E0E7FF] disabled:text-[#4338CA]/60'
+            : 'border border-[#4F46E5] text-[#4F46E5] hover:bg-[rgba(79,70,229,0.08)] hover:text-[#4338CA] disabled:border-[#E0E7FF] disabled:text-[#A5B4FC]',
           className
         )}
         {...props}
