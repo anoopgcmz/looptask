@@ -25,12 +25,14 @@ export interface TaskFormStepInput {
 
 export interface TaskFormValues {
   title: string;
+  description?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   steps: TaskFormStepInput[];
 }
 
 export interface TaskFormSubmitValues {
   title: string;
+  description?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   steps: Array<{
     title: string;
@@ -118,6 +120,7 @@ export default function TaskForm({
   const [users, setUsers] = useState<TaskFormUser[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [flowTitle, setFlowTitle] = useState(initialValues?.title ?? '');
+  const [description, setDescription] = useState(initialValues?.description ?? '');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>(
     initialValues?.priority ?? 'LOW',
   );
@@ -147,6 +150,10 @@ export default function TaskForm({
   useEffect(() => {
     setFlowTitle(initialValues?.title ?? '');
   }, [initialValues?.title]);
+
+  useEffect(() => {
+    setDescription(initialValues?.description ?? '');
+  }, [initialValues?.description]);
 
   useEffect(() => {
     setPriority(initialValues?.priority ?? 'LOW');
@@ -208,6 +215,7 @@ export default function TaskForm({
     try {
       const payload: TaskFormSubmitValues = {
         title: flowTitle,
+        description,
         priority,
         steps: steps.map((step) => {
           const base = {
@@ -253,6 +261,18 @@ export default function TaskForm({
                 value={flowTitle}
                 onChange={(e) => setFlowTitle(e.target.value)}
                 className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#4B5563]" htmlFor="flow-description">
+                Description
+              </label>
+              <Textarea
+                id="flow-description"
+                placeholder="Provide additional details about the task"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
               />
             </div>
             <div className="space-y-2">
