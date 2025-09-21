@@ -11,9 +11,16 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
+type NavigationBadge = {
+  label: string;
+  tone?: "neutral" | "accent";
+};
+
 type NavigationLink = {
   href: string;
   label: string;
+  icon: React.ReactNode;
+  badge?: NavigationBadge;
 };
 
 type User = {
@@ -22,11 +29,108 @@ type User = {
   avatar?: string | null;
 };
 
+const DashboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
+    <path
+      d="M4 4h6v6H4zM14 4h6v10h-6zM4 14h6v6H4zM14 18h6v2h-6z"
+      fill="currentColor"
+      fillRule="evenodd"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
+const TasksIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
+    <path
+      d="M6 12h5M6 16h3M6 8h9M15.5 14.5l1.5 1.5 3-3"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ReportsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
+    <path
+      d="M5 5h14v14H5z"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+    />
+    <path
+      d="M9 14l2-2 2 2 3-3"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const PortfoliosIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
+    <path
+      d="M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <rect
+      x={3}
+      y={7}
+      width={18}
+      height={12}
+      rx={2}
+      stroke="currentColor"
+      strokeWidth={1.5}
+    />
+    <path
+      d="M3 12h18"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const GoalsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
+    <circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={1.5} />
+    <path
+      d="M12 7v5l3 2"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const NAVIGATION_LINKS: NavigationLink[] = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/tasks", label: "Tasks" },
-  { href: "/profile", label: "Profile" },
-  { href: "/settings", label: "Settings" },
+  { href: "/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+  {
+    href: "/tasks",
+    label: "My Tasks",
+    icon: <TasksIcon />,
+    badge: { label: "12" },
+  },
+  {
+    href: "/reports",
+    label: "Reports",
+    icon: <ReportsIcon />,
+    badge: { label: "3" },
+  },
+  {
+    href: "/portfolios",
+    label: "Portfolios",
+    icon: <PortfoliosIcon />,
+    badge: { label: "New", tone: "accent" },
+  },
+  { href: "/goals", label: "Goals", icon: <GoalsIcon /> },
 ];
 
 const AUTH_ROUTES = new Set(["/signin", "/signin/verify", "/login", "/"]);
@@ -259,7 +363,71 @@ function AuthenticatedAppShell({
             <span className="app-header__name">LoopTask</span>
           </div>
         </div>
-        <div className="app-header__actions" aria-label="User menu" />
+        <div className="app-header__actions" aria-label="Workspace actions">
+          <form
+            className="app-header__search"
+            role="search"
+            onSubmit={(event) => {
+              event.preventDefault();
+            }}
+          >
+            <span className="app-header__search-icon" aria-hidden>
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path
+                  d="M11 5a6 6 0 104.472 10.11l3.859 3.86 1.06-1.061-3.86-3.86A6 6 0 0011 5zm0 1.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            <input
+              type="search"
+              name="q"
+              className="app-header__search-input"
+              placeholder="Search tasks, projects, people..."
+              aria-label="Search"
+            />
+          </form>
+
+          <div className="app-header__filters" role="group" aria-label="Quick filters">
+            <button type="button" className="app-header__filter app-header__filter--active">
+              All workspaces
+            </button>
+            <button type="button" className="app-header__filter">
+              Priority
+            </button>
+            <button type="button" className="app-header__filter">
+              Due this week
+            </button>
+          </div>
+
+          <nav className="app-header__tabs" aria-label="Primary navigation">
+            {navigationLinks.map((link) => {
+              const isActive = pathname?.startsWith(link.href);
+              return (
+                <Link
+                  key={`header-${link.href}`}
+                  href={link.href}
+                  className={`app-header__tab ${isActive ? "app-header__tab--active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="app-header__team" aria-label="Team members">
+            <div className="app-header__team-avatars">
+              <Avatar fallback="AL" className="app-header__team-avatar" />
+              <Avatar fallback="RM" className="app-header__team-avatar" />
+              <Avatar fallback="TS" className="app-header__team-avatar" />
+              <Avatar fallback="JD" className="app-header__team-avatar" />
+            </div>
+            <button type="button" className="app-header__team-invite" aria-label="Invite teammates">
+              +
+            </button>
+          </div>
+        </div>
       </header>
 
       <div
@@ -306,7 +474,19 @@ function AuthenticatedAppShell({
                     onClick={handleNavigationLinkActivation}
                     onKeyDown={handleNavigationLinkKeyDown}
                   >
-                    {link.label}
+                    <span className="app-sidebar__link-icon" aria-hidden>
+                      {link.icon}
+                    </span>
+                    <span className="app-sidebar__link-label">{link.label}</span>
+                    {link.badge ? (
+                      <span
+                        className={`app-sidebar__badge ${
+                          link.badge.tone === "accent" ? "app-sidebar__badge--accent" : ""
+                        }`}
+                      >
+                        {link.badge.label}
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               );
