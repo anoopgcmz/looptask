@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 
@@ -54,21 +55,14 @@ const getBadgeVariant = (value?: string): BadgeProps['variant'] => {
 };
 
 export default function TaskCard({ task, onChange, href, canEdit = true }: TaskCardProps) {
+  const router = useRouter();
   const normalizedStatus = task.status?.trim().toUpperCase();
   const isDone = normalizedStatus === 'DONE';
   const showActions = canEdit && !isDone;
 
-  const handleEdit = async () => {
+  const handleEdit = () => {
     if (!showActions) return;
-    const title = prompt('New title', task.title);
-    if (title) {
-      await fetch(`/api/tasks/${task._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
-      onChange?.();
-    }
+    router.push(`/tasks/${task._id}/edit`);
   };
 
   const handleDelete = async () => {
@@ -115,7 +109,7 @@ export default function TaskCard({ task, onChange, href, canEdit = true }: TaskC
         <div className="mt-2 flex justify-end gap-2 sm:justify-start">
           <button
             type="button"
-            onClick={() => void handleEdit()}
+            onClick={() => handleEdit()}
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E5E7EB] text-[#4B5563] transition-colors hover:bg-[rgba(79,70,229,0.08)] hover:text-[#4338CA] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30 focus:ring-offset-2 focus:ring-offset-white"
             aria-label="Edit task"
             title="Edit task"
