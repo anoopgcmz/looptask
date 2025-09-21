@@ -79,6 +79,7 @@ function EditTaskPageInner({ id }: { id: string }) {
       currentUserId={currentUserId}
       initialValues={{
         title: task.title,
+        description: task.description ?? '',
         priority: task.priority,
         steps:
           task.steps?.map((step) => ({
