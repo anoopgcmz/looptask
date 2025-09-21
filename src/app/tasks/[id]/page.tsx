@@ -415,13 +415,17 @@ function TaskPageContent({ id }: { id: string }) {
               </div>
             </section>
           </div>
-          <aside className="flex flex-col gap-6">
-            <section className="sticky top-24 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-[#111827]">Activity</h2>
-              <div className="mt-4 space-y-6">
-                <Timeline events={history} />
-                <div className="border-t border-gray-200 pt-6">
-                  <CommentThread taskId={id} />
+          <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
+            <section className="flex max-h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              <div className="border-b border-gray-200 px-6 py-4">
+                <h2 className="text-lg font-semibold text-[#111827]">Activity</h2>
+              </div>
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <div className="flex flex-1 flex-col overflow-y-auto px-6 py-4">
+                  <div className="flex flex-1 flex-col gap-8">
+                    <Timeline events={history} />
+                    <CommentThread taskId={id} className="flex-1" />
+                  </div>
                 </div>
               </div>
             </section>
