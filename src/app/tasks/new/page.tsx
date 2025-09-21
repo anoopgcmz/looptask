@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
 import useAuth from '@/hooks/useAuth';
@@ -7,6 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface User {
   _id: string;
@@ -14,11 +18,27 @@ interface User {
 }
 
 interface FlowStep {
+  id: string;
   title: string;
   description: string;
   ownerId: string;
   due: string;
 }
+
+const generateStepId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2, 10);
+};
+
+const createStep = (ownerId: string): FlowStep => ({
+  id: generateStepId(),
+  title: '',
+  description: '',
+  ownerId,
+  due: '',
+});
 
 function NewTaskPageInner() {
   const router = useRouter();
@@ -46,9 +66,7 @@ function NewTaskPageInner() {
 
   const [flowTitle, setFlowTitle] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
-  const [steps, setSteps] = useState<FlowStep[]>([
-    { title: '', description: '', ownerId: currentUserId, due: '' },
-  ]);
+  const [steps, setSteps] = useState<FlowStep[]>([createStep(currentUserId)]);
   const [flowError, setFlowError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,20 +76,28 @@ function NewTaskPageInner() {
     );
   }, [currentUserId]);
 
-  const addStep = () =>
-    setSteps((prev) => [
-      ...prev,
-      { title: '', description: '', ownerId: currentUserId, due: '' },
-    ]);
+  const addStep = () => setSteps((prev) => [...prev, createStep(currentUserId)]);
 
   const updateStep = (
-    index: number,
+    id: string,
     key: 'title' | 'description' | 'ownerId' | 'due',
     value: string,
   ) => {
     setSteps((prev) =>
-      prev.map((s: FlowStep, i) => (i === index ? { ...s, [key]: value } : s)),
+      prev.map((s: FlowStep) => (s.id === id ? { ...s, [key]: value } : s)),
     );
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    setSteps((prev) => {
+      const oldIndex = prev.findIndex((step) => step.id === active.id);
+      const newIndex = prev.findIndex((step) => step.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) {
+        return prev;
+      }
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   };
 
   const submitFlow = async (e: React.FormEvent) => {
@@ -157,75 +183,20 @@ function NewTaskPageInner() {
 
         <Card className="space-y-5">
           <h2 className="text-lg font-semibold text-[#111827]">Steps</h2>
-          <div className="space-y-6">
-            {steps.map((step, i) => (
-              <div key={i} className="space-y-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-4">
-                <div className="space-y-2">
-                  <label
-                    className="block text-sm font-medium text-[#4B5563]"
-                    htmlFor={`step-title-${i}`}
-                  >
-                    Step Name
-                  </label>
-                  <Input
-                    id={`step-title-${i}`}
-                    placeholder="Enter step name"
-                    value={step.title}
-                    onChange={(e) => updateStep(i, 'title', e.target.value)}
-                    className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    className="block text-sm font-medium text-[#4B5563]"
-                    htmlFor={`step-description-${i}`}
-                  >
-                    Description
-                  </label>
-                  <Textarea
-                    id={`step-description-${i}`}
-                    placeholder="Describe the work to be completed"
-                    value={step.description}
-                    onChange={(e) => updateStep(i, 'description', e.target.value)}
-                    className="min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    className="block text-sm font-medium text-[#4B5563]"
-                    htmlFor={`step-owner-${i}`}
-                  >
-                    Assignee
-                  </label>
-                  <select
-                    id={`step-owner-${i}`}
-                    value={step.ownerId}
-                    onChange={(e) => updateStep(i, 'ownerId', e.target.value)}
-                    className="flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
-                  >
-                    <option value="">Select assignee</option>
-                    {users.map((u) => (
-                      <option key={u._id} value={u._id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-due-${i}`}>
-                    Due Date
-                  </label>
-                  <Input
-                    id={`step-due-${i}`}
-                    type="date"
-                    value={step.due}
-                    onChange={(e) => updateStep(i, 'due', e.target.value)}
-                    className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={steps.map((step) => step.id)}>
+              {steps.map((step, index) => (
+                <StepCard
+                  key={step.id}
+                  step={step}
+                  index={index}
+                  users={users}
+                  onUpdate={updateStep}
+                  showDivider={index > 0}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
           <Button type="button" variant="outline" onClick={addStep}>
             Add Step
           </Button>
@@ -243,5 +214,141 @@ export default function NewTaskPage() {
     <SessionProvider>
       <NewTaskPageInner />
     </SessionProvider>
+  );
+}
+
+function StepCard({
+  step,
+  index,
+  users,
+  onUpdate,
+  showDivider,
+}: {
+  step: FlowStep;
+  index: number;
+  users: User[];
+  onUpdate: (id: string, key: 'title' | 'description' | 'ownerId' | 'due', value: string) => void;
+  showDivider: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: step.id,
+  });
+
+  const style: CSSProperties = {
+    transform: transform ? CSS.Transform.toString(transform) : undefined,
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(showDivider && 'mt-4 border-t border-[#E5E7EB] pt-4', 'relative')}
+    >
+      <div
+        className={cn(
+          'flex gap-4 rounded-[12px] border border-[#E5E7EB] bg-white p-6 shadow-sm transition-shadow',
+          isDragging && 'shadow-md ring-2 ring-indigo-200 ring-offset-2',
+        )}
+      >
+        <button
+          type="button"
+          aria-label={`Reorder step ${index + 1}`}
+          {...attributes}
+          {...listeners}
+          className={cn(
+            'flex h-10 w-10 shrink-0 cursor-grab items-center justify-center rounded-md text-[#9CA3AF] transition-colors hover:text-[#4B5563] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2',
+            isDragging && 'cursor-grabbing',
+          )}
+        >
+          <GripIcon className="h-5 w-5" />
+          <span className="sr-only">Drag handle</span>
+        </button>
+        <div className="flex-1 space-y-4">
+          <div className="space-y-2">
+            <label
+              className="block text-sm font-medium text-[#4B5563]"
+              htmlFor={`step-title-${step.id}`}
+            >
+              Step Name
+            </label>
+            <Input
+              id={`step-title-${step.id}`}
+              placeholder="Enter step name"
+              value={step.title}
+              onChange={(e) => onUpdate(step.id, 'title', e.target.value)}
+              className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+            />
+          </div>
+          <div className="space-y-2">
+            <label
+              className="block text-sm font-medium text-[#4B5563]"
+              htmlFor={`step-description-${step.id}`}
+            >
+              Description
+            </label>
+            <Textarea
+              id={`step-description-${step.id}`}
+              placeholder="Describe the work to be completed"
+              value={step.description}
+              onChange={(e) => onUpdate(step.id, 'description', e.target.value)}
+              className="min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+            />
+          </div>
+          <div className="space-y-2">
+            <label
+              className="block text-sm font-medium text-[#4B5563]"
+              htmlFor={`step-owner-${step.id}`}
+            >
+              Assignee
+            </label>
+            <select
+              id={`step-owner-${step.id}`}
+              value={step.ownerId}
+              onChange={(e) => onUpdate(step.id, 'ownerId', e.target.value)}
+              className="flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
+            >
+              <option value="">Select assignee</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-due-${step.id}`}>
+              Due Date
+            </label>
+            <Input
+              id={`step-due-${step.id}`}
+              type="date"
+              value={step.due}
+              onChange={(e) => onUpdate(step.id, 'due', e.target.value)}
+              className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GripIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="6" cy="5" r="1.2" />
+      <circle cx="6" cy="10" r="1.2" />
+      <circle cx="6" cy="15" r="1.2" />
+      <circle cx="14" cy="5" r="1.2" />
+      <circle cx="14" cy="10" r="1.2" />
+      <circle cx="14" cy="15" r="1.2" />
+    </svg>
   );
 }
