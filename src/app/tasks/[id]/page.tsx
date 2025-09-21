@@ -224,7 +224,6 @@ function TaskPageContent({ id }: { id: string }) {
   };
 
   const onUploadSubmit = async ({ file }: { file: FileList }) => {
-    if (!canEdit) return;
     const f = file.item(0);
     if (!f) return;
     const tempId = `temp-${Date.now()}`;
@@ -248,7 +247,6 @@ function TaskPageContent({ id }: { id: string }) {
   };
 
   const handleDelete = async (attachmentId: string) => {
-    if (!canEdit) return;
     const previous = attachments;
     setAttachments((prev) => prev.filter((a) => a._id !== attachmentId));
     const res = await fetch(`/api/tasks/${id}/attachments?id=${attachmentId}`, {
@@ -356,7 +354,12 @@ function TaskPageContent({ id }: { id: string }) {
             <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-[#111827]">Task Details</h2>
               <div className="mt-4">
-                <TaskDetail key={task.ownerId} id={id} canEdit={canEdit} />
+                <TaskDetail
+                  key={task.ownerId}
+                  id={id}
+                  canEdit={canEdit}
+                  readOnly
+                />
               </div>
             </section>
             <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

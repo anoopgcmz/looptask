@@ -47,7 +47,15 @@ interface TaskLoop {
   updatedAt?: string;
 }
 
-export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; canEdit?: boolean }) {
+export default function TaskDetail({
+  id,
+  canEdit: canEditProp,
+  readOnly = false,
+}: {
+  id: string;
+  canEdit?: boolean;
+  readOnly?: boolean;
+}) {
   const [task, setTask] = useState<Task | null>(null);
   const [loop, setLoop] = useState<TaskLoop | null>(null);
   const [users, setUsers] = useState<UserMap>({});
@@ -183,8 +191,10 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
     return user.userId === task.createdBy || user.userId === task.ownerId;
   }, [canEditProp, task, user?.userId]);
 
+  const fieldsEditable = canEdit && !readOnly;
+
   const updateField = async (field: keyof Task, value: string) => {
-    if (!task || !canEdit) return;
+    if (!task || !fieldsEditable) return;
     await fetch(`/api/tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -196,7 +206,7 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
   const priorityOptions = ["LOW", "MEDIUM", "HIGH"] as const;
 
   const handlePriorityChange = async (value: string) => {
-    if (!task || !canEdit) return;
+    if (!task || !fieldsEditable) return;
     if (!priorityOptions.includes(value as (typeof priorityOptions)[number])) return;
     if (task.priority === value) return;
 
@@ -230,18 +240,19 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
           <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
             Task Title
           </label>
-          <Input
-            className="flex-1 border-[#E5E7EB] bg-white text-base placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-            value={task.title ?? ""}
-            onChange={
-              canEdit ? (e) => setTask({ ...task, title: e.target.value }) : undefined
-            }
-            onBlur={
-              canEdit ? (e) => void updateField("title", e.target.value) : undefined
-            }
-            readOnly={!canEdit}
-            placeholder="Add a task title"
-          />
+          {fieldsEditable ? (
+            <Input
+              className="flex-1 border-[#E5E7EB] bg-white text-base placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+              value={task.title ?? ""}
+              onChange={(e) => setTask({ ...task, title: e.target.value })}
+              onBlur={(e) => void updateField("title", e.target.value)}
+              placeholder="Add a task title"
+            />
+          ) : (
+            <p className="text-base font-medium text-gray-900">
+              {task.title?.trim() ? task.title : "Untitled task"}
+            </p>
+          )}
         </div>
         {viewers.length > 0 && (
           <div className="flex flex-col gap-2">
@@ -265,18 +276,19 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
         <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Description
         </label>
-        <Textarea
-          className="min-h-[120px] border-[#E5E7EB] text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-          value={task.description ?? ""}
-          onChange={
-            canEdit ? (e) => setTask({ ...task, description: e.target.value }) : undefined
-          }
-          onBlur={
-            canEdit ? (e) => void updateField("description", e.target.value) : undefined
-          }
-          readOnly={!canEdit}
-          placeholder="Describe the work that needs to be done"
-        />
+        {fieldsEditable ? (
+          <Textarea
+            className="min-h-[120px] border-[#E5E7EB] text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+            value={task.description ?? ""}
+            onChange={(e) => setTask({ ...task, description: e.target.value })}
+            onBlur={(e) => void updateField("description", e.target.value)}
+            placeholder="Describe the work that needs to be done"
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-sm text-gray-900">
+            {task.description?.trim() ? task.description : "No description provided."}
+          </p>
+        )}
       </Card>
       <Card className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -284,38 +296,43 @@ export default function TaskDetail({ id, canEdit: canEditProp }: { id: string; c
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Due Date
             </label>
-            <Input
-              type="date"
-              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-              value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
-              onChange={
-                canEdit ? (e) => setTask({ ...task, dueDate: e.target.value }) : undefined
-              }
-              onBlur={
-                canEdit ? (e) => void updateField("dueDate", e.target.value) : undefined
-              }
-              readOnly={!canEdit}
-              disabled={!canEdit}
-            />
+            {fieldsEditable ? (
+              <Input
+                type="date"
+                className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
+                onChange={(e) => setTask({ ...task, dueDate: e.target.value })}
+                onBlur={(e) => void updateField("dueDate", e.target.value)}
+              />
+            ) : (
+              <p className="text-sm text-gray-900">
+                {task.dueDate ? task.dueDate.split("T")[0] : "No due date"}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Priority
             </label>
-            <Select
-              value={task.priority ?? ""}
-              onChange={canEdit ? (e) => void handlePriorityChange(e.target.value) : undefined}
-              disabled={!canEdit}
-            >
-              <option value="" disabled>
-                Select priority
-              </option>
-              {priorityOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+            {fieldsEditable ? (
+              <Select
+                value={task.priority ?? ""}
+                onChange={(e) => void handlePriorityChange(e.target.value)}
+              >
+                <option value="" disabled>
+                  Select priority
                 </option>
-              ))}
-            </Select>
+                {priorityOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <p className="text-sm text-gray-900">
+                {task.priority ?? "No priority set"}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
