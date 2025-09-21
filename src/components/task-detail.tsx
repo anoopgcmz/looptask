@@ -14,10 +14,20 @@ import usePresence from "@/hooks/usePresence";
 import { Avatar } from "@/components/ui/avatar";
 import useAuth from "@/hooks/useAuth";
 
-interface User {
-  _id: string;
-  name?: string;
+interface TaskStep {
+  title?: string;
+  ownerId?: string;
+  description?: string;
+  dueAt?: string;
+  status?: 'OPEN' | 'DONE';
+  completedAt?: string;
 }
+
+type TaskUser = {
+  _id: string;
+  name: string;
+  avatar?: string;
+};
 
 interface Task {
   title?: string;
@@ -29,6 +39,7 @@ interface Task {
   status?: string;
   updatedAt?: string;
   createdBy?: string;
+  steps?: TaskStep[];
 }
 
 interface LoopStep {
@@ -65,6 +76,48 @@ export default function TaskDetail({
   const viewers = usePresence(id);
   const { user } = useAuth();
 
+  const loadUsers = useCallback(async (ids: (string | undefined)[]) => {
+    const uniqueIds = Array.from(
+      new Set(ids.filter((value): value is string => typeof value === "string" && value.length > 0))
+    );
+    if (!uniqueIds.length) return;
+
+    const query = uniqueIds.map((userId) => `id=${encodeURIComponent(userId)}`).join('&');
+    try {
+      const userRes = await fetch(`/api/users?${query}`, { credentials: 'include' });
+      if (!userRes.ok) return;
+
+      const userJson: unknown = await userRes.json();
+      const map: UserMap = {};
+      const assignUser = (raw: unknown) => {
+        if (!raw || typeof raw !== "object" || !("_id" in raw)) return;
+        const candidate = raw as { _id: unknown; name?: unknown; avatar?: unknown };
+        if (typeof candidate._id !== "string") return;
+        const normalized: TaskUser = {
+          _id: candidate._id,
+          name:
+            typeof candidate.name === "string" && candidate.name.length
+              ? candidate.name
+              : "Unknown user",
+          avatar: typeof candidate.avatar === "string" ? candidate.avatar : undefined,
+        };
+        map[normalized._id] = normalized;
+      };
+
+      if (Array.isArray(userJson)) {
+        userJson.forEach(assignUser);
+      } else if (userJson && typeof userJson === "object") {
+        Object.values(userJson).forEach(assignUser);
+      }
+
+      if (Object.keys(map).length) {
+        setUsers((prev) => ({ ...prev, ...map }));
+      }
+    } catch {
+      // Ignore user lookup failures; steps can still render without names.
+    }
+  }, []);
+
   const refreshTask = useCallback(async () => {
     const res = await fetch(`/api/tasks/${id}`);
     if (res.ok) {
@@ -73,9 +126,11 @@ export default function TaskDetail({
         const taskData = json as Task;
         setTask(taskData);
         setTaskVersion(new Date(taskData.updatedAt).getTime());
+        const stepOwnerIds = (taskData.steps ?? []).map((step) => step.ownerId);
+        void loadUsers(stepOwnerIds);
       }
     }
-  }, [id]);
+  }, [id, loadUsers]);
 
   const refreshLoop = useCallback(async () => {
     setLoopLoading(true);
@@ -88,35 +143,10 @@ export default function TaskDetail({
         setLoop(loopData);
         setLoopVersion(new Date(loopData.updatedAt).getTime());
 
-        const ids = Array.from(
-          new Set(
-            (loopData.sequence ?? [])
-              .map((s: LoopStep) => s.assignedTo)
-              .filter((v: string | undefined): v is string => !!v)
-          )
-        );
-        if (ids.length) {
-          const userRes = await fetch(
-            `/api/users?${ids.map((u) => `id=${u}`).join('&')}`,
-            { credentials: 'include' }
-          );
-          if (userRes.ok) {
-            const userJson: unknown = await userRes.json();
-            let map: UserMap = {} as UserMap;
-            if (Array.isArray(userJson)) {
-              map = userJson.reduce(
-                (acc: UserMap, u: User) => {
-                  acc[u._id] = u;
-                  return acc;
-                },
-                {} as UserMap
-              );
-            } else if (userJson && typeof userJson === "object") {
-              map = userJson as UserMap;
-            }
-            setUsers(map);
-          }
-        }
+        const ids = (loopData.sequence ?? [])
+          .map((s: LoopStep) => s.assignedTo)
+          .filter((value): value is string => typeof value === "string" && value.length > 0);
+        void loadUsers(ids);
       } else {
         setLoop(null);
       }
@@ -126,7 +156,7 @@ export default function TaskDetail({
   } finally {
     setLoopLoading(false);
   }
-}, [id]);
+}, [id, loadUsers]);
 
   useEffect(() => {
     void refreshTask();
@@ -149,6 +179,13 @@ export default function TaskDetail({
               prev ? { ...prev, ...data.patch, updatedAt: data.updatedAt } : { ...data.patch, updatedAt: data.updatedAt }
             );
             setTaskVersion(tver);
+            if (data.patch && typeof data.patch === "object" && "steps" in data.patch) {
+              const stepsPatch = (data.patch as { steps?: TaskStep[] }).steps;
+              if (Array.isArray(stepsPatch)) {
+                const owners = stepsPatch.map((step) => step?.ownerId);
+                void loadUsers(owners);
+              }
+            }
           }
           break;
         case "loop.updated":
@@ -172,7 +209,16 @@ export default function TaskDetail({
                 }
               }
               if (data.patch.parallel !== undefined) next.parallel = data.patch.parallel;
-              return { ...next, updatedAt: data.updatedAt };
+              const updatedLoop = { ...next, updatedAt: data.updatedAt };
+              const assignedIds = Array.isArray(updatedLoop.sequence)
+                ? updatedLoop.sequence
+                    .map((step) => step?.assignedTo)
+                    .filter((value): value is string => typeof value === "string" && value.length > 0)
+                : [];
+              if (assignedIds.length) {
+                void loadUsers(assignedIds);
+              }
+              return updatedLoop;
             });
             setLoopVersion(lver);
           }
@@ -181,7 +227,7 @@ export default function TaskDetail({
           break;
       }
     },
-    [id, taskVersion, loopVersion]
+    [id, taskVersion, loopVersion, loadUsers]
   );
   useRealtime({ onMessage: handleMessage });
 
@@ -291,7 +337,7 @@ export default function TaskDetail({
         )}
       </Card>
       <Card className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Due Date
@@ -332,6 +378,44 @@ export default function TaskDetail({
               <p className="text-sm text-gray-900">
                 {task.priority ?? "No priority set"}
               </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 md:row-span-3">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Steps
+            </label>
+            {task.steps && task.steps.length ? (
+              <ul className="flex flex-col gap-3">
+                {task.steps.map((step, index) => {
+                  const owner = step.ownerId ? users[step.ownerId] : undefined;
+                  const dueLabel = formatDate(step.dueAt);
+                  return (
+                    <li
+                      key={`${step.ownerId ?? 'step'}-${index}`}
+                      className="rounded-lg border border-gray-200 bg-gray-50 p-3 shadow-sm"
+                    >
+                      <div className="text-sm font-medium text-gray-900">
+                        {step.title?.trim() ? step.title : `Step ${index + 1}`}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-600">
+                        Owner: {owner?.name ?? (step.ownerId ? 'Unknown owner' : 'Unassigned')}
+                      </div>
+                      {dueLabel ? (
+                        <div className="mt-1 text-xs text-gray-500">Due {dueLabel}</div>
+                      ) : null}
+                      {step.status ? (
+                        <div className="mt-1 text-xs uppercase tracking-wide text-gray-500">
+                          Status: {step.status}
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-200 p-3 text-sm text-gray-500">
+                No steps have been added to this task yet.
+              </div>
             )}
           </div>
           <div className="flex flex-col gap-2">
@@ -415,5 +499,12 @@ export default function TaskDetail({
       ) : null}
     </div>
   );
+}
+
+function formatDate(value?: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleDateString();
 }
 
