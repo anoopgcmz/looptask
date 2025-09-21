@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 import AppShell from '@/components/layout/AppShell';
 import LoopBuilder from '@/components/loop-builder';
 import PushNotificationInitializer from '@/components/PushNotificationInitializer';
 import "./globals.css";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
 });
@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased bg-[var(--color-background)]`}>
+      <body className={`${inter.variable} antialiased bg-[var(--color-background)]`}>
         <AppShell>{children}</AppShell>
         <LoopBuilder />
         <PushNotificationInitializer />
