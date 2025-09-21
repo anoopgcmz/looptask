@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
@@ -40,6 +41,16 @@ const createStep = (ownerId: string): FlowStep => ({
   due: '',
 });
 
+const PRIORITY_OPTIONS: Array<{
+  value: 'LOW' | 'MEDIUM' | 'HIGH';
+  label: string;
+  color: string;
+}> = [
+  { value: 'LOW', label: 'Low Priority', color: '#6B7280' },
+  { value: 'MEDIUM', label: 'Medium Priority', color: '#F59E0B' },
+  { value: 'HIGH', label: 'High Priority', color: '#EF4444' },
+];
+
 function NewTaskPageInner() {
   const router = useRouter();
   const { user, status, isLoading } = useAuth();
@@ -68,6 +79,8 @@ function NewTaskPageInner() {
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
   const [steps, setSteps] = useState<FlowStep[]>([createStep(currentUserId)]);
   const [flowError, setFlowError] = useState<string | null>(null);
+
+  const selectedPriority = PRIORITY_OPTIONS.find((option) => option.value === priority);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -171,16 +184,26 @@ function NewTaskPageInner() {
               <label className="block text-sm font-medium text-[#4B5563]" htmlFor="priority">
                 Priority
               </label>
-              <select
-                id="priority"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
-                className="flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
-              >
-                <option value="LOW">Low Priority</option>
-                <option value="MEDIUM">Medium Priority</option>
-                <option value="HIGH">High Priority</option>
-              </select>
+              <div className="relative">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full"
+                  style={{ backgroundColor: selectedPriority?.color ?? '#6B7280' }}
+                />
+                <Select
+                  id="priority"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
+                  className="flex h-10 w-full appearance-none rounded-lg border border-[#E5E7EB] bg-white pl-9 pr-10 text-sm transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
+                  style={{ color: selectedPriority?.color ?? '#6B7280' }}
+                >
+                  {PRIORITY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value} style={{ color: option.color }}>
+                      ● {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
           </div>
         </Card>
