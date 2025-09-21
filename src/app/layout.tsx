@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import AppShell from '@/components/layout/AppShell';
 import LoopBuilder from '@/components/loop-builder';
 import PushNotificationInitializer from '@/components/PushNotificationInitializer';
+import { ToastProvider } from '@/components/ui/toast-provider';
 import "./globals.css";
 
 const inter = Inter({
@@ -24,9 +25,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased bg-[var(--color-background)]`}>
-        <AppShell>{children}</AppShell>
-        <LoopBuilder />
-        <PushNotificationInitializer />
+        <ToastProvider>
+          <AppShell>{children}</AppShell>
+          <LoopBuilder />
+          <PushNotificationInitializer />
+        </ToastProvider>
       </body>
     </html>
   );
