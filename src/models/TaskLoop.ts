@@ -30,7 +30,7 @@ const loopStepSchema = new Schema(
     actualTime: { type: Number },
     completedAt: Date,
     comments: String,
-    dependencies: [{ type: Schema.Types.ObjectId }],
+    dependencies: [{ type: Number }],
   },
   {
     _id: false,

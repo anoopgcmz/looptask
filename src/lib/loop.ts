@@ -6,6 +6,55 @@ import { TaskLoop, type ILoopStep, type ITaskLoop } from '@/models/TaskLoop';
 import { LoopHistory } from '@/models/LoopHistory';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 
+export function applyStepCompletion(loop: ITaskLoop, stepIndex: number) {
+  if (stepIndex < 0 || stepIndex >= loop.sequence.length) {
+    return { loop, newlyActiveIndexes: [] as number[], completed: false };
+  }
+
+  const step = loop.sequence[stepIndex];
+  if (step.status === 'COMPLETED') {
+    return { loop, newlyActiveIndexes: [] as number[], completed: false };
+  }
+
+  step.status = 'COMPLETED';
+  step.completedAt = new Date();
+
+  const newActives: number[] = [];
+  let activated = false;
+  loop.sequence.forEach((s: ILoopStep, idx) => {
+    if (s.status === 'COMPLETED') return;
+    const deps = (s.dependencies ?? []) as number[];
+    const depsMet = deps.every((depIdx) => {
+      if (depIdx < 0 || depIdx >= loop.sequence.length) return false;
+      return loop.sequence[depIdx]?.status === 'COMPLETED';
+    });
+    if (!depsMet) {
+      s.status = 'BLOCKED';
+      return;
+    }
+
+    if (loop.parallel || !activated) {
+      if (s.status !== 'ACTIVE') newActives.push(idx);
+      s.status = 'ACTIVE';
+      activated = activated || !loop.parallel;
+    } else {
+      s.status = 'PENDING';
+    }
+  });
+
+  if (newActives.length) {
+    loop.currentStep = Math.min(...newActives);
+  } else {
+    const activeIdx = loop.sequence.findIndex((s: ILoopStep) => s.status === 'ACTIVE');
+    loop.currentStep = activeIdx;
+    if (activeIdx === -1 && loop.sequence.every((s: ILoopStep) => s.status === 'COMPLETED')) {
+      loop.isActive = false;
+    }
+  }
+
+  return { loop, newlyActiveIndexes: newActives, completed: true };
+}
+
 export async function completeStep(
   taskId: string,
   stepIndex: number,
@@ -19,65 +68,12 @@ export async function completeStep(
     await sessionDb.withTransaction(async () => {
       const loop = await TaskLoop.findOne({ taskId }).session(sessionDb);
       if (!loop) return;
-      if (stepIndex < 0 || stepIndex >= loop.sequence.length) {
+      const result = applyStepCompletion(loop, stepIndex);
+
+      if (!result.completed) {
+        newlyActiveIndexes = result.newlyActiveIndexes;
         updatedLoop = loop;
         return;
-      }
-
-      const step = loop.sequence[stepIndex];
-      if (step.status === 'COMPLETED') {
-        updatedLoop = loop;
-        return;
-      }
-
-      step.status = 'COMPLETED';
-      step.completedAt = new Date();
-
-      const newActives: number[] = [];
-      let activated = false;
-      loop.sequence.forEach((s: ILoopStep, idx) => {
-        if (s.status === 'COMPLETED') return;
-        const deps: Array<number | Types.ObjectId> =
-          (s.dependencies ?? []) as Array<number | Types.ObjectId>;
-        const depsMet = deps.every((d) => {
-          if (typeof d === 'number') {
-            return loop.sequence[d]?.status === 'COMPLETED';
-          }
-          if (d instanceof Types.ObjectId) {
-            const depIdx = loop.sequence.findIndex(
-              (st: ILoopStep & { _id?: Types.ObjectId }) => st._id && st._id.equals(d)
-            );
-            return depIdx === -1 || loop.sequence[depIdx].status === 'COMPLETED';
-          }
-          return false;
-        });
-        if (!depsMet) {
-          s.status = 'BLOCKED';
-          return;
-        }
-
-        if (loop.parallel || !activated) {
-          if (s.status !== 'ACTIVE') newActives.push(idx);
-          s.status = 'ACTIVE';
-          activated = activated || !loop.parallel;
-        } else {
-          s.status = 'PENDING';
-        }
-      });
-
-      if (newActives.length) {
-        loop.currentStep = Math.min(...newActives);
-      } else {
-        const activeIdx = loop.sequence.findIndex(
-          (s: ILoopStep) => s.status === 'ACTIVE'
-        );
-        loop.currentStep = activeIdx; // -1 if none
-        if (
-          activeIdx === -1 &&
-          loop.sequence.every((s: ILoopStep) => s.status === 'COMPLETED')
-        ) {
-          loop.isActive = false;
-        }
       }
 
       await loop.save({ session: sessionDb });
@@ -94,7 +90,7 @@ export async function completeStep(
         );
       }
 
-      newlyActiveIndexes = newActives;
+      newlyActiveIndexes = result.newlyActiveIndexes;
       updatedLoop = loop;
     });
   } finally {

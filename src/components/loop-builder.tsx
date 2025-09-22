@@ -17,6 +17,7 @@ export function buildLoopSaveRequest(steps: LoopStep[], hasExistingLoop: boolean
   orderedSteps: LoopStep[];
 } {
   const orderedSteps = [...steps].sort((a, b) => a.index - b.index);
+  const indexById = new Map(orderedSteps.map((step) => [step.id, step.index]));
 
   if (hasExistingLoop) {
     return {
@@ -39,11 +40,13 @@ export function buildLoopSaveRequest(steps: LoopStep[], hasExistingLoop: boolean
     method: 'POST',
     body: {
       sequence: orderedSteps.map(
-        ({ assignedTo, description, estimatedTime, dependencies }) => ({
+        ({ assignedTo, description, estimatedTime, dependencies, id }) => ({
           assignedTo,
           description,
           estimatedTime,
-          dependencies,
+          dependencies: dependencies
+            .map((depId) => indexById.get(depId))
+            .filter((value): value is number => typeof value === 'number'),
         })
       ),
     },
