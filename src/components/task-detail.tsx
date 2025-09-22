@@ -1,18 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { openLoopBuilder } from "@/lib/loopBuilder";
-import LoopVisualizer, { type StepWithStatus, type UserMap } from "@/components/loop-visualizer";
-import LoopProgress from "@/components/loop-progress";
 import useRealtime, { type RealtimeMessage } from "@/hooks/useRealtime";
 import usePresence from "@/hooks/usePresence";
 import { Avatar } from "@/components/ui/avatar";
 import useAuth from "@/hooks/useAuth";
+import LoopTasksSection from "@/components/loop-tasks-section";
+import { cn } from "@/lib/utils";
 
 interface User {
   _id: string;
@@ -31,38 +29,21 @@ interface Task {
   createdBy?: string;
 }
 
-interface LoopStep {
-  assignedTo?: string;
-  description: string;
-  estimatedTime?: number;
-  dependencies?: string[];
-  comments?: string;
-  status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'BLOCKED';
-}
-
-interface TaskLoop {
-  sequence: LoopStep[];
-  currentStep: number;
-  parallel?: boolean;
-  updatedAt?: string;
-}
-
 export default function TaskDetail({
   id,
   canEdit: canEditProp,
   readOnly = false,
+  showLoopTasks = true,
 }: {
   id: string;
   canEdit?: boolean;
   readOnly?: boolean;
+  showLoopTasks?: boolean;
 }) {
   const [task, setTask] = useState<Task | null>(null);
-  const [loop, setLoop] = useState<TaskLoop | null>(null);
-  const [users, setUsers] = useState<UserMap>({});
+  const [users, setUsers] = useState<Record<string, User>>({});
   const [ownerName, setOwnerName] = useState<string | null>(null);
-  const [loopLoading, setLoopLoading] = useState(true);
   const [taskVersion, setTaskVersion] = useState(0);
-  const [loopVersion, setLoopVersion] = useState(0);
   const viewers = usePresence(id);
   const { user } = useAuth();
 
@@ -71,7 +52,7 @@ export default function TaskDetail({
       new Set(ids.filter((value): value is string => Boolean(value)))
     );
 
-    if (!uniqueIds.length) return {} as UserMap;
+    if (!uniqueIds.length) return {} as Record<string, User>;
 
     try {
       const res = await fetch(
@@ -81,12 +62,12 @@ export default function TaskDetail({
         { credentials: "include" }
       );
 
-      if (!res.ok) return {} as UserMap;
+      if (!res.ok) return {} as Record<string, User>;
 
       const json: unknown = await res.json();
-      let map: UserMap = {} as UserMap;
+      let map: Record<string, User> = {} as Record<string, User>;
       if (Array.isArray(json)) {
-        const result: UserMap = {} as UserMap;
+        const result: Record<string, User> = {} as Record<string, User>;
         for (const u of json) {
           if (u && typeof u === "object" && "_id" in u) {
             const user = u as User;
@@ -95,7 +76,7 @@ export default function TaskDetail({
         }
         map = result;
       } else if (json && typeof json === "object") {
-        map = json as UserMap;
+        map = json as Record<string, User>;
       }
 
       if (Object.keys(map).length) {
@@ -104,7 +85,7 @@ export default function TaskDetail({
 
       return map;
     } catch {
-      return {} as UserMap;
+      return {} as Record<string, User>;
     }
   }, []);
 
@@ -127,45 +108,9 @@ export default function TaskDetail({
     }
   }, [id, loadUsers]);
 
-  const refreshLoop = useCallback(async () => {
-    setLoopLoading(true);
-    try {
-      const res = await fetch(`/api/tasks/${id}/loop`);
-      if (res.ok) {
-        const json: unknown = await res.json();
-        if (json && typeof json === "object" && "updatedAt" in json) {
-          const loopData = json as TaskLoop;
-          setLoop(loopData);
-          setLoopVersion(new Date(loopData.updatedAt).getTime());
-
-          const ids = Array.from(
-            new Set(
-              (loopData.sequence ?? [])
-                .map((s: LoopStep) => s.assignedTo)
-                .filter((v: string | undefined): v is string => !!v)
-            )
-          );
-          if (ids.length) {
-            void loadUsers(ids);
-          }
-        } else {
-          setLoop(null);
-        }
-      } else {
-        setLoop(null);
-      }
-    } finally {
-      setLoopLoading(false);
-    }
-  }, [id, loadUsers]);
-
   useEffect(() => {
     void refreshTask();
   }, [refreshTask]);
-
-  useEffect(() => {
-    void refreshLoop();
-  }, [refreshLoop]);
 
   useEffect(() => {
     const ownerId = task?.ownerId;
@@ -204,58 +149,11 @@ export default function TaskDetail({
             }
           }
           break;
-        case "loop.updated":
-          if (!data.updatedAt) return;
-          const lver = new Date(data.updatedAt).getTime();
-          if (lver > loopVersion) {
-            setLoop((prev) => {
-              if (!prev || !data.patch) {
-                return { ...(data.patch || {}), updatedAt: data.updatedAt } as TaskLoop;
-              }
-              const next: TaskLoop = { ...prev };
-              if (Array.isArray(data.patch.sequence)) {
-                const seq = [...prev.sequence];
-                const updates = data.patch.sequence as unknown[];
-                if (
-                  updates.every(
-                    (
-                      s: unknown
-                    ): s is { index: number } & Partial<LoopStep> =>
-                      !!s &&
-                      typeof s === "object" &&
-                      "index" in s &&
-                      typeof (s as { index: unknown }).index === "number"
-                  )
-                ) {
-                  updates.forEach(({ index, ...rest }) => {
-                    const current = seq[index] ?? ({} as LoopStep);
-                    seq[index] = {
-                      ...current,
-                      ...(rest as Partial<LoopStep>),
-                    };
-                  });
-                  next.sequence = seq;
-                } else {
-                  next.sequence = updates as unknown as LoopStep[];
-                }
-              }
-              const parallelValue =
-                data.patch &&
-                typeof data.patch === "object" &&
-                "parallel" in data.patch
-                  ? (data.patch as { parallel?: TaskLoop["parallel"] }).parallel
-                  : undefined;
-              if (parallelValue !== undefined) next.parallel = parallelValue;
-              return { ...next, updatedAt: data.updatedAt };
-            });
-            setLoopVersion(lver);
-          }
-          break;
         default:
           break;
       }
     },
-    [id, taskVersion, loopVersion, loadUsers]
+    [id, taskVersion, loadUsers]
   );
   useRealtime({ onMessage: handleMessage });
 
@@ -307,9 +205,14 @@ export default function TaskDetail({
     return <div>Loading...</div>;
   }
 
+  const containerClass = cn(
+    "grid gap-4",
+    showLoopTasks ? "lg:grid-cols-[minmax(0,1fr)_320px]" : undefined
+  );
+
   return (
     <div className="p-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className={containerClass}>
         <div className="flex flex-col gap-4">
           <Card className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
@@ -443,55 +346,11 @@ export default function TaskDetail({
             </div>
           </Card>
         </div>
-        <div className="flex flex-col gap-4">
-          <Card className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Loop Progress
-              </span>
-              {loopLoading ? (
-                <div className="text-sm text-gray-500">Loading loop...</div>
-              ) : loop ? (
-                <LoopProgress
-                  total={loop.sequence.length}
-                  completed={
-                    loop.sequence.filter((s: LoopStep) => s.status === "COMPLETED").length
-                  }
-                />
-              ) : (
-                <div className="text-sm text-gray-500">No loop defined yet.</div>
-              )}
-            </div>
-            {!loopLoading && loop ? (
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Loop Steps
-                </span>
-                <LoopVisualizer
-                  steps={
-                    loop.sequence.map((s: LoopStep, idx) => ({
-                      id: String(idx),
-                      assignedTo: s.assignedTo ?? "",
-                      description: s.description,
-                      estimatedTime: s.estimatedTime,
-                      dependencies: s.dependencies ?? [],
-                      index: idx,
-                      status: s.status,
-                    })) as StepWithStatus[]
-                  }
-                  users={users}
-                />
-              </div>
-            ) : null}
-            {fieldsEditable ? (
-              <div className="flex justify-end">
-                <Button onClick={() => openLoopBuilder(id)} className="px-5">
-                  Manage Loop
-                </Button>
-              </div>
-            ) : null}
-          </Card>
-        </div>
+        {showLoopTasks ? (
+          <div className="flex flex-col gap-4">
+            <LoopTasksSection taskId={id} canEdit={fieldsEditable} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

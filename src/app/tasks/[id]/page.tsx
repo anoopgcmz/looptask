@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { SessionProvider } from 'next-auth/react';
 import useAuth from '@/hooks/useAuth';
 import TaskDetail from "@/components/task-detail";
+import LoopTasksSection from "@/components/loop-tasks-section";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
 import type { TimelineEvent } from "@/components/timeline/timeline";
@@ -366,6 +367,17 @@ function TaskPageContent({ id }: { id: string }) {
                   id={id}
                   canEdit={canEdit}
                   readOnly
+                  showLoopTasks={false}
+                />
+              </div>
+            </section>
+            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-[#111827]">Loop Tasks</h2>
+              <div className="mt-4">
+                <LoopTasksSection
+                  taskId={id}
+                  canEdit={canEdit}
+                  className="border border-transparent bg-transparent p-0 shadow-none"
                 />
               </div>
             </section>
