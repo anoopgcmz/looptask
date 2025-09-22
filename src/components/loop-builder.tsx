@@ -11,6 +11,46 @@ import useLoopBuilder, { type LoopStep } from '@/hooks/useLoopBuilder';
 import { registerLoopBuilder } from '@/lib/loopBuilder';
 import LoopTimeline from '@/components/loop-timeline';
 
+export function buildLoopSaveRequest(steps: LoopStep[], hasExistingLoop: boolean): {
+  method: 'POST' | 'PATCH';
+  body: { sequence: unknown[] };
+  orderedSteps: LoopStep[];
+} {
+  const orderedSteps = [...steps].sort((a, b) => a.index - b.index);
+
+  if (hasExistingLoop) {
+    return {
+      method: 'PATCH',
+      body: {
+        sequence: orderedSteps.map(({ index, assignedTo, description }) => {
+          const payload: { index: number; assignedTo?: string; description?: string } = {
+            index,
+          };
+          if (assignedTo) payload.assignedTo = assignedTo;
+          if (description) payload.description = description;
+          return payload;
+        }),
+      },
+      orderedSteps,
+    };
+  }
+
+  return {
+    method: 'POST',
+    body: {
+      sequence: orderedSteps.map(
+        ({ assignedTo, description, estimatedTime, dependencies }) => ({
+          assignedTo,
+          description,
+          estimatedTime,
+          dependencies,
+        })
+      ),
+    },
+    orderedSteps,
+  };
+}
+
 interface User {
   _id: string;
   name: string;
@@ -23,6 +63,7 @@ export default function LoopBuilder() {
     closeBuilder,
     taskId,
     steps,
+    hasExistingLoop,
     addStep,
     updateStep,
     removeStep,
@@ -61,40 +102,29 @@ export default function LoopBuilder() {
 
   const handleSave = async () => {
     if (!taskId) return;
-    const orderedSteps = [...steps].sort((a, b) => a.index - b.index);
+    const request = buildLoopSaveRequest(steps, hasExistingLoop);
     const res = await fetch(`/api/tasks/${taskId}/loop`, {
-      method: 'POST',
+      method: request.method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sequence: orderedSteps.map(
-          ({ assignedTo, description, estimatedTime, dependencies }) => ({
-            assignedTo,
-            description,
-            estimatedTime,
-            dependencies,
-          })
-        ),
-      }),
+      body: JSON.stringify(request.body),
     });
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as unknown;
-      if (
-        data &&
-        typeof data === 'object' &&
-        'errors' in data &&
-        Array.isArray((data as { errors?: unknown }).errors)
-      ) {
-        const map: Record<string, string> = {};
-        (data as { errors: { index: number; message: string }[] }).errors.forEach(
-          (e) => {
-            const id = orderedSteps[e.index]?.id;
+        if (
+          data &&
+          typeof data === 'object' &&
+          'errors' in data &&
+          Array.isArray((data as { errors?: unknown }).errors)
+        ) {
+          const map: Record<string, string> = {};
+          (data as { errors: { index: number; message: string }[] }).errors.forEach((e) => {
+            const id = request.orderedSteps[e.index]?.id;
             if (id) map[id] = e.message;
-          }
-        );
-        setErrors(map);
-        setMode('edit');
-        return;
-      }
+          });
+          setErrors(map);
+          setMode('edit');
+          return;
+        }
       return;
     }
     closeBuilder();

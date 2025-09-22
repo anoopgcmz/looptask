@@ -274,8 +274,8 @@ export default function LoopTasksSection({
       onManageLoop();
       return;
     }
-    openLoopBuilder(taskId);
-  }, [onManageLoop, taskId]);
+    openLoopBuilder(taskId, loop ?? null);
+  }, [loop, onManageLoop, taskId]);
 
   return (
     <Card className={cn("flex flex-col gap-4", className)}>
