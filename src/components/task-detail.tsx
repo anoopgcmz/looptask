@@ -308,13 +308,15 @@ export default function TaskDetail({
   }
 
   return (
-    <div className="p-4 flex flex-col gap-4">
-      <Card className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Task Title
-          </label>
-          {fieldsEditable ? (
+    <div className="p-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex flex-col gap-4">
+          <Card className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Task Title
+              </label>
+              {fieldsEditable ? (
             <Input
               className="flex-1 border-[#E5E7EB] bg-white text-base placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
               value={task.title ?? ""}
@@ -345,118 +347,122 @@ export default function TaskDetail({
             </div>
           </div>
         )}
-      </Card>
-      <Card className="flex flex-col gap-2">
-        <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Description
-        </label>
-        {fieldsEditable ? (
-          <Textarea
-            className="min-h-[120px] border-[#E5E7EB] text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-            value={task.description ?? ""}
-            onChange={(e) => setTask({ ...task, description: e.target.value })}
-            onBlur={(e) => void updateField("description", e.target.value)}
-            placeholder="Describe the work that needs to be done"
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-sm text-gray-900">
-            {task.description?.trim() ? task.description : "No description provided."}
-          </p>
-        )}
-      </Card>
-      <Card className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
+          </Card>
+          <Card className="flex flex-col gap-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Due Date
+              Description
             </label>
             {fieldsEditable ? (
-              <Input
-                type="date"
-                className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
-                onChange={(e) => setTask({ ...task, dueDate: e.target.value })}
-                onBlur={(e) => void updateField("dueDate", e.target.value)}
+              <Textarea
+                className="min-h-[120px] border-[#E5E7EB] text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                value={task.description ?? ""}
+                onChange={(e) => setTask({ ...task, description: e.target.value })}
+                onBlur={(e) => void updateField("description", e.target.value)}
+                placeholder="Describe the work that needs to be done"
               />
             ) : (
-              <p className="text-sm text-gray-900">
-                {task.dueDate ? task.dueDate.split("T")[0] : "No due date"}
+              <p className="whitespace-pre-wrap text-sm text-gray-900">
+                {task.description?.trim() ? task.description : "No description provided."}
               </p>
             )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Priority
-            </label>
-            {fieldsEditable ? (
-              <Select
-                value={task.priority ?? ""}
-                onChange={(e) => void handlePriorityChange(e.target.value)}
-              >
-                <option value="" disabled>
-                  Select priority
-                </option>
-                {priorityOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </Select>
-            ) : (
-              <p className="text-sm text-gray-900">
-                {task.priority ?? "No priority set"}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Owner
-            </label>
-            <Input
-              readOnly
-              value={ownerName ?? "Unassigned"}
-              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Status
-            </label>
-            <Input
-              readOnly
-              value={task.status ?? "Unknown"}
-              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-            />
-          </div>
-          <div className="flex flex-col gap-2 md:col-span-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Tags
-            </label>
-            <Input
-              readOnly
-              value={task.tags?.join(", ") || "No tags"}
-              className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-            />
-          </div>
+          </Card>
+          <Card className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Due Date
+                </label>
+                {fieldsEditable ? (
+                  <Input
+                    type="date"
+                    className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                    value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
+                    onChange={(e) => setTask({ ...task, dueDate: e.target.value })}
+                    onBlur={(e) => void updateField("dueDate", e.target.value)}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-900">
+                    {task.dueDate ? task.dueDate.split("T")[0] : "No due date"}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Priority
+                </label>
+                {fieldsEditable ? (
+                  <Select
+                    value={task.priority ?? ""}
+                    onChange={(e) => void handlePriorityChange(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      Select priority
+                    </option>
+                    {priorityOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <p className="text-sm text-gray-900">
+                    {task.priority ?? "No priority set"}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Owner
+                </label>
+                <Input
+                  readOnly
+                  value={ownerName ?? "Unassigned"}
+                  className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Status
+                </label>
+                <Input
+                  readOnly
+                  value={task.status ?? "Unknown"}
+                  className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                />
+              </div>
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Tags
+                </label>
+                <Input
+                  readOnly
+                  value={task.tags?.join(", ") || "No tags"}
+                  className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                />
+              </div>
+            </div>
+          </Card>
         </div>
-      </Card>
-      {fieldsEditable ? (
-        <Card className="flex flex-col gap-4">
-          {loopLoading ? (
-            <div className="text-sm text-gray-500">Loading loop...</div>
-          ) : loop ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Loop Progress
-                </span>
+        <div className="flex flex-col gap-4">
+          <Card className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Loop Progress
+              </span>
+              {loopLoading ? (
+                <div className="text-sm text-gray-500">Loading loop...</div>
+              ) : loop ? (
                 <LoopProgress
                   total={loop.sequence.length}
                   completed={
-                    loop.sequence.filter((s: LoopStep) => s.status === 'COMPLETED').length
+                    loop.sequence.filter((s: LoopStep) => s.status === "COMPLETED").length
                   }
                 />
-              </div>
+              ) : (
+                <div className="text-sm text-gray-500">No loop defined yet.</div>
+              )}
+            </div>
+            {!loopLoading && loop ? (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Loop Steps
@@ -465,7 +471,7 @@ export default function TaskDetail({
                   steps={
                     loop.sequence.map((s: LoopStep, idx) => ({
                       id: String(idx),
-                      assignedTo: s.assignedTo ?? '',
+                      assignedTo: s.assignedTo ?? "",
                       description: s.description,
                       estimatedTime: s.estimatedTime,
                       dependencies: s.dependencies ?? [],
@@ -476,17 +482,17 @@ export default function TaskDetail({
                   users={users}
                 />
               </div>
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500">No loop defined yet.</div>
-          )}
-          <div className="flex justify-end">
-            <Button onClick={() => openLoopBuilder(id)} className="px-5">
-              Manage Loop
-            </Button>
-          </div>
-        </Card>
-      ) : null}
+            ) : null}
+            {fieldsEditable ? (
+              <div className="flex justify-end">
+                <Button onClick={() => openLoopBuilder(id)} className="px-5">
+                  Manage Loop
+                </Button>
+              </div>
+            ) : null}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
