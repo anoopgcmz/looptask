@@ -42,17 +42,21 @@ export function normalizeLoopSteps(sequence?: LoopBuilderData['sequence']): Loop
     const dependenciesRaw = Array.isArray(record.dependencies)
       ? (record.dependencies as Array<string | number | null | undefined>)
       : [];
-    const dependencies = dependenciesRaw
-      .map((dep) => {
-        if (typeof dep === 'number') {
-          return baseIds[dep] ?? String(dep);
-        }
-        if (typeof dep === 'string') {
-          return dep;
-        }
-        return null;
-      })
-      .filter((value): value is string => Boolean(value));
+    const dependencies = Array.from(
+      new Set(
+        dependenciesRaw
+          .map((dep) => {
+            if (typeof dep === 'number') {
+              return baseIds[dep] ?? String(dep);
+            }
+            if (typeof dep === 'string') {
+              return dep;
+            }
+            return null;
+          })
+          .filter((value): value is string => Boolean(value))
+      )
+    );
 
     const estimatedTime = record.estimatedTime;
 
@@ -117,7 +121,8 @@ export default function useLoopBuilder() {
       return [
         ...s,
         {
-          id: Math.random().toString(36).slice(2),
+          id:
+            globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2),
           assignedTo: '',
           description: '',
           dependencies: [],

@@ -37,4 +37,40 @@ describe('loop builder helpers', () => {
     expect(request.orderedSteps).toHaveLength(1);
     expect(request.orderedSteps[0]?.description).toBe('Updated description');
   });
+
+  it('builds a POST request with dependency indexes for a new loop', () => {
+    const steps: LoopStep[] = [
+      {
+        id: 'step-1',
+        index: 0,
+        assignedTo: 'user-1',
+        description: 'First step',
+        dependencies: [],
+      },
+      {
+        id: 'step-2',
+        index: 1,
+        assignedTo: 'user-2',
+        description: 'Second step',
+        dependencies: ['step-1'],
+      },
+    ];
+
+    const request = buildLoopSaveRequest(steps, false);
+    expect(request.method).toBe('POST');
+    expect(request.body.sequence).toEqual([
+      {
+        assignedTo: 'user-1',
+        description: 'First step',
+        estimatedTime: undefined,
+        dependencies: [],
+      },
+      {
+        assignedTo: 'user-2',
+        description: 'Second step',
+        estimatedTime: undefined,
+        dependencies: [0],
+      },
+    ]);
+  });
 });

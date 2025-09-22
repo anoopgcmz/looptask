@@ -19,7 +19,7 @@ const loopStepSchema = z.object({
   assignedTo: z.string(),
   description: z.string(),
   estimatedTime: z.number().optional(),
-  dependencies: z.array(z.string()).optional(),
+  dependencies: z.array(z.number().int().nonnegative()).optional(),
 });
 
 type LoopStepInput = z.infer<typeof loopStepSchema>;
@@ -97,6 +97,20 @@ export const POST = withOrganization(
       } else {
         userIds.add(s.assignedTo);
       }
+      if (s.dependencies) {
+        const seenDeps = new Set<number>();
+        s.dependencies.forEach((dep) => {
+          if (dep < 0 || dep >= steps.length) {
+            errors.push({ index: idx, message: 'Invalid dependency index' });
+          } else if (dep === idx) {
+            errors.push({ index: idx, message: 'Step cannot depend on itself' });
+          } else if (seenDeps.has(dep)) {
+            errors.push({ index: idx, message: 'Duplicate dependency' });
+          } else {
+            seenDeps.add(dep);
+          }
+        });
+      }
     });
 
     if (!errors.length && userIds.size) {
@@ -131,7 +145,7 @@ export const POST = withOrganization(
       assignedTo: new Types.ObjectId(s.assignedTo),
       description: s.description,
       estimatedTime: s.estimatedTime,
-      dependencies: s.dependencies?.map((d) => new Types.ObjectId(d)) ?? [],
+      dependencies: s.dependencies ?? [],
     }));
 
     const loop = await TaskLoop.create({
