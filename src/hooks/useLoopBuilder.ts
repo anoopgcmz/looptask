@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { arrayMove } from '@dnd-kit/sortable';
+import type { LoopBuilderData } from '@/lib/loopBuilder';
 
 export interface LoopStep {
   id: string;
@@ -12,16 +13,101 @@ export interface LoopStep {
   index: number;
 }
 
+export function normalizeLoopSteps(sequence?: LoopBuilderData['sequence']): LoopStep[] {
+  if (!Array.isArray(sequence)) return [];
+
+  const baseIds = sequence.map((step, idx) => {
+    if (step && typeof step === 'object') {
+      const record = step as Record<string, unknown>;
+      const explicitId = record.id ?? record._id;
+      if (typeof explicitId === 'string' && explicitId.length) {
+        return explicitId;
+      }
+    }
+    return String(idx);
+  });
+
+  return sequence.map((raw, idx) => {
+    const record = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+
+    let assignedTo = '';
+    const assignedValue = record.assignedTo;
+    if (typeof assignedValue === 'string') {
+      assignedTo = assignedValue;
+    } else if (assignedValue && typeof assignedValue === 'object') {
+      const nestedId = (assignedValue as Record<string, unknown>)._id;
+      if (typeof nestedId === 'string') assignedTo = nestedId;
+    }
+
+    const dependenciesRaw = Array.isArray(record.dependencies)
+      ? (record.dependencies as Array<string | number | null | undefined>)
+      : [];
+    const dependencies = dependenciesRaw
+      .map((dep) => {
+        if (typeof dep === 'number') {
+          return baseIds[dep] ?? String(dep);
+        }
+        if (typeof dep === 'string') {
+          return dep;
+        }
+        return null;
+      })
+      .filter((value): value is string => Boolean(value));
+
+    const estimatedTime = record.estimatedTime;
+
+    return {
+      id: baseIds[idx],
+      assignedTo,
+      description: typeof record.description === 'string' ? record.description : '',
+      estimatedTime: typeof estimatedTime === 'number' ? estimatedTime : undefined,
+      dependencies,
+      index: idx,
+    } satisfies LoopStep;
+  });
+}
+
 export default function useLoopBuilder() {
   const [open, setOpen] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [steps, setSteps] = useState<LoopStep[]>([]);
+  const [hasExistingLoop, setHasExistingLoop] = useState(false);
 
-  const openBuilder = (id: string) => {
-    setTaskId(id);
-    setSteps([]);
-    setOpen(true);
-  };
+  const openBuilder = useCallback(
+    async (id: string, loop?: LoopBuilderData | null) => {
+      setTaskId(id);
+      setOpen(true);
+
+      if (loop === null) {
+        setSteps([]);
+        setHasExistingLoop(false);
+        return;
+      }
+
+      if (loop !== undefined) {
+        setSteps(normalizeLoopSteps(loop.sequence));
+        setHasExistingLoop(true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/tasks/${id}/loop`);
+        if (!res.ok) {
+          setSteps([]);
+          setHasExistingLoop(false);
+          return;
+        }
+
+        const data = (await res.json()) as LoopBuilderData;
+        setSteps(normalizeLoopSteps(data.sequence));
+        setHasExistingLoop(true);
+      } catch {
+        setSteps([]);
+        setHasExistingLoop(false);
+      }
+    },
+    []
+  );
 
   const closeBuilder = () => setOpen(false);
 
@@ -67,6 +153,7 @@ export default function useLoopBuilder() {
     closeBuilder,
     taskId,
     steps,
+    hasExistingLoop,
     addStep,
     updateStep,
     removeStep,
