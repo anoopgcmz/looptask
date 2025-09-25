@@ -6,6 +6,7 @@ import { TaskLoop, type ILoopStep, type ITaskLoop } from '@/models/TaskLoop';
 import { LoopHistory } from '@/models/LoopHistory';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 import { emitLoopUpdated } from '@/lib/ws';
+import { runWithOptionalTransaction } from '@/lib/transaction';
 
 export function applyStepCompletion(loop: ITaskLoop, stepIndex: number) {
   if (stepIndex < 0 || stepIndex >= loop.sequence.length) {
@@ -67,8 +68,10 @@ export async function completeStep(
   let newlyActiveIndexes: number[] = [];
   let loopWasUpdated = false;
   try {
-    await sessionDb.withTransaction(async () => {
-      const loop = await TaskLoop.findOne({ taskId }).session(sessionDb);
+    await runWithOptionalTransaction(sessionDb, async (session) => {
+      const loopQuery = TaskLoop.findOne({ taskId });
+      if (session) loopQuery.session(session);
+      const loop = await loopQuery;
       if (!loop) return;
       const result = applyStepCompletion(loop, stepIndex);
 
@@ -78,7 +81,7 @@ export async function completeStep(
         return;
       }
 
-      await loop.save({ session: sessionDb });
+      await loop.save(session ? { session } : undefined);
       loopWasUpdated = true;
 
       if (userId) {
@@ -89,7 +92,7 @@ export async function completeStep(
             action: 'COMPLETE',
             userId: new Types.ObjectId(userId),
           },
-          { session: sessionDb }
+          session ? { session } : undefined
         );
       }
 
