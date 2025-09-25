@@ -5,6 +5,7 @@ type UserLike = {
   _id: Types.ObjectId | string;
   organizationId?: Types.ObjectId | string | undefined;
   teamId?: Types.ObjectId | string | undefined;
+  role?: string | undefined;
 };
 
 export function canReadTask(user: UserLike, task: ITask): boolean {
@@ -35,7 +36,6 @@ export function canWriteTask(user: UserLike, task: ITask): boolean {
   const userId = user?._id?.toString();
   const orgId = user.organizationId?.toString();
   if (!userId || !orgId || task.organizationId.toString() !== orgId) return false;
-  return (
-    task.createdBy.toString() === userId || task.ownerId?.toString() === userId
-  );
+  if (user.role === 'ADMIN') return true;
+  return task.createdBy.toString() === userId;
 }

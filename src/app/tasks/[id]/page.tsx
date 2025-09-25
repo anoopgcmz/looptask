@@ -227,7 +227,7 @@ function TaskPageContent({ id }: { id: string }) {
   const canEdit = useMemo(() => {
     if (!user?.userId || !task) return false;
     if (user.role === 'ADMIN') return true;
-    return user.userId === task.createdBy || user.userId === task.ownerId;
+    return user.userId === task.createdBy;
   }, [task, user?.role, user?.userId]);
 
   useEffect(() => {

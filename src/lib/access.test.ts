@@ -32,9 +32,16 @@ describe('task access', () => {
     expect(canWriteTask(user, task)).toBe(true);
   });
 
-  it('owner can read and write', () => {
+  it('owner can read but not write', () => {
     const task = { ...baseTask };
     const user = { _id: ownerId, teamId, organizationId: orgId };
+    expect(canReadTask(user, task)).toBe(true);
+    expect(canWriteTask(user, task)).toBe(false);
+  });
+
+  it('admin can read and write', () => {
+    const task = { ...baseTask };
+    const user = { _id: ownerId, teamId, organizationId: orgId, role: 'ADMIN' };
     expect(canReadTask(user, task)).toBe(true);
     expect(canWriteTask(user, task)).toBe(true);
   });

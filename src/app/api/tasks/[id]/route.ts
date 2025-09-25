@@ -111,7 +111,12 @@ export const PATCH = withOrganization(
   if (!task) return problem(404, 'Not Found', 'Task not found');
   if (
     !canWriteTask(
-      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+      {
+        _id: session.userId,
+        teamId: session.teamId,
+        organizationId: session.organizationId,
+        role: session.role,
+      },
       task
     )
   )
@@ -246,10 +251,15 @@ export const DELETE = withOrganization(
     const task: ITask | null = await Task.findById(id);
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
-      !canWriteTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
-        task
-      )
+    !canWriteTask(
+      {
+        _id: session.userId,
+        teamId: session.teamId,
+        organizationId: session.organizationId,
+        role: session.role,
+      },
+      task
+    )
     )
       return problem(403, 'Forbidden', 'You cannot delete this task');
 
@@ -286,7 +296,12 @@ export const PUT = withOrganization(
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+        {
+          _id: session.userId,
+          teamId: session.teamId,
+          organizationId: session.organizationId,
+          role: session.role,
+        },
         task
       )
     )

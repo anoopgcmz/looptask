@@ -127,7 +127,12 @@ export const POST = withOrganization(
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+        {
+          _id: session.userId,
+          teamId: session.teamId,
+          organizationId: session.organizationId,
+          role: session.role,
+        },
         task
       )
     ) {
@@ -233,7 +238,12 @@ export const GET = withOrganization(
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+        {
+          _id: session.userId,
+          teamId: session.teamId,
+          organizationId: session.organizationId,
+          role: session.role,
+        },
         task
       )
     ) {
@@ -266,7 +276,12 @@ export const PATCH = withOrganization(
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+        {
+          _id: session.userId,
+          teamId: session.teamId,
+          organizationId: session.organizationId,
+          role: session.role,
+        },
         task
       )
     ) {
@@ -425,7 +440,12 @@ export const DELETE = withOrganization(
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+        {
+          _id: session.userId,
+          teamId: session.teamId,
+          organizationId: session.organizationId,
+          role: session.role,
+        },
         task
       )
     ) {
