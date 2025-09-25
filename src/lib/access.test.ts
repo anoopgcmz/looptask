@@ -8,6 +8,7 @@ describe('task access', () => {
   const ownerId = new Types.ObjectId();
   const helperId = new Types.ObjectId();
   const mentionId = new Types.ObjectId();
+  const stepOwnerId = new Types.ObjectId();
   const teamId = new Types.ObjectId();
   const otherTeamId = new Types.ObjectId();
   const otherUserId = new Types.ObjectId();
@@ -48,6 +49,17 @@ describe('task access', () => {
   it('mention can read but not write', () => {
     const task = { ...baseTask, mentions: [mentionId] };
     const user = { _id: mentionId, teamId, organizationId: orgId };
+    expect(canReadTask(user, task)).toBe(true);
+    expect(canWriteTask(user, task)).toBe(false);
+  });
+
+  it('step owner can read but not write', () => {
+    const task = {
+      ...baseTask,
+      steps: [{ ownerId: stepOwnerId }],
+      participantIds: [stepOwnerId],
+    };
+    const user = { _id: stepOwnerId, teamId, organizationId: orgId };
     expect(canReadTask(user, task)).toBe(true);
     expect(canWriteTask(user, task)).toBe(false);
   });
