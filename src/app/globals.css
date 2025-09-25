@@ -159,6 +159,45 @@ body {
   margin-left: auto;
 }
 
+.app-header__icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--surface-card);
+  color: var(--color-text);
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.app-header__icon-button:hover {
+  background: rgba(79, 70, 229, 0.08);
+  border-color: rgba(79, 70, 229, 0.4);
+}
+
+.app-header__icon-button:focus-visible {
+  outline: 2px solid rgba(79, 70, 229, 0.5);
+  outline-offset: 3px;
+}
+
+.app-header__icon-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.app-header__notification-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  transform: translate(10%, -10%);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 .app-header__search {
   position: relative;
   display: inline-flex;
