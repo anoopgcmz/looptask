@@ -83,4 +83,40 @@ describe('POST /tasks validation', () => {
     );
     expect(mockDbConnect).not.toHaveBeenCalled();
   });
+
+  it('rejects a task when step due dates are not in descending order', async () => {
+    const ownerId = new Types.ObjectId().toString();
+
+    const res = await POST(
+      new Request('http://localhost/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Valid Title',
+          ownerId,
+          steps: [
+            {
+              title: 'Step 1',
+              ownerId,
+              dueAt: '2025-12-05T00:00:00.000Z',
+            },
+            {
+              title: 'Step 2',
+              ownerId,
+              dueAt: '2025-12-06T00:00:00.000Z',
+            },
+          ],
+        }),
+      })
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual(
+      expect.objectContaining({
+        title: 'Invalid request',
+        detail: 'Step "Step 2" due date must be before step "Step 1" due date',
+      })
+    );
+    expect(mockDbConnect).not.toHaveBeenCalled();
+  });
 });

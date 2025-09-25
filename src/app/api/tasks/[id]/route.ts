@@ -23,6 +23,7 @@ import type {
 import { stepSchema } from '@/lib/schemas/taskStep';
 import { serializeTask } from '@/lib/serializeTask';
 import { prepareLoopFromSteps } from '@/lib/taskLoopSync';
+import { assertSequentialTaskStepDueDates } from '@/lib/validateStepDueDates';
 
 const patchSchema: z.ZodType<Partial<TaskPayload>> = z
   .object({
@@ -103,6 +104,14 @@ export const PATCH = withOrganization(
   } catch (e: unknown) {
     const err = e as Error;
     return problem(400, 'Invalid request', err.message);
+  }
+  if (body.steps) {
+    try {
+      assertSequentialTaskStepDueDates(body.steps);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid step due dates';
+      return problem(400, 'Invalid request', message);
+    }
   }
   const { params } = context;
   const { id } = await params;
@@ -315,6 +324,12 @@ export const PUT = withOrganization(
     }
     if (!body.steps) {
       return problem(400, 'Invalid request', 'Steps are required');
+    }
+    try {
+      assertSequentialTaskStepDueDates(body.steps);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid step due dates';
+      return problem(400, 'Invalid request', message);
     }
     for (const s of body.steps) {
       const stepOwner = await User.findOne({
