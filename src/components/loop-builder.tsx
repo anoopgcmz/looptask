@@ -68,7 +68,6 @@ export default function LoopBuilder() {
     steps,
     hasExistingLoop,
     updateStep,
-    removeStep,
     reorderSteps,
   } = useLoopBuilder();
   const [users, setUsers] = useState<User[]>([]);
@@ -136,15 +135,6 @@ export default function LoopBuilder() {
     });
   };
 
-  const handleRemoveStep = (id: string) => {
-    removeStep(id);
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  };
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && closeBuilder()}>
       <DialogContent className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden p-0">
@@ -157,17 +147,15 @@ export default function LoopBuilder() {
               <SortableContext items={steps.map((s: LoopStep) => s.id)}>
                 <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
                   {steps.map((step) => (
-                    <StepItem
-                      key={step.id}
-                      step={step}
-                      allSteps={steps}
-                      users={users}
-                      onChange={handleUpdateStep}
-                      onRemove={handleRemoveStep}
-                      index={step.index}
-                      onReorder={reorderSteps}
-                      error={errors[step.id]}
-                    />
+                  <StepItem
+                    key={step.id}
+                    step={step}
+                    allSteps={steps}
+                    users={users}
+                    onChange={handleUpdateStep}
+                    index={step.index}
+                    error={errors[step.id]}
+                  />
                   ))}
                 </div>
               </SortableContext>
@@ -191,18 +179,14 @@ function StepItem({
   allSteps,
   users,
   onChange,
-  onRemove,
   index,
-  onReorder,
   error,
 }: {
   step: LoopStep;
   allSteps: LoopStep[];
   users: User[];
   onChange: (id: string, data: Partial<LoopStep>) => void;
-  onRemove: (id: string) => void;
   index: number;
-  onReorder: (from: number, to: number) => void;
   error?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
@@ -212,8 +196,6 @@ function StepItem({
     transform: CSS.Transform.toString(transform),
     transition,
   };
-  const moveUp = () => onReorder(index, index - 1);
-  const moveDown = () => onReorder(index, index + 1);
   const selectClasses =
     'h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-opacity-30 focus:ring-offset-2 focus:ring-offset-[var(--color-surface)] focus:border-[var(--color-primary)]';
   const multiSelectClasses =
@@ -242,31 +224,7 @@ function StepItem({
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={moveUp}
-            disabled={index === 0}
-            className="h-8 px-3 text-xs font-semibold uppercase tracking-wide"
-          >
-            Move up
-          </Button>
-          <Button
-            variant="outline"
-            onClick={moveDown}
-            disabled={index === allSteps.length - 1}
-            className="h-8 px-3 text-xs font-semibold uppercase tracking-wide"
-          >
-            Move down
-          </Button>
-          <Button
-            variant="outline"
-            className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-red-200 text-red-600 hover:bg-red-50"
-            onClick={() => onRemove(step.id)}
-          >
-            Remove
-          </Button>
-        </div>
+        <div className="flex flex-wrap items-center gap-2" />
       </div>
 
       <div className="mt-5 space-y-5">

@@ -190,6 +190,24 @@ export default function TaskForm({
     setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, [key]: value } : s)));
   };
 
+  const removeStep = (id: string) => {
+    setSteps((prev) => prev.filter((step) => step.id !== id));
+  };
+
+  const moveStep = (id: string, direction: 'up' | 'down') => {
+    setSteps((prev) => {
+      const currentIndex = prev.findIndex((step) => step.id === id);
+      if (currentIndex === -1) {
+        return prev;
+      }
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) {
+        return prev;
+      }
+      return arrayMove(prev, currentIndex, targetIndex);
+    });
+  };
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
     setSteps((prev) => {
@@ -313,6 +331,10 @@ export default function TaskForm({
                   index={index}
                   users={users}
                   onUpdate={updateStep}
+                  onRemove={removeStep}
+                  onMove={moveStep}
+                  disableMoveUp={index === 0}
+                  disableMoveDown={index === steps.length - 1}
                   showDivider={index > 0}
                 />
               ))}
@@ -358,12 +380,20 @@ function StepCard({
   index,
   users,
   onUpdate,
+  onRemove,
+  onMove,
+  disableMoveUp,
+  disableMoveDown,
   showDivider,
 }: {
   step: InternalStep;
   index: number;
   users: TaskFormUser[];
   onUpdate: (id: string, key: 'title' | 'description' | 'ownerId' | 'due', value: string) => void;
+  onRemove: (id: string) => void;
+  onMove: (id: string, direction: 'up' | 'down') => void;
+  disableMoveUp: boolean;
+  disableMoveDown: boolean;
   showDivider: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -401,6 +431,44 @@ function StepCard({
           <span className="sr-only">Drag handle</span>
         </button>
         <div className="flex-1 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">
+                Step {index + 1}
+              </p>
+              <p className="text-base font-semibold text-[#111827]">
+                {step.title.trim() || 'Untitled Step'}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onMove(step.id, 'up')}
+                disabled={disableMoveUp}
+                className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-[#E5E7EB] text-[#4B5563] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+              >
+                Move Up
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onMove(step.id, 'down')}
+                disabled={disableMoveDown}
+                className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-[#E5E7EB] text-[#4B5563] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+              >
+                Move Down
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onRemove(step.id)}
+                className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-title-${step.id}`}>
               Step Name
