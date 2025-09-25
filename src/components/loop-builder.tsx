@@ -7,10 +7,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import useLoopBuilder, { type LoopStep } from '@/hooks/useLoopBuilder';
 import { registerLoopBuilder } from '@/lib/loopBuilder';
-import LoopTimeline from '@/components/loop-timeline';
 
 export function buildLoopSaveRequest(steps: LoopStep[], hasExistingLoop: boolean): {
   method: 'POST' | 'PATCH';
@@ -68,13 +67,11 @@ export default function LoopBuilder() {
     taskId,
     steps,
     hasExistingLoop,
-    addStep,
     updateStep,
     removeStep,
     reorderSteps,
   } = useLoopBuilder();
   const [users, setUsers] = useState<User[]>([]);
-  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -90,10 +87,7 @@ export default function LoopBuilder() {
         // ignore
       }
     };
-    if (open) {
-      setMode('edit');
-      void load();
-    }
+    if (open) void load();
   }, [open]);
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -114,21 +108,20 @@ export default function LoopBuilder() {
     });
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as unknown;
-        if (
-          data &&
-          typeof data === 'object' &&
-          'errors' in data &&
-          Array.isArray((data as { errors?: unknown }).errors)
-        ) {
-          const map: Record<string, string> = {};
-          (data as { errors: { index: number; message: string }[] }).errors.forEach((e) => {
-            const id = request.orderedSteps[e.index]?.id;
-            if (id) map[id] = e.message;
-          });
-          setErrors(map);
-          setMode('edit');
-          return;
-        }
+      if (
+        data &&
+        typeof data === 'object' &&
+        'errors' in data &&
+        Array.isArray((data as { errors?: unknown }).errors)
+      ) {
+        const map: Record<string, string> = {};
+        (data as { errors: { index: number; message: string }[] }).errors.forEach((e) => {
+          const id = request.orderedSteps[e.index]?.id;
+          if (id) map[id] = e.message;
+        });
+        setErrors(map);
+        return;
+      }
       return;
     }
     closeBuilder();
@@ -154,72 +147,38 @@ export default function LoopBuilder() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && closeBuilder()}>
-      <DialogContent fullScreen className="overflow-hidden p-0">
-        <div className="flex h-full flex-col overflow-hidden">
-          <div className="border-b border-[var(--color-border)] px-6 py-4">
-            <h2 className="text-lg font-semibold">Manage Loop</h2>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden p-0">
+        <div className="border-b border-[var(--color-border)] px-6 py-4">
+          <h2 className="text-lg font-semibold">Manage Loop</h2>
+        </div>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 pb-6 pt-4">
+            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={steps.map((s: LoopStep) => s.id)}>
+                <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+                  {steps.map((step) => (
+                    <StepItem
+                      key={step.id}
+                      step={step}
+                      allSteps={steps}
+                      users={users}
+                      onChange={handleUpdateStep}
+                      onRemove={handleRemoveStep}
+                      index={step.index}
+                      onReorder={reorderSteps}
+                      error={errors[step.id]}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
-          <div className="flex flex-1 flex-col gap-6 overflow-hidden p-6">
-            {mode === 'edit' ? (
-              <div className="flex h-full flex-col gap-4">
-                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={steps.map((s: LoopStep) => s.id)}>
-                    <div className="flex flex-1 flex-col items-center overflow-y-auto pr-1 sm:pr-2">
-                      <div className="flex w-full max-w-3xl flex-col gap-5">
-                        {steps.map((step) => (
-                          <StepItem
-                            key={step.id}
-                            step={step}
-                            allSteps={steps}
-                            users={users}
-                            onChange={handleUpdateStep}
-                            onRemove={handleRemoveStep}
-                            index={step.index}
-                            onReorder={reorderSteps}
-                            error={errors[step.id]}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </SortableContext>
-                </DndContext>
-                <div className="flex flex-col gap-4">
-                  <Button variant="outline" onClick={addStep}>
-                    Add Step
-                  </Button>
-                  <div className="flex justify-end gap-2">
-                    <DialogClose asChild>
-                      <Button variant="outline" onClick={closeBuilder}>
-                        Cancel
-                      </Button>
-                    </DialogClose>
-                    <Button onClick={() => setMode('preview')} disabled={!steps.length}>
-                      Preview
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex h-full flex-col gap-4">
-                <div className="flex-1 overflow-y-auto pr-1 sm:pr-2">
-                  <LoopTimeline
-                    steps={steps.map((s: LoopStep) => ({ ...s, status: 'PENDING' }))}
-                    users={users}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setMode('edit')}>
-                    Edit
-                  </Button>
-                  <DialogClose asChild>
-                    <Button variant="outline" onClick={closeBuilder}>
-                      Cancel
-                    </Button>
-                  </DialogClose>
-                  <Button onClick={handleSave}>Save Loop</Button>
-                </div>
-              </div>
-            )}
+          <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
+            <div className="mx-auto flex w-full max-w-3xl justify-end">
+              <Button onClick={handleSave} disabled={steps.length === 0}>
+                Save Loop
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
