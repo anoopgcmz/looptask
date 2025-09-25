@@ -81,17 +81,21 @@ const orgId = new Types.ObjectId();
 vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => ({ userId: currentUserId, organizationId: orgId.toString() })) }));
 
 vi.mock('@/lib/ws', () => ({ emitTaskTransition: vi.fn() }));
+const completeStepMock = vi.hoisted(() => vi.fn(async () => null));
 vi.mock('@/lib/notify', () => ({
   notifyStatusChange: vi.fn(),
   notifyLoopStepReady: vi.fn(),
   notifyTaskClosed: vi.fn(),
   notifyAssignment: vi.fn(),
 }));
+vi.mock('@/lib/loop', () => ({ default: { completeStep: completeStepMock } }));
 
 describe('task flow with steps', () => {
   beforeEach(() => {
     tasks.clear();
     vi.clearAllMocks();
+    completeStepMock.mockReset();
+    completeStepMock.mockResolvedValue(null);
   });
 
   it('advances through steps and completes', async () => {
@@ -116,6 +120,13 @@ describe('task flow with steps', () => {
       updatedAt: new Date(),
     });
 
+    completeStepMock.mockResolvedValue({
+      sequence: [],
+      currentStep: 1,
+      isActive: true,
+      updatedAt: new Date(),
+    } as unknown as Record<string, unknown>);
+
     currentUserId = u1.toString();
     await POST(
       new Request('http://test', {
@@ -128,15 +139,10 @@ describe('task flow with steps', () => {
     expect(t.currentStepIndex).toBe(1);
     expect(t.ownerId.toString()).toBe(u2.toString());
     expect(t.status).toBe('FLOW_IN_PROGRESS');
-    expect(notifyAssignment).toHaveBeenCalledWith(
-      [u2],
-      expect.objectContaining({ _id: taskId }),
-      'Step 2'
-    );
-    expect(notifyLoopStepReady).toHaveBeenCalledWith(
-      [u2],
-      expect.objectContaining({ _id: taskId }),
-      'Step 2'
+    expect(completeStepMock).toHaveBeenLastCalledWith(
+      taskId.toString(),
+      0,
+      u1.toString()
     );
 
     currentUserId = u2.toString();
@@ -151,15 +157,10 @@ describe('task flow with steps', () => {
     expect(t.currentStepIndex).toBe(2);
     expect(t.ownerId.toString()).toBe(u3.toString());
     expect(t.status).toBe('FLOW_IN_PROGRESS');
-    expect(notifyAssignment).toHaveBeenCalledWith(
-      [u3],
-      expect.objectContaining({ _id: taskId }),
-      'Step 3'
-    );
-    expect(notifyLoopStepReady).toHaveBeenCalledWith(
-      [u3],
-      expect.objectContaining({ _id: taskId }),
-      'Step 3'
+    expect(completeStepMock).toHaveBeenLastCalledWith(
+      taskId.toString(),
+      1,
+      u2.toString()
     );
 
     currentUserId = u3.toString();
@@ -173,6 +174,13 @@ describe('task flow with steps', () => {
     t = tasks.get(taskId.toString());
     expect(t.status).toBe('DONE');
     expect(t.currentStepIndex).toBe(2);
+    expect(completeStepMock).toHaveBeenLastCalledWith(
+      taskId.toString(),
+      2,
+      u3.toString()
+    );
+    expect(notifyAssignment).not.toHaveBeenCalled();
+    expect(notifyLoopStepReady).not.toHaveBeenCalled();
   });
 
   it('completes task when last open step finishes and notifies', async () => {

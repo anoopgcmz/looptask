@@ -7,9 +7,11 @@ import { Task } from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import { ActivityLog } from '@/models/ActivityLog';
 import { User } from '@/models/User';
+import { TaskLoop } from '@/models/TaskLoop';
+import { LoopHistory } from '@/models/LoopHistory';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { scheduleTaskJobs } from '@/lib/agenda';
-import { emitTaskUpdated } from '@/lib/ws';
+import { emitTaskUpdated, emitLoopUpdated } from '@/lib/ws';
 import { diff } from '@/lib/diff';
 import { problem } from '@/lib/http';
 import { computeParticipants } from '@/lib/taskParticipants';
@@ -20,6 +22,7 @@ import type {
 } from '@/types/api/task';
 import { stepSchema } from '@/lib/schemas/taskStep';
 import { serializeTask } from '@/lib/serializeTask';
+import { prepareLoopFromSteps } from '@/lib/taskLoopSync';
 
 const patchSchema: z.ZodType<Partial<TaskPayload>> = z
   .object({
@@ -165,6 +168,52 @@ export const PATCH = withOrganization(
     steps: task.steps,
   });
   await task.save();
+  const loopData = prepareLoopFromSteps(
+    task._id,
+    task.steps,
+    task.currentStepIndex,
+    task.status
+  );
+  let loopPayload: object | null = null;
+  if (loopData) {
+    const existingLoop = await TaskLoop.findOne({ taskId: task._id });
+    if (existingLoop) {
+      existingLoop.set({
+        sequence: loopData.sequence,
+        currentStep: loopData.currentStep,
+        isActive: loopData.isActive,
+        parallel: false,
+      });
+      await existingLoop.save();
+      loopPayload =
+        typeof (existingLoop as unknown as { toObject?: () => unknown }).toObject === 'function'
+          ? ((existingLoop as unknown as { toObject: () => unknown }).toObject() as object)
+          : (existingLoop as unknown as object);
+    } else {
+      const createdLoop = await TaskLoop.create({
+        taskId: task._id,
+        sequence: loopData.sequence,
+        currentStep: loopData.currentStep,
+        isActive: loopData.isActive,
+        parallel: false,
+      });
+      await LoopHistory.create(
+        loopData.sequence.map((_, idx) => ({
+          taskId: createdLoop.taskId,
+          stepIndex: idx,
+          action: 'CREATE',
+          userId: new Types.ObjectId(session.userId),
+        }))
+      );
+      loopPayload =
+        typeof (createdLoop as unknown as { toObject?: () => unknown }).toObject === 'function'
+          ? ((createdLoop as unknown as { toObject: () => unknown }).toObject() as object)
+          : (createdLoop as unknown as object);
+    }
+  } else {
+    await TaskLoop.findOneAndDelete({ taskId: task._id });
+    await LoopHistory.deleteMany({ taskId: task._id });
+  }
   await ActivityLog.create({
     taskId: task._id,
     actorId: new Types.ObjectId(session.userId),
@@ -173,6 +222,13 @@ export const PATCH = withOrganization(
   });
   await scheduleTaskJobs(task);
   emitTaskUpdated({ taskId: task._id, patch: body, updatedAt: task.updatedAt });
+  if (loopPayload) {
+    emitLoopUpdated({
+      taskId: task._id.toString(),
+      patch: loopPayload,
+      updatedAt: task.updatedAt,
+    });
+  }
   return NextResponse.json<TaskResponse>(serializeTask(task));
 });
 
@@ -196,6 +252,8 @@ export const DELETE = withOrganization(
       return problem(403, 'Forbidden', 'You cannot delete this task');
 
     await Task.findByIdAndDelete(task._id);
+    await TaskLoop.findOneAndDelete({ taskId: task._id });
+    await LoopHistory.deleteMany({ taskId: task._id });
     await ActivityLog.create({
       taskId: task._id,
       actorId: new Types.ObjectId(session.userId),
@@ -288,6 +346,52 @@ export const PUT = withOrganization(
       steps: task.steps,
     });
     await task.save();
+    const loopData = prepareLoopFromSteps(
+      task._id,
+      task.steps,
+      task.currentStepIndex,
+      task.status
+    );
+    let loopPayload: object | null = null;
+    if (loopData) {
+      const existingLoop = await TaskLoop.findOne({ taskId: task._id });
+      if (existingLoop) {
+        existingLoop.set({
+          sequence: loopData.sequence,
+          currentStep: loopData.currentStep,
+          isActive: loopData.isActive,
+          parallel: false,
+        });
+        await existingLoop.save();
+        loopPayload =
+          typeof (existingLoop as unknown as { toObject?: () => unknown }).toObject === 'function'
+            ? ((existingLoop as unknown as { toObject: () => unknown }).toObject() as object)
+            : (existingLoop as unknown as object);
+      } else {
+        const createdLoop = await TaskLoop.create({
+          taskId: task._id,
+          sequence: loopData.sequence,
+          currentStep: loopData.currentStep,
+          isActive: loopData.isActive,
+          parallel: false,
+        });
+        await LoopHistory.create(
+          loopData.sequence.map((_, idx) => ({
+            taskId: createdLoop.taskId,
+            stepIndex: idx,
+            action: 'CREATE',
+            userId: new Types.ObjectId(session.userId),
+          }))
+        );
+        loopPayload =
+          typeof (createdLoop as unknown as { toObject?: () => unknown }).toObject === 'function'
+            ? ((createdLoop as unknown as { toObject: () => unknown }).toObject() as object)
+            : (createdLoop as unknown as object);
+      }
+    } else {
+      await TaskLoop.findOneAndDelete({ taskId: task._id });
+      await LoopHistory.deleteMany({ taskId: task._id });
+    }
     await ActivityLog.create({
       taskId: task._id,
       actorId: new Types.ObjectId(session.userId),
@@ -297,6 +401,13 @@ export const PUT = withOrganization(
     await scheduleTaskJobs(task);
     const patch = diff(oldTask, task.toObject());
     emitTaskUpdated({ taskId: task._id, patch, updatedAt: task.updatedAt });
+    if (loopPayload) {
+      emitLoopUpdated({
+        taskId: task._id.toString(),
+        patch: loopPayload,
+        updatedAt: task.updatedAt,
+      });
+    }
     return NextResponse.json<TaskResponse>(serializeTask(task));
   }
 );

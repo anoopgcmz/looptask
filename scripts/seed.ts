@@ -3,6 +3,9 @@ import { Organization } from '@/models/Organization';
 import { Team } from '@/models/Team';
 import { User } from '@/models/User';
 import { Task } from '@/models/Task';
+import { TaskLoop } from '@/models/TaskLoop';
+import { LoopHistory } from '@/models/LoopHistory';
+import { prepareLoopFromSteps } from '@/lib/taskLoopSync';
 
 export async function seed() {
   await dbConnect();
@@ -10,7 +13,9 @@ export async function seed() {
     Organization.deleteMany({}),
     Team.deleteMany({}),
     User.deleteMany({}),
-    Task.deleteMany({})
+    Task.deleteMany({}),
+    TaskLoop.deleteMany({}),
+    LoopHistory.deleteMany({}),
   ]);
 
   const organizations = await Organization.create([
@@ -72,7 +77,7 @@ export async function seed() {
       dueDate: simpleDue,
     });
 
-    await Task.create({
+    const flowTask = await Task.create({
       title: 'Flow task',
       createdBy: user1._id,
       ownerId: user1._id,
@@ -86,6 +91,29 @@ export async function seed() {
       ],
       currentStepIndex: 0,
     });
+    const loopData = prepareLoopFromSteps(
+      flowTask._id,
+      flowTask.steps,
+      flowTask.currentStepIndex,
+      flowTask.status
+    );
+    if (loopData) {
+      const loop = await TaskLoop.create({
+        taskId: flowTask._id,
+        sequence: loopData.sequence,
+        currentStep: loopData.currentStep,
+        isActive: loopData.isActive,
+        parallel: false,
+      });
+      await LoopHistory.create(
+        loop.sequence.map((_, idx) => ({
+          taskId: loop.taskId,
+          stepIndex: idx,
+          action: 'CREATE',
+          userId: flowTask.createdBy,
+        }))
+      );
+    }
   }
 
   console.log('Seeding complete');
