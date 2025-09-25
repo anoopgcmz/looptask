@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SessionProvider } from 'next-auth/react';
 import useAuth from '@/hooks/useAuth';
+import { isRealtimeMessage } from '@/hooks/useRealtime';
 import TaskDetail from "@/components/task-detail";
 import StatusBadge from "@/components/status-badge";
 import CommentThread from "@/components/comment-thread";
@@ -126,6 +127,32 @@ function TaskPageContent({ id }: { id: string }) {
     const res = await fetch(`/api/tasks/${id}/history`);
     if (res.ok) setHistory(await res.json());
   }, [id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = `${window.location.origin.replace(/^http/, 'ws')}/api/ws?taskId=${id}`;
+    const ws = new WebSocket(url);
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data: unknown = JSON.parse(event.data);
+        if (!isRealtimeMessage(data) || data.taskId !== id) return;
+        if (
+          data.event === 'task.updated' ||
+          data.event === 'task.transitioned' ||
+          data.event === 'comment.created'
+        ) {
+          void loadHistory();
+        }
+      } catch {
+        // ignore malformed events
+      }
+    };
+    ws.addEventListener('message', handleMessage);
+    return () => {
+      ws.removeEventListener('message', handleMessage);
+      ws.close();
+    };
+  }, [id, loadHistory]);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -252,6 +279,7 @@ function TaskPageContent({ id }: { id: string }) {
     if (res.ok) {
       const updated = await res.json();
       setTask(updated);
+      void loadHistory();
     } else {
       setTask(previous);
     }
@@ -276,6 +304,7 @@ function TaskPageContent({ id }: { id: string }) {
     if (res.ok) {
       const updated = await res.json();
       setTask(updated);
+      void loadHistory();
     } else {
       setTask(previous);
     }
@@ -299,6 +328,7 @@ function TaskPageContent({ id }: { id: string }) {
       if (res.ok) {
         const updated = await res.json();
         setTask(updated);
+        void loadHistory();
       }
     } finally {
       setStepUpdating(null);
