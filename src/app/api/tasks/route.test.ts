@@ -84,7 +84,7 @@ describe('POST /tasks validation', () => {
     expect(mockDbConnect).not.toHaveBeenCalled();
   });
 
-  it('rejects a task when step due dates are not in descending order', async () => {
+  it('rejects a task when a step due date is before an earlier step', async () => {
     const ownerId = new Types.ObjectId().toString();
 
     const res = await POST(
@@ -98,12 +98,12 @@ describe('POST /tasks validation', () => {
             {
               title: 'Step 1',
               ownerId,
-              dueAt: '2025-12-05T00:00:00.000Z',
+              dueAt: '2025-12-06T00:00:00.000Z',
             },
             {
               title: 'Step 2',
               ownerId,
-              dueAt: '2025-12-06T00:00:00.000Z',
+              dueAt: '2025-12-05T00:00:00.000Z',
             },
           ],
         }),
@@ -114,7 +114,7 @@ describe('POST /tasks validation', () => {
     expect(await res.json()).toEqual(
       expect.objectContaining({
         title: 'Invalid request',
-        detail: 'Step "Step 2" due date must be before step "Step 1" due date',
+        detail: 'Step "Step 2" due date must not be before step "Step 1" due date',
       })
     );
     expect(mockDbConnect).not.toHaveBeenCalled();

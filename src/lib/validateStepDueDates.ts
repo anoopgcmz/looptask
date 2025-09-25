@@ -15,11 +15,11 @@ export function assertSequentialStepDueDates(steps: StepWithDueDate[]) {
   let previousIndex = -1;
   steps.forEach((step, index) => {
     if (!step.dueAt) return;
-    if (previousDueAt && step.dueAt >= previousDueAt) {
+    if (previousDueAt && step.dueAt < previousDueAt) {
       const currentLabel = formatStepLabel(index, step.title);
       const previousLabel = formatStepLabel(previousIndex, steps[previousIndex]?.title);
       throw new Error(
-        `Step ${currentLabel} due date must be before step ${previousLabel} due date`
+        `Step ${currentLabel} due date must not be before step ${previousLabel} due date`
       );
     }
     previousDueAt = step.dueAt;
