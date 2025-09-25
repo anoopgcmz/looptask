@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type CSSProperties } from 'react';
+import { useState, useEffect, useMemo, type CSSProperties } from 'react';
 import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { getTodayDateInputValue, isDateInputBeforeToday } from '@/lib/dateInput';
 
 export interface TaskFormUser {
   _id: string;
@@ -80,6 +81,7 @@ const PRIORITY_OPTIONS: Array<{
 ];
 
 const REQUIRED_FIELDS_ERROR = 'Please fill in all required fields.';
+const PAST_DUE_ERROR = 'Due date cannot be in the past';
 
 const generateStepId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -141,13 +143,16 @@ export default function TaskForm({
   );
   const [flowError, setFlowError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({ steps: {} });
+  const minDueDate = useMemo(() => getTodayDateInputValue(), []);
 
   const clearFormFieldError = (field: 'title' | 'description') => {
     setFormErrors((prev) => {
       if (!prev[field]) return prev;
       return { ...prev, [field]: undefined };
     });
-    setFlowError((prev) => (prev === REQUIRED_FIELDS_ERROR ? null : prev));
+    setFlowError((prev) =>
+      prev === REQUIRED_FIELDS_ERROR || prev === PAST_DUE_ERROR ? null : prev,
+    );
   };
 
   const clearStepError = (id: string, key: StepFieldKey) => {
@@ -166,7 +171,9 @@ export default function TaskForm({
       }
       return { ...prev, steps: nextSteps };
     });
-    setFlowError((prev) => (prev === REQUIRED_FIELDS_ERROR ? null : prev));
+    setFlowError((prev) =>
+      prev === REQUIRED_FIELDS_ERROR || prev === PAST_DUE_ERROR ? null : prev,
+    );
   };
 
   useEffect(() => {
@@ -225,6 +232,15 @@ export default function TaskForm({
 
   const updateStep = (id: string, key: StepFieldKey, value: string) => {
     setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, [key]: value } : s)));
+    if (key === 'due') {
+      if (!value.trim()) {
+        return;
+      }
+      if (!isDateInputBeforeToday(value)) {
+        clearStepError(id, key);
+      }
+      return;
+    }
     if (value.trim()) {
       clearStepError(id, key);
     }
@@ -269,6 +285,7 @@ export default function TaskForm({
   const validateForm = () => {
     const errors: FormErrors = { steps: {} };
     let hasError = false;
+    let hasPastDue = false;
 
     if (!flowTitle.trim()) {
       errors.title = 'Title is required';
@@ -293,6 +310,9 @@ export default function TaskForm({
       }
       if (!step.due.trim()) {
         stepErrors.due = 'Due date is required';
+      } else if (isDateInputBeforeToday(step.due)) {
+        stepErrors.due = PAST_DUE_ERROR;
+        hasPastDue = true;
       }
       if (Object.keys(stepErrors).length > 0) {
         errors.steps[step.id] = stepErrors;
@@ -302,7 +322,7 @@ export default function TaskForm({
 
     if (hasError) {
       setFormErrors(errors);
-      setFlowError(REQUIRED_FIELDS_ERROR);
+      setFlowError(hasPastDue ? PAST_DUE_ERROR : REQUIRED_FIELDS_ERROR);
       return false;
     }
 
@@ -354,7 +374,7 @@ export default function TaskForm({
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] px-8 py-6">
-      <form onSubmit={submitFlow} className="mx-auto max-w-3xl space-y-6">
+      <form onSubmit={submitFlow} noValidate className="mx-auto max-w-3xl space-y-6">
         <Card className="space-y-5">
           <h2 className="text-lg font-semibold text-[#111827]">Task Info</h2>
           <div className="space-y-4">
@@ -458,6 +478,7 @@ export default function TaskForm({
                   showDivider={index > 0}
                   showControls={steps.length > 1}
                   errors={formErrors.steps[step.id]}
+                  minDueDate={minDueDate}
                 />
               ))}
             </SortableContext>
@@ -509,6 +530,7 @@ function StepCard({
   showDivider,
   showControls,
   errors,
+  minDueDate,
 }: {
   step: InternalStep;
   index: number;
@@ -521,6 +543,7 @@ function StepCard({
   showDivider: boolean;
   showControls: boolean;
   errors?: StepErrors;
+  minDueDate: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: step.id,
@@ -666,6 +689,7 @@ function StepCard({
             <Input
               id={`step-due-${step.id}`}
               type="date"
+              min={minDueDate}
               value={step.due}
               onChange={(e) => onUpdate(step.id, 'due', e.target.value)}
               className={cn(
