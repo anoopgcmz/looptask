@@ -199,8 +199,9 @@ function TaskPageContent({ id }: { id: string }) {
 
   const canEdit = useMemo(() => {
     if (!user?.userId || !task) return false;
+    if (user.role === 'ADMIN') return true;
     return user.userId === task.createdBy || user.userId === task.ownerId;
-  }, [task, user?.userId]);
+  }, [task, user?.role, user?.userId]);
 
   useEffect(() => {
     if (status === 'unauthenticated' && !isLoading) {
@@ -284,7 +285,10 @@ function TaskPageContent({ id }: { id: string }) {
     index: number,
     nextStatus: 'IN_PROGRESS' | 'DONE'
   ) => {
-    if (!task || !canEdit) return;
+    if (!task) return;
+    const step = task.steps?.[index];
+    const isStepOwner = Boolean(step?.ownerId) && step?.ownerId === user?.userId;
+    if (!(canEdit || isStepOwner)) return;
     setStepUpdating(index);
     try {
       const res = await fetch(`/api/tasks/${id}/transition`, {
@@ -459,7 +463,11 @@ function TaskPageContent({ id }: { id: string }) {
                     const ownerLabel = ownerInfo?.name || ownerInfo?.email || 'Unassigned';
                     const isActive = activeStepIndex === idx && step.status !== 'DONE';
                     const waitingOnPrevious = activeStepIndex >= 0 && idx > activeStepIndex;
-                    const canModify = canEdit && stepUpdating === null && isActive;
+                    const isStepOwner = Boolean(step.ownerId) && step.ownerId === user?.userId;
+                    const canModify =
+                      stepUpdating === null &&
+                      isActive &&
+                      (canEdit || isStepOwner);
 
                     const handleChange = (value: string) => {
                       if (value === step.status) return;
