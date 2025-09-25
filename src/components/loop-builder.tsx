@@ -6,6 +6,7 @@ import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import useLoopBuilder, { type LoopStep } from '@/hooks/useLoopBuilder';
 import { registerLoopBuilder } from '@/lib/loopBuilder';
@@ -163,20 +164,22 @@ export default function LoopBuilder() {
               <div className="flex h-full flex-col gap-4">
                 <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={steps.map((s: LoopStep) => s.id)}>
-                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto pr-1 sm:pr-2">
-                      {steps.map((step) => (
-                        <StepItem
-                          key={step.id}
-                          step={step}
-                          allSteps={steps}
-                          users={users}
-                          onChange={handleUpdateStep}
-                          onRemove={handleRemoveStep}
-                          index={step.index}
-                          onReorder={reorderSteps}
-                          error={errors[step.id]}
-                        />
-                      ))}
+                    <div className="flex flex-1 flex-col items-center overflow-y-auto pr-1 sm:pr-2">
+                      <div className="flex w-full max-w-3xl flex-col gap-5">
+                        {steps.map((step) => (
+                          <StepItem
+                            key={step.id}
+                            step={step}
+                            allSteps={steps}
+                            users={users}
+                            onChange={handleUpdateStep}
+                            onRemove={handleRemoveStep}
+                            index={step.index}
+                            onReorder={reorderSteps}
+                            error={errors[step.id]}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -252,82 +255,136 @@ function StepItem({
   };
   const moveUp = () => onReorder(index, index - 1);
   const moveDown = () => onReorder(index, index + 1);
+  const selectClasses =
+    'h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-opacity-30 focus:ring-offset-2 focus:ring-offset-[var(--color-surface)] focus:border-[var(--color-primary)]';
+  const multiSelectClasses =
+    'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-opacity-30 focus:ring-offset-2 focus:ring-offset-[var(--color-surface)] focus:border-[var(--color-primary)] min-h-[3.5rem]';
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="border rounded p-2 flex items-start gap-2 bg-[var(--color-surface)]"
+      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm"
     >
-      <div {...attributes} {...listeners} className="cursor-grab p-2 select-none">
-        ⋮⋮
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-dashed border-[var(--color-border)] bg-white text-lg text-[var(--color-text-secondary)] cursor-grab select-none"
+          >
+            ⋮⋮
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
+              Step {index + 1}
+            </p>
+            <p className="truncate text-base font-semibold text-[var(--color-text)]">
+              {step.description?.trim() || 'Untitled step'}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={moveUp}
+            disabled={index === 0}
+            className="h-8 px-3 text-xs font-semibold uppercase tracking-wide"
+          >
+            Move up
+          </Button>
+          <Button
+            variant="outline"
+            onClick={moveDown}
+            disabled={index === allSteps.length - 1}
+            className="h-8 px-3 text-xs font-semibold uppercase tracking-wide"
+          >
+            Move down
+          </Button>
+          <Button
+            variant="outline"
+            className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-red-200 text-red-600 hover:bg-red-50"
+            onClick={() => onRemove(step.id)}
+          >
+            Remove
+          </Button>
+        </div>
       </div>
-      <div className="flex flex-col gap-1">
-        <Button variant="outline" onClick={moveUp} disabled={index === 0}>
-          Move up
-        </Button>
-        <Button
-          variant="outline"
-          onClick={moveDown}
-          disabled={index === allSteps.length - 1}
-        >
-          Move down
-        </Button>
+
+      <div className="mt-5 space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text)]">
+            Assignee
+            <select
+              value={step.assignedTo}
+              onChange={(e) => onChange(step.id, { assignedTo: e.target.value })}
+              className={selectClasses}
+            >
+              <option value="">Select a teammate</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text)]">
+            Estimated time (hours)
+            <Input
+              placeholder="e.g. 4"
+              inputMode="numeric"
+              min={0}
+              type="number"
+              value={step.estimatedTime ?? ''}
+              onChange={(e) =>
+                onChange(step.id, {
+                  estimatedTime: e.target.value ? Number(e.target.value) : undefined,
+                })
+              }
+            />
+          </label>
+        </div>
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text)]">
+          Description
+          <Textarea
+            rows={4}
+            placeholder="Add helpful details so your teammate knows exactly what to do."
+            value={step.description}
+            onChange={(e) => onChange(step.id, { description: e.target.value })}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text)]">
+          Dependencies
+          <select
+            multiple
+            value={step.dependencies}
+            onChange={(e) =>
+              onChange(step.id, {
+                dependencies: Array.from(e.target.selectedOptions).map((o) => o.value),
+              })
+            }
+            className={multiSelectClasses}
+          >
+            {allSteps
+              .filter((s: LoopStep) => s.id !== step.id)
+              .map((s: LoopStep) => (
+                <option key={s.id} value={s.id}>
+                  {s.description || 'Untitled Step'}
+                </option>
+              ))}
+          </select>
+          <span className="text-xs font-normal text-[var(--color-text-secondary)]">
+            Hold Ctrl or Command to select multiple steps that must be completed first.
+          </span>
+        </label>
+
+        {error && (
+          <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">
+            {error}
+          </p>
+        )}
       </div>
-      <div className="flex-1 flex flex-col gap-2">
-        <select
-          value={step.assignedTo}
-          onChange={(e) => onChange(step.id, { assignedTo: e.target.value })}
-          className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-        >
-          <option value="">Assignee</option>
-          {users.map((u) => (
-            <option key={u._id} value={u._id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-        <Input
-          placeholder="Description"
-          value={step.description}
-          onChange={(e) => onChange(step.id, { description: e.target.value })}
-        />
-        <Input
-          placeholder="Estimated Time"
-          type="number"
-          value={step.estimatedTime ?? ''}
-          onChange={(e) =>
-            onChange(step.id, {
-              estimatedTime: e.target.value ? Number(e.target.value) : undefined,
-            })
-          }
-        />
-        <select
-          multiple
-          value={step.dependencies}
-          onChange={(e) =>
-            onChange(step.id, {
-              dependencies: Array.from(e.target.selectedOptions).map((o) => o.value),
-            })
-          }
-          className="flex h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
-        >
-        {allSteps
-          .filter((s: LoopStep) => s.id !== step.id)
-          .map((s: LoopStep) => (
-            <option key={s.id} value={s.id}>
-              {s.description || 'Untitled Step'}
-            </option>
-          ))}
-        </select>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </div>
-      <Button
-        variant="ghost"
-        className="text-red-600"
-        onClick={() => onRemove(step.id)}
-      >
-        Remove
-      </Button>
     </div>
   );
 }
