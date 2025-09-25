@@ -33,19 +33,40 @@ export async function GET(
     .sort({ createdAt: 1 })
     .populate('actorId', 'name');
 
+  const transitionMessages: Record<string, string> = {
+    START: 'Marked the task as in progress',
+    SEND_FOR_REVIEW: 'Sent the task for review',
+    REQUEST_CHANGES: 'Requested changes',
+    DONE: 'Marked the task as done',
+  };
+
+  const defaultMessages: Record<string, string> = {
+    CREATED: 'Created the task',
+    UPDATED: 'Updated the task',
+    DELETED: 'Deleted the task',
+  };
+
   const events = logs.map((log) => {
-    let type = log.type;
-    const payload = (log as { payload?: { action?: string } }).payload;
-    if (log.type === 'TRANSITIONED' && payload?.action) {
-      type = payload.action;
-    }
     const actor = log.actorId as { name?: string };
-    return {
+    const base = {
       id: log._id.toString(),
-      type,
       user: { name: actor?.name || 'Unknown' },
       date: log.createdAt,
     };
+
+    if (log.type === 'COMMENT') {
+      return { ...base, type: 'comment', status: 'Left a comment' };
+    }
+
+    const payload = (log as { payload?: { action?: string } }).payload;
+    if (log.type === 'TRANSITIONED') {
+      const action = payload?.action ?? '';
+      const status = transitionMessages[action] ?? 'Updated the task status';
+      return { ...base, type: 'transition', status };
+    }
+
+    const status = defaultMessages[log.type] ?? 'Updated the task';
+    return { ...base, type: 'update', status };
   });
 
   return NextResponse.json(events);

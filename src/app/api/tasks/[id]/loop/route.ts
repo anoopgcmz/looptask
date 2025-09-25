@@ -4,7 +4,7 @@ import { z } from 'zod';
 import mongoose, { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import { Task, type ITask } from '@/models/Task';
-import { TaskLoop, type ITaskLoop } from '@/models/TaskLoop';
+import { TaskLoop, type ILoopStep, type ITaskLoop } from '@/models/TaskLoop';
 import { LoopHistory } from '@/models/LoopHistory';
 import { User, type IUser } from '@/models/User';
 import { canWriteTask } from '@/lib/access';
@@ -59,6 +59,51 @@ const loopPatchSchema = z.object({
 export const runtime = 'nodejs';
 
 type LoopPatchStep = z.infer<typeof loopPatchStepSchema>;
+
+function initializeLoopState(
+  steps: LoopStepInput[]
+): { statuses: ILoopStep['status'][]; currentStep: number; isActive: boolean } {
+  if (!steps.length) {
+    return { statuses: [], currentStep: -1, isActive: false };
+  }
+
+  const normalizedDeps = steps.map((step, idx) =>
+    (step.dependencies ?? []).filter((dep) => dep >= 0 && dep < steps.length && dep !== idx)
+  );
+
+  const statuses = Array<ILoopStep['status']>(steps.length).fill('BLOCKED');
+
+  const readyIndexes = normalizedDeps
+    .map((deps, idx) => ({ deps, idx }))
+    .filter(({ deps }) => deps.length === 0)
+    .map(({ idx }) => idx)
+    .sort((a, b) => a - b);
+
+  let currentStep = -1;
+  if (readyIndexes.length) {
+    currentStep = readyIndexes[0] ?? 0;
+    statuses[currentStep] = 'ACTIVE';
+    for (let i = 1; i < readyIndexes.length; i += 1) {
+      const idx = readyIndexes[i];
+      statuses[idx] = 'PENDING';
+    }
+  } else {
+    currentStep = 0;
+    statuses[currentStep] = 'ACTIVE';
+  }
+
+  normalizedDeps.forEach((deps, idx) => {
+    if (statuses[idx] === 'BLOCKED') {
+      if (!deps.length) {
+        statuses[idx] = idx === currentStep ? 'ACTIVE' : 'PENDING';
+      } else {
+        statuses[idx] = 'BLOCKED';
+      }
+    }
+  });
+
+  return { statuses, currentStep, isActive: true };
+}
 
 export const POST = withOrganization(
   async (
@@ -140,17 +185,25 @@ export const POST = withOrganization(
       return problem(400, 'Invalid request', detail);
     }
 
-    const sequence = steps.map((s: LoopStepInput) => ({
+    const initialState = initializeLoopState(steps);
+    const normalizedDeps = steps.map((s: LoopStepInput, idx) =>
+      (s.dependencies ?? []).filter((dep) => dep >= 0 && dep < steps.length && dep !== idx)
+    );
+
+    const sequence = steps.map((s: LoopStepInput, idx) => ({
       taskId: new Types.ObjectId(id),
       assignedTo: new Types.ObjectId(s.assignedTo),
       description: s.description,
       estimatedTime: s.estimatedTime,
-      dependencies: s.dependencies ?? [],
+      dependencies: normalizedDeps[idx] ?? [],
+      status: initialState.statuses[idx] ?? 'BLOCKED',
     }));
 
     const loop = await TaskLoop.create({
       taskId: new Types.ObjectId(id),
       sequence,
+      currentStep: initialState.currentStep,
+      isActive: initialState.isActive,
     });
 
     await LoopHistory.create(
