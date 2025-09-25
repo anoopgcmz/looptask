@@ -16,6 +16,7 @@ import Timeline from "@/components/timeline/timeline";
 import DeleteTaskModal from '@/components/delete-task-modal';
 import type { TaskStatus } from '@/models/Task';
 import { Button } from '@/components/ui/button';
+import type { TaskStep } from '@/types/api/task';
 
 interface Task {
   _id: string;
@@ -23,6 +24,8 @@ interface Task {
   status: TaskStatus;
   ownerId?: string;
   createdBy?: string;
+  steps?: TaskStep[];
+  currentStepIndex?: number;
 }
 
 interface Attachment {
@@ -93,6 +96,8 @@ function TaskPageContent({ id }: { id: string }) {
   const [userQuery, setUserQuery] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [ownerName, setOwnerName] = useState('');
+  const [stepOwners, setStepOwners] = useState<Record<string, { name?: string; email?: string }>>({});
+  const [stepUpdating, setStepUpdating] = useState<number | null>(null);
 
   const {
     handleSubmit: submitOwner,
@@ -140,6 +145,57 @@ function TaskPageContent({ id }: { id: string }) {
     };
     void loadOwner();
   }, [task?.ownerId]);
+
+  useEffect(() => {
+    if (!task?.steps?.length) {
+      setStepOwners({});
+      return;
+    }
+    const ids = Array.from(
+      new Set(
+        task.steps
+          .map((step) => step.ownerId)
+          .filter((value): value is string => Boolean(value))
+      )
+    );
+    if (!ids.length) {
+      setStepOwners({});
+      return;
+    }
+    const loadOwners = async () => {
+      try {
+        const res = await fetch(
+          `/api/users?${ids.map((ownerId) => `id=${encodeURIComponent(ownerId)}`).join('&')}`
+        );
+        if (!res.ok) return;
+        const data: unknown = await res.json();
+        const next: Record<string, { name?: string; email?: string }> = {};
+        const pushEntry = (entry: unknown) => {
+          if (!entry || typeof entry !== 'object') return;
+          const record = entry as { _id?: unknown; name?: unknown; email?: unknown };
+          if (typeof record._id !== 'string') return;
+          const name =
+            typeof record.name === 'string' && record.name.trim().length
+              ? record.name
+              : undefined;
+          const email =
+            typeof record.email === 'string' && record.email.trim().length
+              ? record.email
+              : undefined;
+          next[record._id] = { name, email };
+        };
+        if (Array.isArray(data)) {
+          data.forEach(pushEntry);
+        } else if (data && typeof data === 'object') {
+          Object.values(data as Record<string, unknown>).forEach(pushEntry);
+        }
+        setStepOwners(next);
+      } catch {
+        // ignore failures
+      }
+    };
+    void loadOwners();
+  }, [task?.steps]);
 
   const canEdit = useMemo(() => {
     if (!user?.userId || !task) return false;
@@ -224,6 +280,27 @@ function TaskPageContent({ id }: { id: string }) {
     }
   };
 
+  const handleStepStatusChange = async (
+    index: number,
+    nextStatus: 'IN_PROGRESS' | 'DONE'
+  ) => {
+    if (!task || !canEdit) return;
+    setStepUpdating(index);
+    try {
+      const res = await fetch(`/api/tasks/${id}/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: nextStatus === 'IN_PROGRESS' ? 'START' : 'DONE' }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setTask(updated);
+      }
+    } finally {
+      setStepUpdating(null);
+    }
+  };
+
   const onUploadSubmit = async ({ file }: { file: FileList }) => {
     const f = file.item(0);
     if (!f) return;
@@ -267,7 +344,9 @@ function TaskPageContent({ id }: { id: string }) {
   };
 
   if (!task) return <div>Loading...</div>;
-  const actions = ACTIONS[task.status];
+  const actions = task.steps?.length ? [] : ACTIONS[task.status];
+  const hasRemainingSteps = task.steps?.some((s) => s.status !== 'DONE') ?? false;
+  const activeStepIndex = hasRemainingSteps ? task.currentStepIndex ?? 0 : -1;
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
@@ -369,6 +448,81 @@ function TaskPageContent({ id }: { id: string }) {
                   readOnly
                   showLoopTasks={false}
                 />
+              </div>
+            </section>
+            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-[#111827]">Step Progress</h2>
+              <div className="mt-4 flex flex-col gap-3">
+                {task.steps?.length ? (
+                  task.steps.map((step, idx) => {
+                    const ownerInfo = stepOwners[step.ownerId];
+                    const ownerLabel = ownerInfo?.name || ownerInfo?.email || 'Unassigned';
+                    const isActive = activeStepIndex === idx && step.status !== 'DONE';
+                    const waitingOnPrevious = activeStepIndex >= 0 && idx > activeStepIndex;
+                    const canModify = canEdit && stepUpdating === null && isActive;
+
+                    const handleChange = (value: string) => {
+                      if (value === step.status) return;
+                      if (value === 'IN_PROGRESS' || value === 'DONE') {
+                        void handleStepStatusChange(idx, value as 'IN_PROGRESS' | 'DONE');
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={`${step.ownerId}-${idx}`}
+                        className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                      >
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-[#111827]">
+                              {step.title || `Step ${idx + 1}`}
+                            </p>
+                            <p className="text-xs text-[#6B7280]">
+                              Assigned to {ownerLabel}
+                              {isActive
+                                ? ' • Active'
+                                : step.status === 'DONE'
+                                  ? ' • Completed'
+                                  : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+                              Status
+                            </span>
+                            <select
+                              className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-[#111827] focus:border-[#4F46E5] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-[#9CA3AF]"
+                              value={step.status}
+                              onChange={(event) => handleChange(event.target.value)}
+                              disabled={!canModify}
+                            >
+                              <option value="OPEN">Open</option>
+                              <option value="IN_PROGRESS" disabled={step.status === 'DONE'}>
+                                In Progress
+                              </option>
+                              <option value="DONE" disabled={step.status === 'OPEN'}>
+                                Done
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+                        {waitingOnPrevious ? (
+                          <p className="mt-2 text-xs text-[#6B7280]">
+                            Waiting for the previous step to be completed.
+                          </p>
+                        ) : null}
+                        {isActive && step.status === 'OPEN' && canEdit ? (
+                          <p className="mt-2 text-xs text-[#6B7280]">
+                            Start this step when you&apos;re ready to work on it.
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-[#6B7280]">No steps defined for this task.</p>
+                )}
               </div>
             </section>
             <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

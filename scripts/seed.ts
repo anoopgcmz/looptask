@@ -83,7 +83,7 @@ export async function seed() {
       ownerId: user1._id,
       organizationId: org._id,
       teamId: team._id,
-      status: 'FLOW_IN_PROGRESS',
+      status: 'OPEN',
       steps: [
         { title: 'Step 1', ownerId: user1._id, status: 'OPEN' },
         { title: 'Step 2', ownerId: user2._id, status: 'OPEN' },
