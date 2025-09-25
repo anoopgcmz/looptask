@@ -25,9 +25,9 @@ import { prepareLoopFromSteps } from '@/lib/taskLoopSync';
 
 const createTaskSchema: z.ZodType<TaskPayload> = z
   .object({
-    title: z.string(),
+    title: z.string().trim().min(1, 'Title is required'),
     description: z.string().optional(),
-    ownerId: z.string().optional(),
+    ownerId: z.string().trim().optional(),
     helpers: z.array(z.string()).optional(),
     mentions: z.array(z.string()).optional(),
     teamId: z.string().optional(),
