@@ -57,12 +57,15 @@ export function prepareLoopFromSteps(
       status = 'BLOCKED';
     }
 
+    const dependencies =
+      idx === 0 ? [] : Array.from({ length: idx }, (_, depIndex) => depIndex);
+
     return {
       taskId,
       assignedTo: new Types.ObjectId(step.ownerId),
       description: resolveDescription(step, idx),
       status,
-      dependencies: idx === 0 ? [] : [idx - 1],
+      dependencies,
       completedAt: completed ? step.completedAt : undefined,
     } satisfies PreparedLoopData['sequence'][number];
   });
