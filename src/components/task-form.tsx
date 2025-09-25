@@ -59,6 +59,16 @@ interface InternalStep {
   due: string;
 }
 
+type StepFieldKey = 'title' | 'description' | 'ownerId' | 'due';
+
+type StepErrors = Partial<Record<StepFieldKey, string>>;
+
+interface FormErrors {
+  title?: string;
+  description?: string;
+  steps: Record<string, StepErrors>;
+}
+
 const PRIORITY_OPTIONS: Array<{
   value: 'LOW' | 'MEDIUM' | 'HIGH';
   label: string;
@@ -68,6 +78,8 @@ const PRIORITY_OPTIONS: Array<{
   { value: 'MEDIUM', label: 'Medium Priority', color: '#F59E0B' },
   { value: 'HIGH', label: 'High Priority', color: '#EF4444' },
 ];
+
+const REQUIRED_FIELDS_ERROR = 'Please fill in all required fields.';
 
 const generateStepId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -128,6 +140,34 @@ export default function TaskForm({
     mapInitialSteps(initialValues?.steps, currentUserId),
   );
   const [flowError, setFlowError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<FormErrors>({ steps: {} });
+
+  const clearFormFieldError = (field: 'title' | 'description') => {
+    setFormErrors((prev) => {
+      if (!prev[field]) return prev;
+      return { ...prev, [field]: undefined };
+    });
+    setFlowError((prev) => (prev === REQUIRED_FIELDS_ERROR ? null : prev));
+  };
+
+  const clearStepError = (id: string, key: StepFieldKey) => {
+    setFormErrors((prev) => {
+      const currentErrors = prev.steps[id];
+      if (!currentErrors?.[key]) {
+        return prev;
+      }
+      const nextStepErrors: StepErrors = { ...currentErrors };
+      delete nextStepErrors[key];
+      const nextSteps = { ...prev.steps };
+      if (Object.keys(nextStepErrors).length > 0) {
+        nextSteps[id] = nextStepErrors;
+      } else {
+        delete nextSteps[id];
+      }
+      return { ...prev, steps: nextSteps };
+    });
+    setFlowError((prev) => (prev === REQUIRED_FIELDS_ERROR ? null : prev));
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -170,7 +210,7 @@ export default function TaskForm({
     );
   }, [currentUserId]);
 
-  const addStep = () =>
+  const addStep = () => {
     setSteps((prev) => [
       ...prev,
       {
@@ -181,17 +221,23 @@ export default function TaskForm({
         due: '',
       },
     ]);
+  };
 
-  const updateStep = (
-    id: string,
-    key: 'title' | 'description' | 'ownerId' | 'due',
-    value: string,
-  ) => {
+  const updateStep = (id: string, key: StepFieldKey, value: string) => {
     setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, [key]: value } : s)));
+    if (value.trim()) {
+      clearStepError(id, key);
+    }
   };
 
   const removeStep = (id: string) => {
     setSteps((prev) => prev.filter((step) => step.id !== id));
+    setFormErrors((prev) => {
+      if (!prev.steps[id]) return prev;
+      const nextSteps = { ...prev.steps };
+      delete nextSteps[id];
+      return { ...prev, steps: nextSteps };
+    });
   };
 
   const moveStep = (id: string, direction: 'up' | 'down') => {
@@ -220,9 +266,57 @@ export default function TaskForm({
     });
   };
 
+  const validateForm = () => {
+    const errors: FormErrors = { steps: {} };
+    let hasError = false;
+
+    if (!flowTitle.trim()) {
+      errors.title = 'Title is required';
+      hasError = true;
+    }
+
+    if (!description.trim()) {
+      errors.description = 'Description is required';
+      hasError = true;
+    }
+
+    steps.forEach((step) => {
+      const stepErrors: StepErrors = {};
+      if (!step.title.trim()) {
+        stepErrors.title = 'Step name is required';
+      }
+      if (!step.description.trim()) {
+        stepErrors.description = 'Step description is required';
+      }
+      if (!step.ownerId.trim()) {
+        stepErrors.ownerId = 'Step owner is required';
+      }
+      if (!step.due.trim()) {
+        stepErrors.due = 'Due date is required';
+      }
+      if (Object.keys(stepErrors).length > 0) {
+        errors.steps[step.id] = stepErrors;
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
+      setFormErrors(errors);
+      setFlowError(REQUIRED_FIELDS_ERROR);
+      return false;
+    }
+
+    setFormErrors({ steps: {} });
+    setFlowError(null);
+    return true;
+  };
+
   const submitFlow = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
+    if (!validateForm()) {
+      return;
+    }
     setFlowError(null);
     setIsSubmitting(true);
     try {
@@ -272,9 +366,22 @@ export default function TaskForm({
                 id="flow-title"
                 placeholder="Enter task title"
                 value={flowTitle}
-                onChange={(e) => setFlowTitle(e.target.value)}
-                className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFlowTitle(value);
+                  if (value.trim()) {
+                    clearFormFieldError('title');
+                  }
+                }}
+                className={cn(
+                  'border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0',
+                  formErrors.title && 'border-red-500 focus:border-red-500 focus:ring-red-200',
+                )}
+                aria-invalid={Boolean(formErrors.title)}
               />
+              {formErrors.title ? (
+                <p className="text-sm text-red-600">{formErrors.title}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-[#4B5563]" htmlFor="flow-description">
@@ -284,9 +391,22 @@ export default function TaskForm({
                 id="flow-description"
                 placeholder="Provide additional details about the task"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDescription(value);
+                  if (value.trim()) {
+                    clearFormFieldError('description');
+                  }
+                }}
+                className={cn(
+                  'min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0',
+                  formErrors.description && 'border-red-500 focus:border-red-500 focus:ring-red-200',
+                )}
+                aria-invalid={Boolean(formErrors.description)}
               />
+              {formErrors.description ? (
+                <p className="text-sm text-red-600">{formErrors.description}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <span className="block text-sm font-medium text-[#4B5563]">Priority</span>
@@ -336,6 +456,8 @@ export default function TaskForm({
                   disableMoveUp={index === 0}
                   disableMoveDown={index === steps.length - 1}
                   showDivider={index > 0}
+                  showControls={steps.length > 1}
+                  errors={formErrors.steps[step.id]}
                 />
               ))}
             </SortableContext>
@@ -385,16 +507,20 @@ function StepCard({
   disableMoveUp,
   disableMoveDown,
   showDivider,
+  showControls,
+  errors,
 }: {
   step: InternalStep;
   index: number;
   users: TaskFormUser[];
-  onUpdate: (id: string, key: 'title' | 'description' | 'ownerId' | 'due', value: string) => void;
+  onUpdate: (id: string, key: StepFieldKey, value: string) => void;
   onRemove: (id: string) => void;
   onMove: (id: string, direction: 'up' | 'down') => void;
   disableMoveUp: boolean;
   disableMoveDown: boolean;
   showDivider: boolean;
+  showControls: boolean;
+  errors?: StepErrors;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: step.id,
@@ -415,6 +541,7 @@ function StepCard({
         className={cn(
           'flex gap-4 rounded-[12px] border border-[#E5E7EB] bg-white p-6 shadow-sm transition-shadow',
           isDragging && 'shadow-md ring-2 ring-indigo-200 ring-offset-2',
+          errors && Object.keys(errors).length > 0 && 'border-red-200',
         )}
       >
         <button
@@ -440,34 +567,36 @@ function StepCard({
                 {step.title.trim() || 'Untitled Step'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onMove(step.id, 'up')}
-                disabled={disableMoveUp}
-                className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-[#E5E7EB] text-[#4B5563] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
-              >
-                Move Up
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onMove(step.id, 'down')}
-                disabled={disableMoveDown}
-                className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-[#E5E7EB] text-[#4B5563] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
-              >
-                Move Down
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onRemove(step.id)}
-                className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
-              >
-                Remove
-              </Button>
-            </div>
+            {showControls ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onMove(step.id, 'up')}
+                  disabled={disableMoveUp}
+                  className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-[#E5E7EB] text-[#4B5563] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  Move Up
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onMove(step.id, 'down')}
+                  disabled={disableMoveDown}
+                  className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-[#E5E7EB] text-[#4B5563] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  Move Down
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onRemove(step.id)}
+                  className="h-8 px-3 text-xs font-semibold uppercase tracking-wide border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-title-${step.id}`}>
@@ -478,8 +607,13 @@ function StepCard({
               placeholder="Enter step name"
               value={step.title}
               onChange={(e) => onUpdate(step.id, 'title', e.target.value)}
-              className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+              className={cn(
+                'border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0',
+                errors?.title && 'border-red-500 focus:border-red-500 focus:ring-red-200',
+              )}
+              aria-invalid={Boolean(errors?.title)}
             />
+            {errors?.title ? <p className="text-sm text-red-600">{errors.title}</p> : null}
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-description-${step.id}`}>
@@ -490,8 +624,15 @@ function StepCard({
               placeholder="Describe the work to be completed"
               value={step.description}
               onChange={(e) => onUpdate(step.id, 'description', e.target.value)}
-              className="min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+              className={cn(
+                'min-h-[120px] border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0',
+                errors?.description && 'border-red-500 focus:border-red-500 focus:ring-red-200',
+              )}
+              aria-invalid={Boolean(errors?.description)}
             />
+            {errors?.description ? (
+              <p className="text-sm text-red-600">{errors.description}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-owner-${step.id}`}>
@@ -501,7 +642,11 @@ function StepCard({
               id={`step-owner-${step.id}`}
               value={step.ownerId}
               onChange={(e) => onUpdate(step.id, 'ownerId', e.target.value)}
-              className="flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm"
+              className={cn(
+                'flex h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] transition-shadow focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0 hover:border-indigo-300 hover:shadow-sm',
+                errors?.ownerId && 'border-red-500 focus:border-red-500 focus:ring-red-200',
+              )}
+              aria-invalid={Boolean(errors?.ownerId)}
             >
               <option value="">Select owner</option>
               {users.map((user) => (
@@ -510,6 +655,9 @@ function StepCard({
                 </option>
               ))}
             </select>
+            {errors?.ownerId ? (
+              <p className="text-sm text-red-600">{errors.ownerId}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-[#4B5563]" htmlFor={`step-due-${step.id}`}>
@@ -520,8 +668,13 @@ function StepCard({
               type="date"
               value={step.due}
               onChange={(e) => onUpdate(step.id, 'due', e.target.value)}
-              className="border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0"
+              className={cn(
+                'border-[#E5E7EB] placeholder:text-[#9CA3AF] hover:border-indigo-300 hover:shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:ring-offset-0',
+                errors?.due && 'border-red-500 focus:border-red-500 focus:ring-red-200',
+              )}
+              aria-invalid={Boolean(errors?.due)}
             />
+            {errors?.due ? <p className="text-sm text-red-600">{errors.due}</p> : null}
           </div>
         </div>
       </div>
