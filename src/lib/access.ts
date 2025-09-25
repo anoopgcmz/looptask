@@ -17,6 +17,7 @@ export function canReadTask(user: UserLike, task: ITask): boolean {
   if (task.ownerId?.toString() === userId) return true;
   if (task.helpers?.some((h) => h.toString() === userId)) return true;
   if (task.mentions?.some((m) => m.toString() === userId)) return true;
+  if (task.participantIds?.some((p) => p.toString() === userId)) return true;
 
   if (
     task.visibility === 'TEAM' &&
