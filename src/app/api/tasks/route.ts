@@ -22,6 +22,7 @@ import { stepSchema } from '@/lib/schemas/taskStep';
 import { serializeTask } from '@/lib/serializeTask';
 import { emitLoopUpdated } from '@/lib/ws';
 import { prepareLoopFromSteps } from '@/lib/taskLoopSync';
+import { assertSequentialTaskStepDueDates } from '@/lib/validateStepDueDates';
 
 const createTaskSchema: z.ZodType<TaskPayload> = z
   .object({
@@ -53,6 +54,12 @@ export const POST = withOrganization(async (req, session) => {
     ...step,
     status: step.status ?? 'OPEN',
   }));
+  try {
+    assertSequentialTaskStepDueDates(steps);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Invalid step due dates';
+    return problem(400, 'Invalid request', message);
+  }
   let ownerId = body.ownerId;
   let status: TaskStatus = 'OPEN';
   let currentStepIndex = 0;
