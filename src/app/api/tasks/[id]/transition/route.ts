@@ -106,11 +106,11 @@ export async function POST(
     if (body.action !== 'START' && body.action !== 'DONE') {
       return problem(400, 'Invalid action', 'Only START or DONE is allowed for step tasks');
     }
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin && !isCreator) {
       return problem(
         403,
         'Forbidden',
-        'Only the current step owner or an admin may update the step'
+        'Only the current step owner, task creator, or an admin may update the step'
       );
     }
 
