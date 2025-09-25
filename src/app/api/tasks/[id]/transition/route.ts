@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { Types, startSession } from 'mongoose';
 import type { ClientSession } from 'mongoose';
 import dbConnect from '@/lib/db';
-import { Task, type IStep } from '@/models/Task';
+import { Task, deriveTaskStatusFromSteps, resolveCurrentStepIndex } from '@/models/Task';
+import type { IStep } from '@/models/Task';
 import { ActivityLog } from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { emitTaskTransition } from '@/lib/ws';
@@ -102,48 +103,62 @@ export async function POST(
   };
 
   if (task.steps?.length) {
-    // Only DONE is meaningful when steps exist
-    if (body.action !== 'DONE') {
-      return problem(400, 'Invalid action', 'Only DONE is allowed for step tasks');
+    if (body.action !== 'START' && body.action !== 'DONE') {
+      return problem(400, 'Invalid action', 'Only START or DONE is allowed for step tasks');
     }
     if (!isOwner && !isAdmin) {
       return problem(
         403,
         'Forbidden',
-        'Only the current step owner or an admin may complete the step'
+        'Only the current step owner or an admin may update the step'
       );
     }
 
     let completedStepIndex = -1;
+    type StepFailure = 'NONE' | 'STEP_MISSING' | 'STEP_DONE' | 'STEP_NOT_READY';
     const performStepTransition = async (
       session?: ClientSession
-    ): Promise<{ updated: ITask | null; failure: 'NONE' | 'STEP_MISSING' | 'STEP_DONE' }> => {
+    ): Promise<{ updated: ITask | null; failure: StepFailure }> => {
       const t = (session
         ? ((await Task.findById(task._id).session(session)) as ITask | null)
         : ((await Task.findById(task._id)) as ITask | null));
       if (!t) throw new Error('Task not found');
       if (!t.steps) throw new Error('Task steps missing');
-      const idx = t.currentStepIndex ?? 0;
+
+      const idx = resolveCurrentStepIndex(t.steps);
       const step = t.steps[idx];
       if (!step) {
         return { updated: null, failure: 'STEP_MISSING' };
       }
-      if (step.status === 'DONE') {
-        return { updated: null, failure: 'STEP_DONE' };
-      }
-      completedStepIndex = idx;
-      step.status = 'DONE';
-      step.completedAt = new Date();
 
-      const allDone = t.steps.every((s: IStep) => s.status === 'DONE');
-      if (allDone) {
-        t.status = 'DONE';
+      if (body.action === 'START') {
+        if (step.status === 'DONE') {
+          return { updated: null, failure: 'STEP_DONE' };
+        }
+        if (step.status !== 'IN_PROGRESS') {
+          step.status = 'IN_PROGRESS';
+          step.completedAt = undefined;
+        }
       } else {
-        const nextIdx = t.steps.findIndex((s: IStep) => s.status !== 'DONE');
-        t.currentStepIndex = nextIdx;
-        t.ownerId = t.steps[nextIdx].ownerId;
-        t.status = 'FLOW_IN_PROGRESS';
+        if (step.status === 'DONE') {
+          return { updated: null, failure: 'STEP_DONE' };
+        }
+        if (step.status !== 'IN_PROGRESS') {
+          return { updated: null, failure: 'STEP_NOT_READY' };
+        }
+        completedStepIndex = idx;
+        step.status = 'DONE';
+        step.completedAt = new Date();
       }
+
+      t.currentStepIndex = resolveCurrentStepIndex(t.steps);
+      t.status = deriveTaskStatusFromSteps(t.steps as IStep[]);
+      const activeIdx = t.currentStepIndex;
+      const activeStep = t.steps[activeIdx] ?? t.steps[t.steps.length - 1];
+      if (activeStep) {
+        t.ownerId = activeStep.ownerId;
+      }
+
       if (session) {
         await t.save({ session });
       } else {
@@ -166,7 +181,7 @@ export async function POST(
     };
 
     const mongoSession = await startSession();
-    let result: { updated: ITask | null; failure: 'NONE' | 'STEP_MISSING' | 'STEP_DONE' } = {
+    let result: { updated: ITask | null; failure: StepFailure } = {
       updated: null,
       failure: 'NONE',
     };
@@ -191,6 +206,9 @@ export async function POST(
       }
       if (failure === 'STEP_DONE') {
         return problem(409, 'Conflict', 'Step already completed');
+      }
+      if (failure === 'STEP_NOT_READY') {
+        return problem(409, 'Conflict', 'Step must be in progress before completion');
       }
       return problem(500, 'Error', 'Transition failed');
     }

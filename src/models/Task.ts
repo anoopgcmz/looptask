@@ -22,8 +22,22 @@ export interface IStep {
   ownerId: Types.ObjectId;
   description?: string;
   dueAt?: Date;
-  status: 'OPEN' | 'DONE';
+  status: 'OPEN' | 'IN_PROGRESS' | 'DONE';
   completedAt?: Date;
+}
+
+export function deriveTaskStatusFromSteps(steps: IStep[]): TaskStatus {
+  if (!steps.length) return 'OPEN';
+  if (steps.every((step) => step.status === 'DONE')) return 'DONE';
+  const hasProgress = steps.some((step) => step.status !== 'OPEN');
+  return hasProgress ? 'IN_PROGRESS' : 'OPEN';
+}
+
+export function resolveCurrentStepIndex(steps: IStep[]): number {
+  if (!steps.length) return 0;
+  const next = steps.findIndex((step) => step.status !== 'DONE');
+  if (next === -1) return steps.length - 1;
+  return next;
 }
 
 const stepSchema = new Schema<IStep>(
@@ -32,7 +46,7 @@ const stepSchema = new Schema<IStep>(
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     description: String,
     dueAt: Date,
-    status: { type: String, enum: ['OPEN', 'DONE'], default: 'OPEN' },
+    status: { type: String, enum: ['OPEN', 'IN_PROGRESS', 'DONE'], default: 'OPEN' },
     completedAt: Date,
   },
   { _id: false }

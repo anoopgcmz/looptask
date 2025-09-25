@@ -5,7 +5,7 @@ export interface TaskStepPayload {
   ownerId: string;
   description?: string | undefined;
   dueAt?: Date | undefined;
-  status?: 'OPEN' | 'DONE' | undefined;
+  status?: 'OPEN' | 'IN_PROGRESS' | 'DONE' | undefined;
   completedAt?: Date | undefined;
 }
 
@@ -46,7 +46,7 @@ export interface TaskStep {
   ownerId: string;
   description?: string | undefined;
   dueAt?: string | undefined;
-  status: 'OPEN' | 'DONE';
+  status: 'OPEN' | 'IN_PROGRESS' | 'DONE';
   completedAt?: string | undefined;
 }
 

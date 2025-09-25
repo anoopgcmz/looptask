@@ -49,15 +49,21 @@ export const POST = withOrganization(async (req, session) => {
     return problem(400, 'Invalid request', err.message);
   }
   const createdBy = session.userId;
+  const steps = (body.steps ?? []).map((step) => ({
+    ...step,
+    status: step.status ?? 'OPEN',
+  }));
   let ownerId = body.ownerId;
   let status: TaskStatus = 'OPEN';
   let currentStepIndex = 0;
-  const steps = body.steps ?? [];
-  const firstStep = steps[0];
-  if (firstStep) {
-    ownerId = firstStep.ownerId;
-    status = 'FLOW_IN_PROGRESS';
-    currentStepIndex = 0;
+  if (steps.length) {
+    const nextIndex = steps.findIndex((s) => s.status !== 'DONE');
+    currentStepIndex = nextIndex === -1 ? steps.length - 1 : nextIndex;
+    const active = steps[currentStepIndex] ?? steps[steps.length - 1];
+    ownerId = active?.ownerId ?? ownerId;
+    const hasProgress = steps.some((s) => s.status !== 'OPEN');
+    const allDone = steps.every((s) => s.status === 'DONE');
+    status = allDone ? 'DONE' : hasProgress ? 'IN_PROGRESS' : 'OPEN';
   }
   if (!ownerId) {
     return problem(400, 'Invalid request', 'ownerId is required');

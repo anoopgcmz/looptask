@@ -37,11 +37,23 @@ interface Task {
   participantIds?: mongoose.Types.ObjectId[];
   save?: () => Promise<void>;
   session?: () => Task;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const tasks = new Map<string, Task>();
 
 vi.mock('@/models/Task', () => ({
+  deriveTaskStatusFromSteps: (steps: Task['steps']) => {
+    if (!steps || !steps.length) return 'OPEN';
+    if (steps.every((step) => step.status === 'DONE')) return 'DONE';
+    return steps.some((step) => step.status !== 'OPEN') ? 'IN_PROGRESS' : 'OPEN';
+  },
+  resolveCurrentStepIndex: (steps: Task['steps']) => {
+    if (!steps || !steps.length) return 0;
+    const idx = steps.findIndex((step) => step.status !== 'DONE');
+    return idx === -1 ? steps.length - 1 : idx;
+  },
   Task: {
     findById: vi.fn((id: string | mongoose.Types.ObjectId) => {
       const key = typeof id === 'string' ? id : id.toString();
@@ -109,7 +121,7 @@ describe('task flow with steps', () => {
       createdBy: u1,
       ownerId: u1,
       organizationId: orgId,
-      status: 'FLOW_IN_PROGRESS',
+      status: 'OPEN',
       steps: [
         { title: 'Step 1', ownerId: u1, status: 'OPEN' },
         { title: 'Step 2', ownerId: u2, status: 'OPEN' },
@@ -131,14 +143,27 @@ describe('task flow with steps', () => {
     await POST(
       new Request('http://test', {
         method: 'POST',
-        body: JSON.stringify({ action: 'DONE' }),
+        body: JSON.stringify({ action: 'START' }),
       }),
       { params: Promise.resolve({ id: taskId.toString() }) }
     );
     let t = tasks.get(taskId.toString());
+    expect(t.currentStepIndex).toBe(0);
+    expect(t.ownerId.toString()).toBe(u1.toString());
+    expect(t.status).toBe('IN_PROGRESS');
+    expect(completeStepMock).not.toHaveBeenCalled();
+
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'DONE' }),
+      }),
+      { params: Promise.resolve({ id: taskId.toString() }) }
+    );
+    t = tasks.get(taskId.toString());
     expect(t.currentStepIndex).toBe(1);
     expect(t.ownerId.toString()).toBe(u2.toString());
-    expect(t.status).toBe('FLOW_IN_PROGRESS');
+    expect(t.status).toBe('IN_PROGRESS');
     expect(completeStepMock).toHaveBeenLastCalledWith(
       taskId.toString(),
       0,
@@ -149,6 +174,18 @@ describe('task flow with steps', () => {
     await POST(
       new Request('http://test', {
         method: 'POST',
+        body: JSON.stringify({ action: 'START' }),
+      }),
+      { params: Promise.resolve({ id: taskId.toString() }) }
+    );
+    t = tasks.get(taskId.toString());
+    expect(t.currentStepIndex).toBe(1);
+    expect(t.ownerId.toString()).toBe(u2.toString());
+    expect(t.status).toBe('IN_PROGRESS');
+
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
         body: JSON.stringify({ action: 'DONE' }),
       }),
       { params: Promise.resolve({ id: taskId.toString() }) }
@@ -156,7 +193,7 @@ describe('task flow with steps', () => {
     t = tasks.get(taskId.toString());
     expect(t.currentStepIndex).toBe(2);
     expect(t.ownerId.toString()).toBe(u3.toString());
-    expect(t.status).toBe('FLOW_IN_PROGRESS');
+    expect(t.status).toBe('IN_PROGRESS');
     expect(completeStepMock).toHaveBeenLastCalledWith(
       taskId.toString(),
       1,
@@ -164,6 +201,18 @@ describe('task flow with steps', () => {
     );
 
     currentUserId = u3.toString();
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'START' }),
+      }),
+      { params: Promise.resolve({ id: taskId.toString() }) }
+    );
+    t = tasks.get(taskId.toString());
+    expect(t.currentStepIndex).toBe(2);
+    expect(t.ownerId.toString()).toBe(u3.toString());
+    expect(t.status).toBe('IN_PROGRESS');
+
     await POST(
       new Request('http://test', {
         method: 'POST',
@@ -194,7 +243,7 @@ describe('task flow with steps', () => {
       createdBy: u1,
       ownerId: u2,
       organizationId: orgId,
-      status: 'FLOW_IN_PROGRESS',
+      status: 'IN_PROGRESS',
       steps: [
         { title: 'Step 1', ownerId: u1, status: 'DONE' },
         { title: 'Step 2', ownerId: u2, status: 'OPEN' },
@@ -207,6 +256,14 @@ describe('task flow with steps', () => {
     });
 
     currentUserId = u2.toString();
+    await POST(
+      new Request('http://test', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'START' }),
+      }),
+      { params: Promise.resolve({ id: taskId.toString() }) }
+    );
+
     await POST(
       new Request('http://test', {
         method: 'POST',
@@ -229,7 +286,7 @@ describe('task flow with steps', () => {
       createdBy: u1,
       ownerId: u1,
       organizationId: orgId,
-      status: 'FLOW_IN_PROGRESS',
+      status: 'DONE',
       steps: [{ title: 'Step 1', ownerId: u1, status: 'DONE' }],
       currentStepIndex: 0,
       createdAt: new Date(),

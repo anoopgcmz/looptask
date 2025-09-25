@@ -3,7 +3,7 @@ import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
-import { Task } from '@/models/Task';
+import { Task, deriveTaskStatusFromSteps, resolveCurrentStepIndex } from '@/models/Task';
 import type { ITask } from '@/models/Task';
 import { ActivityLog } from '@/models/ActivityLog';
 import { User } from '@/models/User';
@@ -154,10 +154,12 @@ export const PATCH = withOrganization(
       : task.steps,
   });
   if (Array.isArray(task.steps) && task.steps.length) {
-    const stepIndex = task.currentStepIndex ?? 0;
-    if (stepIndex >= 0 && stepIndex < task.steps.length) {
-      task.status = 'FLOW_IN_PROGRESS';
-      task.ownerId = task.steps[stepIndex].ownerId;
+    const stepIndex = resolveCurrentStepIndex(task.steps);
+    task.currentStepIndex = stepIndex;
+    task.status = deriveTaskStatusFromSteps(task.steps);
+    const activeStep = task.steps[stepIndex] ?? task.steps[task.steps.length - 1];
+    if (activeStep) {
+      task.ownerId = activeStep.ownerId;
     }
   }
   task.participantIds = computeParticipants({
@@ -332,10 +334,12 @@ export const PUT = withOrganization(
       currentStepIndex: body.currentStepIndex,
     });
     if (Array.isArray(task.steps) && task.steps.length) {
-      const stepIndex = task.currentStepIndex ?? 0;
-      if (stepIndex >= 0 && stepIndex < task.steps.length) {
-        task.status = 'FLOW_IN_PROGRESS';
-        task.ownerId = task.steps[stepIndex].ownerId;
+      const stepIndex = resolveCurrentStepIndex(task.steps);
+      task.currentStepIndex = stepIndex;
+      task.status = deriveTaskStatusFromSteps(task.steps);
+      const activeStep = task.steps[stepIndex] ?? task.steps[task.steps.length - 1];
+      if (activeStep) {
+        task.ownerId = activeStep.ownerId;
       }
     }
     task.participantIds = computeParticipants({
