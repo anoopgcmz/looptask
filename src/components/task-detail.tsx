@@ -11,6 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import useAuth from "@/hooks/useAuth";
 import LoopTasksSection from "@/components/loop-tasks-section";
 import { cn } from "@/lib/utils";
+import { getTodayDateInputValue, isDateInputBeforeToday } from "@/lib/dateInput";
 
 interface User {
   _id: string;
@@ -44,6 +45,7 @@ export default function TaskDetail({
   const [users, setUsers] = useState<Record<string, User>>({});
   const [ownerName, setOwnerName] = useState<string | null>(null);
   const [taskVersion, setTaskVersion] = useState(0);
+  const [dueDateError, setDueDateError] = useState<string | null>(null);
   const viewers = usePresence(id);
   const { user } = useAuth();
 
@@ -164,15 +166,23 @@ export default function TaskDetail({
   }, [canEditProp, task, user?.userId]);
 
   const fieldsEditable = canEdit && !readOnly;
+  const minDueDate = useMemo(() => getTodayDateInputValue(), []);
 
   const updateField = async (field: keyof Task, value: string) => {
     if (!task || !fieldsEditable) return;
+    if (field === "dueDate") {
+      if (value && isDateInputBeforeToday(value)) {
+        setDueDateError("Due date cannot be in the past");
+        return;
+      }
+      setDueDateError(null);
+    }
     await fetch(`/api/tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: value }),
     });
-    setTask({ ...task, [field]: value });
+    setTask((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
   const priorityOptions = ["LOW", "MEDIUM", "HIGH"] as const;
@@ -276,13 +286,36 @@ export default function TaskDetail({
                   Due Date
                 </label>
                 {fieldsEditable ? (
-                  <Input
-                    type="date"
-                    className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                    value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
-                    onChange={(e) => setTask({ ...task, dueDate: e.target.value })}
-                    onBlur={(e) => void updateField("dueDate", e.target.value)}
-                  />
+                  <div className="space-y-1">
+                    <Input
+                      type="date"
+                      min={minDueDate}
+                      className="border-[#E5E7EB] text-sm text-gray-900 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                      value={task.dueDate ? task.dueDate.split("T")[0] || "" : ""}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        if (nextValue && isDateInputBeforeToday(nextValue)) {
+                          setDueDateError("Due date cannot be in the past");
+                          return;
+                        }
+                        setDueDateError(null);
+                        setTask((prev) =>
+                          prev ? { ...prev, dueDate: nextValue } : prev,
+                        );
+                      }}
+                      onBlur={(e) => {
+                        const nextValue = e.target.value;
+                        if (nextValue && isDateInputBeforeToday(nextValue)) {
+                          setDueDateError("Due date cannot be in the past");
+                          return;
+                        }
+                        void updateField("dueDate", nextValue);
+                      }}
+                    />
+                    {dueDateError ? (
+                      <p className="text-sm text-red-600">{dueDateError}</p>
+                    ) : null}
+                  </div>
                 ) : (
                   <p className="text-sm text-gray-900">
                     {task.dueDate ? task.dueDate.split("T")[0] : "No due date"}
