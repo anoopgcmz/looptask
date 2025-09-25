@@ -5,6 +5,7 @@ import type { ITask } from '@/models/Task';
 import { TaskLoop, type ILoopStep, type ITaskLoop } from '@/models/TaskLoop';
 import { LoopHistory } from '@/models/LoopHistory';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
+import { emitLoopUpdated } from '@/lib/ws';
 
 export function applyStepCompletion(loop: ITaskLoop, stepIndex: number) {
   if (stepIndex < 0 || stepIndex >= loop.sequence.length) {
@@ -64,6 +65,7 @@ export async function completeStep(
   const sessionDb = await mongoose.startSession();
   let updatedLoop: ITaskLoop | null = null;
   let newlyActiveIndexes: number[] = [];
+  let loopWasUpdated = false;
   try {
     await sessionDb.withTransaction(async () => {
       const loop = await TaskLoop.findOne({ taskId }).session(sessionDb);
@@ -77,6 +79,7 @@ export async function completeStep(
       }
 
       await loop.save({ session: sessionDb });
+      loopWasUpdated = true;
 
       if (userId) {
         await LoopHistory.create(
@@ -99,17 +102,25 @@ export async function completeStep(
 
   if (!updatedLoop) return null;
 
+  if (loopWasUpdated) {
+    const payload =
+      typeof (updatedLoop as unknown as { toObject?: () => ITaskLoop }).toObject === 'function'
+        ? ((updatedLoop as unknown as { toObject: () => ITaskLoop }).toObject() as ITaskLoop)
+        : updatedLoop;
+    emitLoopUpdated({ taskId, patch: payload, updatedAt: updatedLoop.updatedAt });
+  }
+
   if (newlyActiveIndexes.length) {
-      const task = await Task.findById(taskId).lean<Pick<ITask, '_id' | 'title' | 'status'>>();
-      if (task) {
-        const sequence = updatedLoop.sequence as ILoopStep[];
-        for (const idx of newlyActiveIndexes) {
-          const s = sequence[idx];
-          const assignee = s.assignedTo as Types.ObjectId;
-          await notifyAssignment([assignee], task, s.description);
-          await notifyLoopStepReady([assignee], task, s.description);
-        }
+    const task = await Task.findById(taskId).lean<Pick<ITask, '_id' | 'title' | 'status'>>();
+    if (task) {
+      const sequence = updatedLoop.sequence as ILoopStep[];
+      for (const idx of newlyActiveIndexes) {
+        const s = sequence[idx];
+        const assignee = s.assignedTo as Types.ObjectId;
+        await notifyAssignment([assignee], task, s.description);
+        await notifyLoopStepReady([assignee], task, s.description);
       }
+    }
   }
 
   return updatedLoop;

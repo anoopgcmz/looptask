@@ -6,6 +6,8 @@ import { Task } from '@/models/Task';
 import type { ITask, TaskStatus } from '@/models/Task';
 import { ActivityLog } from '@/models/ActivityLog';
 import { User } from '@/models/User';
+import { TaskLoop } from '@/models/TaskLoop';
+import { LoopHistory } from '@/models/LoopHistory';
 import { notifyAssignment, notifyMention } from '@/lib/notify';
 import { scheduleTaskJobs } from '@/lib/agenda';
 import { problem } from '@/lib/http';
@@ -18,6 +20,8 @@ import type {
 } from '@/types/api/task';
 import { stepSchema } from '@/lib/schemas/taskStep';
 import { serializeTask } from '@/lib/serializeTask';
+import { emitLoopUpdated } from '@/lib/ws';
+import { prepareLoopFromSteps } from '@/lib/taskLoopSync';
 
 const createTaskSchema: z.ZodType<TaskPayload> = z
   .object({
@@ -114,6 +118,38 @@ export const POST = withOrganization(async (req, session) => {
     type: 'CREATED',
     payload: {},
   });
+  const loopData = prepareLoopFromSteps(
+    task._id,
+    task.steps,
+    task.currentStepIndex,
+    task.status
+  );
+  if (loopData) {
+    const loop = await TaskLoop.create({
+      taskId: task._id,
+      sequence: loopData.sequence,
+      currentStep: loopData.currentStep,
+      isActive: loopData.isActive,
+      parallel: false,
+    });
+    await LoopHistory.create(
+      loop.sequence.map((_, idx) => ({
+        taskId: loop.taskId,
+        stepIndex: idx,
+        action: 'CREATE',
+        userId: new Types.ObjectId(createdBy),
+      }))
+    );
+    const payload =
+      typeof (loop as unknown as { toObject?: () => unknown }).toObject === 'function'
+        ? ((loop as unknown as { toObject: () => unknown }).toObject() as object)
+        : (loop as object);
+    emitLoopUpdated({
+      taskId: task._id.toString(),
+      patch: payload,
+      updatedAt: loop.updatedAt,
+    });
+  }
   await scheduleTaskJobs(task);
   const assignmentIds = [
     task.ownerId,

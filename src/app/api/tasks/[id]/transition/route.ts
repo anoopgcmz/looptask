@@ -18,6 +18,7 @@ import { problem } from '@/lib/http';
 import type { TaskResponse } from '@/types/api/task';
 import { serializeTask } from '@/lib/serializeTask';
 import type { ITask } from '@/models/Task';
+import loopUtils from '@/lib/loop';
 
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
@@ -113,6 +114,7 @@ export async function POST(
       );
     }
 
+    let completedStepIndex = -1;
     const performStepTransition = async (
       session?: ClientSession
     ): Promise<{ updated: ITask | null; failure: 'NONE' | 'STEP_MISSING' | 'STEP_DONE' }> => {
@@ -129,6 +131,7 @@ export async function POST(
       if (step.status === 'DONE') {
         return { updated: null, failure: 'STEP_DONE' };
       }
+      completedStepIndex = idx;
       step.status = 'DONE';
       step.completedAt = new Date();
 
@@ -191,6 +194,14 @@ export async function POST(
       }
       return problem(500, 'Error', 'Transition failed');
     }
+    let loopResult: Awaited<ReturnType<typeof loopUtils.completeStep>> | null = null;
+    if (completedStepIndex >= 0) {
+      loopResult = await loopUtils.completeStep(
+        updated._id.toString(),
+        completedStepIndex,
+        actorId
+      );
+    }
     const recipients = (updated.participantIds || []).filter(
       (id: Types.ObjectId) => id.toString() !== actorId
     );
@@ -198,7 +209,7 @@ export async function POST(
       if (recipients.length) {
         await notifyTaskClosed(recipients as Types.ObjectId[], updated);
       }
-    } else {
+    } else if (!loopResult) {
       const ownerId = updated.ownerId;
       if (ownerId && ownerId.toString() !== actorId) {
         const step = updated.steps?.[updated.currentStepIndex];
