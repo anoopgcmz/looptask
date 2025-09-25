@@ -147,7 +147,7 @@ export default function LoopBuilder() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && closeBuilder()}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden p-0">
+      <DialogContent className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden p-0">
         <div className="border-b border-[var(--color-border)] px-6 py-4">
           <h2 className="text-lg font-semibold">Manage Loop</h2>
         </div>
