@@ -3,8 +3,13 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import useNotificationsChannel from '@/hooks/useNotificationsChannel';
 import type { UnreadCount } from '@/types/api/notifications';
+import { cn } from '@/lib/utils';
 
-export default function NotificationsBadge() {
+interface NotificationsBadgeProps {
+  className?: string;
+}
+
+export default function NotificationsBadge({ className }: NotificationsBadgeProps) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -41,5 +46,12 @@ export default function NotificationsBadge() {
 
   if (count === 0) return null;
 
-  return <Badge className="ml-2">{count}</Badge>;
+  return (
+    <Badge
+      variant="urgent"
+      className={cn('ml-2 px-2 py-[2px] text-[11px] leading-none', className)}
+    >
+      {count}
+    </Badge>
+  );
 }

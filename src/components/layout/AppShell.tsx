@@ -5,6 +5,7 @@ import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import NotificationsBadge from "@/components/notifications-badge";
 import { Avatar } from "@/components/ui/avatar";
 
 type AppShellProps = {
@@ -106,6 +107,19 @@ const GoalsIcon = (props: React.SVGProps<SVGSVGElement>) => (
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const BellIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
+    <path
+      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
     />
   </svg>
 );
@@ -362,6 +376,16 @@ function AuthenticatedAppShell({
             </span>
             <span className="app-header__name">LoopTask</span>
           </div>
+        </div>
+        <div className="app-header__actions">
+          <Link
+            href="/notifications"
+            className="app-header__icon-button"
+            aria-label="View notifications"
+          >
+            <BellIcon />
+            <NotificationsBadge className="app-header__notification-badge" />
+          </Link>
         </div>
       </header>
 
