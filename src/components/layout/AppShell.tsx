@@ -71,42 +71,23 @@ const ReportsIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const PortfoliosIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
     <path
-      d="M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2"
+      d="M12 15a3 3 0 100-6 3 3 0 000 6z"
       stroke="currentColor"
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
-    />
-    <rect
-      x={3}
-      y={7}
-      width={18}
-      height={12}
-      rx={2}
-      stroke="currentColor"
-      strokeWidth={1.5}
+      fill="none"
     />
     <path
-      d="M3 12h18"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const GoalsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
-    <circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={1.5} />
-    <path
-      d="M12 7v5l3 2"
+      d="M19.4 15a1 1 0 01.2 1.1l-.7 1.2a1 1 0 01-1 .5l-1.4-.3a6.6 6.6 0 01-.9.5l-.2 1.4a1 1 0 01-1 .9h-1.4a1 1 0 01-1-.9l-.2-1.4a6.6 6.6 0 01-.9-.5l-1.4.3a1 1 0 01-1-.5l-.7-1.2a1 1 0 01.2-1.1l1.1-1a6.5 6.5 0 010-1.1l-1.1-1a1 1 0 01-.2-1.1l.7-1.2a1 1 0 011-.5l1.4.3a6.6 6.6 0 01.9-.5l.2-1.4a1 1 0 011-.9h1.4a1 1 0 011 .9l.2 1.4a6.6 6.6 0 01.9.5l1.4-.3a1 1 0 011 .5l.7 1.2a1 1 0 01-.2 1.1l-1.1 1a6.5 6.5 0 010 1.1z"
       stroke="currentColor"
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
+      fill="none"
     />
   </svg>
 );
@@ -138,13 +119,7 @@ const NAVIGATION_LINKS: NavigationLink[] = [
     icon: <ReportsIcon />,
     badge: { label: "3" },
   },
-  {
-    href: "/portfolios",
-    label: "Portfolios",
-    icon: <PortfoliosIcon />,
-    badge: { label: "New", tone: "accent" },
-  },
-  { href: "/goals", label: "Goals", icon: <GoalsIcon /> },
+  { href: "/settings", label: "Settings", icon: <SettingsIcon /> },
 ];
 
 const AUTH_ROUTES = new Set(["/signin", "/signin/verify", "/login", "/"]);
