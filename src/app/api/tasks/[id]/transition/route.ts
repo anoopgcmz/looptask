@@ -20,6 +20,7 @@ import type { TaskResponse } from '@/types/api/task';
 import { serializeTask } from '@/lib/serializeTask';
 import type { ITask } from '@/models/Task';
 import loopUtils from '@/lib/loop';
+import { runWithOptionalTransaction } from '@/lib/transaction';
 
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
@@ -61,46 +62,6 @@ export async function POST(
       'Only the creator, current owner, or an admin may transition this task'
     );
   }
-
-  const isTransactionUnsupportedError = (err: unknown): boolean => {
-    if (!err || typeof err !== 'object') return false;
-
-    const { code, codeName, message } = err as {
-      code?: unknown;
-      codeName?: unknown;
-      message?: unknown;
-    };
-
-    let numericCode: number | undefined;
-    if (typeof code === 'number') {
-      numericCode = code;
-    } else if (typeof code === 'string') {
-      const parsed = Number(code);
-      if (Number.isFinite(parsed)) {
-        numericCode = parsed;
-      }
-    }
-
-    if (numericCode !== undefined && [20, 112, 303].includes(numericCode)) {
-      return true;
-    }
-
-    const normalizedCodeName =
-      typeof codeName === 'string' ? codeName.toLowerCase() : '';
-    if (normalizedCodeName && ['illegaloperation'].includes(normalizedCodeName)) {
-      return true;
-    }
-
-    const normalizedMessage =
-      typeof message === 'string' ? message.toLowerCase() : '';
-
-    return (
-      normalizedMessage.includes('transactions are not supported') ||
-      normalizedMessage.includes(
-        'transaction numbers are only allowed on a replica set member or mongos'
-      )
-    );
-  };
 
   if (task.steps?.length) {
     if (body.action !== 'START' && body.action !== 'DONE') {
@@ -186,15 +147,9 @@ export async function POST(
       failure: 'NONE',
     };
     try {
-      await mongoSession.withTransaction(async () => {
-        result = await performStepTransition(mongoSession);
-      });
-    } catch (error) {
-      if (isTransactionUnsupportedError(error)) {
-        result = await performStepTransition();
-      } else {
-        throw error;
-      }
+      result = await runWithOptionalTransaction(mongoSession, async (session) =>
+        performStepTransition(session ?? undefined)
+      );
     } finally {
       await mongoSession.endSession();
     }
@@ -297,15 +252,9 @@ export async function POST(
     const mongoSession = await startSession();
     let updated: ITask | null = null;
     try {
-      await mongoSession.withTransaction(async () => {
-        updated = await performSimpleTransition(mongoSession);
-      });
-    } catch (error) {
-      if (isTransactionUnsupportedError(error)) {
-        updated = await performSimpleTransition();
-      } else {
-        throw error;
-      }
+      updated = await runWithOptionalTransaction(mongoSession, async (session) =>
+        performSimpleTransition(session ?? undefined)
+      );
     } finally {
       await mongoSession.endSession();
     }

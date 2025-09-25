@@ -12,6 +12,7 @@ import { problem } from '@/lib/http';
 import { withOrganization } from '@/lib/middleware/withOrganization';
 import { notifyAssignment, notifyLoopStepReady } from '@/lib/notify';
 import { emitLoopUpdated } from '@/lib/ws';
+import { runWithOptionalTransaction } from '@/lib/transaction';
 
 type LeanUser = Pick<IUser, 'organizationId' | 'teamId'> & { _id: Types.ObjectId };
 
@@ -337,75 +338,77 @@ export const PATCH = withOrganization(
     const oldAssignments: { userId: string; description: string }[] = [];
     const history: { stepIndex: number; action: 'UPDATE' | 'COMPLETE' | 'REASSIGN' }[] = [];
     let updatedLoop: ITaskLoop | null = null;
-  try {
-    await sessionDb.withTransaction(async () => {
-      const loopDoc = await TaskLoop.findOne({ taskId: id }).session(sessionDb);
-      if (!loopDoc) return;
-      if (steps) {
-        steps.forEach((s: LoopPatchStep) => {
-          const current = loopDoc.sequence[s.index];
-          if (s.assignedTo !== undefined && s.assignedTo !== current.assignedTo.toString()) {
-            oldAssignments.push({ userId: current.assignedTo.toString(), description: current.description });
-            newAssignments.push({ userId: s.assignedTo, description: current.description });
-            current.assignedTo = new Types.ObjectId(s.assignedTo);
-            if (current.status !== 'PENDING' && s.status === undefined) {
-              current.status = 'PENDING';
-              loopDoc.isActive = true;
-              if (loopDoc.currentStep === -1 || s.index < loopDoc.currentStep) {
-                loopDoc.currentStep = s.index;
+    try {
+      await runWithOptionalTransaction(sessionDb, async (transactionSession) => {
+        const loopQuery = TaskLoop.findOne({ taskId: id });
+        if (transactionSession) loopQuery.session(transactionSession);
+        const loopDoc = await loopQuery;
+        if (!loopDoc) return;
+        if (steps) {
+          steps.forEach((s: LoopPatchStep) => {
+            const current = loopDoc.sequence[s.index];
+            if (s.assignedTo !== undefined && s.assignedTo !== current.assignedTo.toString()) {
+              oldAssignments.push({ userId: current.assignedTo.toString(), description: current.description });
+              newAssignments.push({ userId: s.assignedTo, description: current.description });
+              current.assignedTo = new Types.ObjectId(s.assignedTo);
+              if (current.status !== 'PENDING' && s.status === undefined) {
+                current.status = 'PENDING';
+                loopDoc.isActive = true;
+                if (loopDoc.currentStep === -1 || s.index < loopDoc.currentStep) {
+                  loopDoc.currentStep = s.index;
+                }
               }
+              history.push({ stepIndex: s.index, action: 'REASSIGN' });
             }
-            history.push({ stepIndex: s.index, action: 'REASSIGN' });
-          }
-          if (s.description !== undefined && s.description !== current.description) {
-            current.description = s.description;
-            history.push({ stepIndex: s.index, action: 'UPDATE' });
-          }
-          if (s.status !== undefined && s.status !== current.status) {
-            current.status = s.status;
-            history.push({
-              stepIndex: s.index,
-              action: s.status === 'COMPLETED' ? 'COMPLETE' : 'UPDATE',
-            });
-          }
-        });
-      }
-      if (parallel !== undefined) {
-        loopDoc.parallel = parallel;
-      }
-      await loopDoc.save({ session: sessionDb });
-      if (history.length) {
-        await LoopHistory.create(
-          history.map((h) => ({
-            taskId: loopDoc.taskId,
-            stepIndex: h.stepIndex,
-            action: h.action,
-            userId: new Types.ObjectId(session.userId),
-          })),
-          { session: sessionDb }
-        );
-      }
-      updatedLoop = loopDoc;
-    });
-  } finally {
-    await sessionDb.endSession();
-  }
-  if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
+            if (s.description !== undefined && s.description !== current.description) {
+              current.description = s.description;
+              history.push({ stepIndex: s.index, action: 'UPDATE' });
+            }
+            if (s.status !== undefined && s.status !== current.status) {
+              current.status = s.status;
+              history.push({
+                stepIndex: s.index,
+                action: s.status === 'COMPLETED' ? 'COMPLETE' : 'UPDATE',
+              });
+            }
+          });
+        }
+        if (parallel !== undefined) {
+          loopDoc.parallel = parallel;
+        }
+        await loopDoc.save(transactionSession ? { session: transactionSession } : undefined);
+        if (history.length) {
+          await LoopHistory.create(
+            history.map((h) => ({
+              taskId: loopDoc.taskId,
+              stepIndex: h.stepIndex,
+              action: h.action,
+              userId: new Types.ObjectId(session.userId),
+            })),
+            transactionSession ? { session: transactionSession } : undefined
+          );
+        }
+        updatedLoop = loopDoc;
+      });
+    } finally {
+      await sessionDb.endSession();
+    }
+    if (!updatedLoop) return problem(404, 'Not Found', 'Loop not found');
 
-  const notifyTask = task as Pick<ITask, '_id' | 'title' | 'status'>;
+    const notifyTask = task as Pick<ITask, '_id' | 'title' | 'status'>;
 
-  for (const a of newAssignments) {
-    const uid = new Types.ObjectId(a.userId);
-    await notifyAssignment([uid], notifyTask, a.description);
-    await notifyLoopStepReady([uid], notifyTask, a.description);
-  }
-  for (const a of oldAssignments) {
-    const uid = new Types.ObjectId(a.userId);
-    await notifyAssignment([uid], notifyTask, a.description);
-  }
-  const loop = updatedLoop as ITaskLoop;
-  emitLoopUpdated({ taskId: id, patch: body, updatedAt: loop.updatedAt });
-  return NextResponse.json(loop);
+    for (const a of newAssignments) {
+      const uid = new Types.ObjectId(a.userId);
+      await notifyAssignment([uid], notifyTask, a.description);
+      await notifyLoopStepReady([uid], notifyTask, a.description);
+    }
+    for (const a of oldAssignments) {
+      const uid = new Types.ObjectId(a.userId);
+      await notifyAssignment([uid], notifyTask, a.description);
+    }
+    const loop = updatedLoop as ITaskLoop;
+    emitLoopUpdated({ taskId: id, patch: body, updatedAt: loop.updatedAt });
+    return NextResponse.json(loop);
   }
 );
 
