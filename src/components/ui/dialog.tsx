@@ -22,16 +22,24 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+interface DialogContentProps
+  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+  fullScreen?: boolean;
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  DialogContentProps
+>(({ className, children, fullScreen = false, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-[var(--color-surface)] p-6 shadow-[0_20px_40px_rgba(15,23,42,0.08)] focus:outline-none',
+        'fixed z-50 rounded-xl bg-[var(--color-surface)] shadow-[0_20px_40px_rgba(15,23,42,0.08)] focus:outline-none',
+        fullScreen
+          ? 'inset-2 max-w-none translate-x-0 translate-y-0 sm:inset-6'
+          : 'left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-6',
         className
       )}
       {...props}
