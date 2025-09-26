@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
+const ADMIN_LOGIN_PATH = '/admin/login';
+
 const PUBLIC_ROUTES = new Set([
   '/',
   '/login',
@@ -11,12 +13,16 @@ const PUBLIC_ROUTES = new Set([
   '/terms',
   '/privacy',
   '/api/register',
+  ADMIN_LOGIN_PATH,
 ]);
 
 const PUBLIC_PREFIXES = ['/api/auth'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isAdminLoginRoute = pathname === ADMIN_LOGIN_PATH;
 
   const isAsset =
     pathname.startsWith('/_next/') ||
@@ -28,7 +34,7 @@ export async function middleware(request: NextRequest) {
     PUBLIC_ROUTES.has(pathname) ||
     PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
-  if (isPublicRoute) {
+  if (isPublicRoute || isAdminLoginRoute) {
     return NextResponse.next();
   }
 
@@ -39,7 +45,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = '/login';
+  loginUrl.pathname = isAdminRoute ? ADMIN_LOGIN_PATH : '/login';
   loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
 
   return NextResponse.redirect(loginUrl);
