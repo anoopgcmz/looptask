@@ -1,5 +1,4 @@
 import { Schema, model, models, type InferSchemaType, type Model } from 'mongoose';
-import { ORGANIZATION_ROLE_VALUES } from '@/lib/roles';
 
 const invitationSchema = new Schema(
   {
@@ -10,7 +9,7 @@ const invitationSchema = new Schema(
       required: true,
     },
     tokenHash: { type: String, required: true, unique: true },
-    role: { type: String, enum: ORGANIZATION_ROLE_VALUES, default: 'USER' },
+    role: { type: String, enum: ['ADMIN', 'USER'], default: 'USER' },
     expiresAt: { type: Date, required: true },
     used: { type: Boolean, default: false },
   },

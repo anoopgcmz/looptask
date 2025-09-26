@@ -12,7 +12,6 @@ import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import { User } from '@/models/User';
 import { RefreshToken, type ClientMetadata } from '@/models/RefreshToken';
-import type { UserRole } from '@/lib/roles';
 
 declare global {
   var __NEXTAUTH_SECRET: string | undefined;
@@ -23,7 +22,7 @@ interface AuthUser {
   email: string;
   organizationId?: string | undefined;
   teamId?: string | undefined;
-  role?: UserRole | undefined;
+  role?: string | undefined;
   client?: ClientMetadata;
 }
 

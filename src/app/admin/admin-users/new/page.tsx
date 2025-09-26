@@ -4,34 +4,21 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
 import useAuth from '@/hooks/useAuth';
-import PlatformRoleSelector from '@/components/platform-role-selector';
-import type { UserRole } from '@/lib/roles';
 
 function NewAdminForm() {
   const { user } = useAuth();
-  const canAssignPlatform = user?.role === 'PLATFORM';
   const [form, setForm] = useState({
     name: '',
     email: '',
     username: '',
     password: '',
     teamId: '',
-    role: 'ADMIN' as UserRole,
   });
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]:
-        name === 'role'
-          ? ((canAssignPlatform ? value : 'ADMIN') as UserRole)
-          : value,
-    }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +31,7 @@ function NewAdminForm() {
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, organizationId: user?.organizationId }),
+      body: JSON.stringify({ ...form, organizationId: user?.organizationId, role: 'ADMIN' }),
     });
     if (!res.ok) {
       const data = (await res
@@ -64,13 +51,6 @@ function NewAdminForm() {
       <input name="username" value={form.username} onChange={handleChange} placeholder="Username" className="border p-2" required />
       <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Password" className="border p-2" required />
       <input name="teamId" value={form.teamId} onChange={handleChange} placeholder="Team ID" className="border p-2" />
-      <PlatformRoleSelector
-        name="role"
-        value={form.role}
-        onChange={handleChange}
-        includePlatform={canAssignPlatform}
-        className="border p-2"
-      />
       <button type="submit" className="bg-blue-500 text-white p-2">Save Admin</button>
     </form>
   );

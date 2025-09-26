@@ -73,9 +73,9 @@ describe('middleware', () => {
     expect(response.status).toBe(200);
   });
 
-  const adminRestrictedPaths = ['/admin', '/admin/register', '/admin/users', '/admin/users/new'];
+  const adminProtectedPaths = ['/admin', '/admin/users', '/admin/users/new'];
 
-  it.each(adminRestrictedPaths)(
+  it.each(adminProtectedPaths)(
     'redirects to admin login when hitting %s without a session',
     async (path) => {
       vi.mocked(getToken).mockResolvedValue(null);
@@ -88,8 +88,6 @@ describe('middleware', () => {
       expect(location).toContain('/admin/login');
     }
   );
-
-  const adminProtectedPaths = ['/admin', '/admin/users', '/admin/users/new'];
 
   it.each(adminProtectedPaths)(
     'allows authenticated users to access %s',

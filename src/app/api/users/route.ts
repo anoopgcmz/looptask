@@ -5,16 +5,10 @@ import dbConnect from '@/lib/db';
 import { User, type IUser } from '@/models/User';
 import { auth } from '@/lib/auth';
 import { problem } from '@/lib/http';
-import {
-  USER_ROLE_VALUES,
-  isElevatedAdminRole,
-  isPlatformRole,
-  isTenantAdminRole,
-} from '@/lib/roles';
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  const isPlatform = isPlatformRole(session?.role);
+  const isPlatform = session?.role === 'PLATFORM';
   if (!session?.userId || (!isPlatform && !session.organizationId)) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
@@ -59,7 +53,7 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const isElevatedAdmin = isElevatedAdminRole(session.role);
+  const isElevatedAdmin = session.role === 'ADMIN' || session.role === 'PLATFORM';
   const selection = isElevatedAdmin
     ? '-password -pushSubscriptions'
     : '_id name avatar teamId role';
@@ -77,7 +71,7 @@ const createUserSchema = z.object({
   teamId: z.string().optional(),
   timezone: z.string().optional(),
   isActive: z.boolean().optional(),
-  role: z.enum(USER_ROLE_VALUES).optional(),
+  role: z.enum(['ADMIN', 'USER']).optional(),
   avatar: z.string().optional(),
   permissions: z.array(z.string()).optional(),
 });
@@ -86,11 +80,11 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  const isPlatform = isPlatformRole(session?.role);
+  const isPlatform = session?.role === 'PLATFORM';
   if (!session?.userId || (!isPlatform && !session.organizationId)) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
-  if (!isPlatform && !isTenantAdminRole(session.role)) {
+  if (!isPlatform && session.role !== 'ADMIN') {
     return problem(403, 'Forbidden', 'Admin access required.');
   }
   let body: z.infer<typeof createUserSchema>;
@@ -99,9 +93,6 @@ export async function POST(req: NextRequest) {
   } catch (e: unknown) {
     const err = e as Error;
     return problem(400, 'Invalid request', err.message);
-  }
-  if (!isPlatform && body.role === 'PLATFORM') {
-    return problem(403, 'Forbidden', 'Cannot assign platform role.');
   }
   const targetOrganizationId = (() => {
     if (isPlatform) {
@@ -123,11 +114,10 @@ export async function POST(req: NextRequest) {
   }
   await dbConnect();
   try {
-    const { organizationId: _bodyOrgId, teamId, role, ...rest } = body;
+    const { organizationId: _bodyOrgId, teamId, ...rest } = body;
     void _bodyOrgId;
     const user = await User.create({
       ...rest,
-      role: role ?? 'USER',
       organizationId: new Types.ObjectId(targetOrganizationId),
       teamId: teamId ? new Types.ObjectId(teamId) : undefined,
     });
