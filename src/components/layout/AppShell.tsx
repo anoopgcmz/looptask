@@ -122,7 +122,7 @@ const NAVIGATION_LINKS: NavigationLink[] = [
   { href: "/settings", label: "Settings", icon: <SettingsIcon /> },
 ];
 
-const AUTH_ROUTES = new Set(["/signin", "/signin/verify", "/login", "/"]);
+const AUTH_ROUTES = new Set(["/signin", "/signin/verify", "/login", "/", "/admin/login"]);
 
 export function closeSidebarOnNavigation({
   isDesktop,

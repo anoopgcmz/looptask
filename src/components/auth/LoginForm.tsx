@@ -9,7 +9,13 @@ export type LoginFormData = {
   password: string;
 };
 
-export default function LoginForm() {
+export type LoginFormProps = {
+  callbackUrl?: string;
+};
+
+const DEFAULT_CALLBACK_URL = '/dashboard';
+
+export default function LoginForm({ callbackUrl }: LoginFormProps = {}) {
   const {
     register,
     handleSubmit,
@@ -19,10 +25,13 @@ export default function LoginForm() {
   const router = useRouter();
 
   const onSubmit = async (data: LoginFormData) => {
+    const targetCallback = callbackUrl ?? DEFAULT_CALLBACK_URL;
+
     const res = await signIn('credentials', {
       redirect: false,
       email: data.email,
       password: data.password,
+      callbackUrl: targetCallback,
     });
 
     if (res?.error) {
@@ -30,7 +39,19 @@ export default function LoginForm() {
       return;
     }
 
-    router.push('/dashboard');
+    const destination = (() => {
+      if (res?.url) {
+        try {
+          const parsed = new URL(res.url, window.location.origin);
+          return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        } catch {
+          return res.url;
+        }
+      }
+      return targetCallback;
+    })();
+
+    router.push(destination);
   };
 
   return (
