@@ -31,6 +31,22 @@ describe('middleware', () => {
     expect(response.status).toBe(200);
   });
 
+  it('allows admin register page without a session', async () => {
+    vi.mocked(getToken).mockResolvedValue(null);
+
+    const response = await middleware(createRequest('/admin/register'));
+
+    expect(response.status).toBe(200);
+  });
+
+  it('allows admin register api without a session', async () => {
+    vi.mocked(getToken).mockResolvedValue(null);
+
+    const response = await middleware(createRequest('/api/admin/register'));
+
+    expect(response.status).toBe(200);
+  });
+
   const protectedPaths = [
     '/dashboard',
     '/tasks',
