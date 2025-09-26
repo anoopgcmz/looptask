@@ -249,7 +249,7 @@ export const GET = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot access this loop');
     }
-      const loop = await TaskLoop.findOne({ taskId: id }).lean<ITaskLoop>();
+    const loop = await TaskLoop.findOne({ taskId: id }).lean<ITaskLoop>();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
     return NextResponse.json(loop);
   }
@@ -436,7 +436,7 @@ export const DELETE = withOrganization(
     const { params } = context;
     const { id } = await params;
     await dbConnect();
-      const task = await Task.findById(id).lean<ITask>();
+    const task = await Task.findById(id).lean<ITask>();
     if (!task) return problem(404, 'Not Found', 'Task not found');
     if (
       !canWriteTask(
@@ -451,7 +451,7 @@ export const DELETE = withOrganization(
     ) {
       return problem(403, 'Forbidden', 'You cannot delete this loop');
     }
-      const loop = await TaskLoop.findOneAndDelete({ taskId: id }).lean();
+    const loop = await TaskLoop.findOneAndDelete({ taskId: id }).lean();
     if (!loop) return problem(404, 'Not Found', 'Loop not found');
     return NextResponse.json({ success: true });
   }

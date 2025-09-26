@@ -42,7 +42,12 @@ export const GET = withOrganization(
     if (
       !task ||
       !canReadTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+        {
+          _id: session.userId,
+          teamId: session.teamId,
+          organizationId: session.organizationId,
+          role: session.role,
+        },
         task
       )
     ) {

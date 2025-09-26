@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation';
 import LoginForm from '@/components/auth/LoginForm';
 import { auth } from '@/lib/auth';
+import { isPlatformRole } from '@/lib/roles';
 
 const ADMIN_HOME_PATH = '/admin/users';
 
 export default async function AdminLoginPage() {
   const session = await auth();
 
-  if (session?.role === 'ADMIN') {
+  if (session?.role === 'ADMIN' || isPlatformRole(session?.role)) {
     redirect(ADMIN_HOME_PATH);
   }
 
