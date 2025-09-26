@@ -1,3 +1,5 @@
+import bcrypt from 'bcrypt';
+
 import dbConnect from '@/lib/db';
 import { Organization } from '@/models/Organization';
 import { User, type UserDocument } from '@/models/User';
@@ -15,7 +17,7 @@ export const getAdminSeedConfig = (): AdminSeedConfig => ({
   name: process.env.SEED_ADMIN_NAME ?? 'LoopTask Admin',
   email: process.env.SEED_ADMIN_EMAIL ?? 'admin@looptask.local',
   username: process.env.SEED_ADMIN_USERNAME ?? 'admin',
-  password: process.env.SEED_ADMIN_PASSWORD ?? 'admin123',
+  password: process.env.SEED_ADMIN_PASSWORD ?? 'admin',
   organizationName: process.env.SEED_ADMIN_ORGANIZATION_NAME ?? 'LoopTask',
   organizationDomain:
     process.env.SEED_ADMIN_ORGANIZATION_DOMAIN ?? 'looptask.local',
@@ -32,11 +34,29 @@ const ensureOrganization = async (
   return Organization.create({ name, domain });
 };
 
-const promoteToAdmin = async (user: UserDocument) => {
+const syncExistingAdmin = async (user: UserDocument, password: string) => {
+  let updated = false;
+
   if (user.role !== 'ADMIN') {
     user.role = 'ADMIN';
+    updated = true;
+  }
+
+  const storedPassword = user.password;
+  const passwordMatches =
+    typeof storedPassword === 'string' && storedPassword.length > 0
+      ? await bcrypt.compare(password, storedPassword)
+      : false;
+
+  if (!passwordMatches) {
+    user.password = password;
+    updated = true;
+  }
+
+  if (updated) {
     await user.save();
   }
+
   return user;
 };
 
@@ -49,7 +69,7 @@ export async function seedAdmin() {
   });
 
   if (existing) {
-    await promoteToAdmin(existing);
+    await syncExistingAdmin(existing, config.password);
     console.log('Admin account already exists.', {
       email: config.email,
       username: config.username,
