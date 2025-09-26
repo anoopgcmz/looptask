@@ -64,10 +64,11 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.userId || !session.organizationId) {
+  const isPlatform = session?.role === 'PLATFORM';
+  if (!session?.userId || (!isPlatform && !session.organizationId)) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
-  if (session.role !== 'ADMIN') {
+  if (!isPlatform && session.role !== 'ADMIN') {
     return problem(403, 'Forbidden', 'Admin access required.');
   }
   let body: z.infer<typeof createUserSchema>;
@@ -77,15 +78,32 @@ export async function POST(req: NextRequest) {
     const err = e as Error;
     return problem(400, 'Invalid request', err.message);
   }
-  if (body.organizationId && body.organizationId !== session.organizationId) {
+  const targetOrganizationId = (() => {
+    if (isPlatform) {
+      return body.organizationId;
+    }
+    return session.organizationId;
+  })();
+  if (!targetOrganizationId) {
+    return problem(400, 'Invalid request', 'organizationId is required');
+  }
+  if (!Types.ObjectId.isValid(targetOrganizationId)) {
+    return problem(400, 'Invalid request', 'organizationId is invalid');
+  }
+  if (!isPlatform && body.organizationId && body.organizationId !== session.organizationId) {
     return problem(400, 'Invalid request', 'organizationId mismatch');
+  }
+  if (body.teamId && !Types.ObjectId.isValid(body.teamId)) {
+    return problem(400, 'Invalid request', 'teamId is invalid');
   }
   await dbConnect();
   try {
+    const { organizationId: _bodyOrgId, teamId, ...rest } = body;
+    void _bodyOrgId;
     const user = await User.create({
-      ...body,
-      organizationId: new Types.ObjectId(session.organizationId),
-      teamId: body.teamId ? new Types.ObjectId(body.teamId) : undefined,
+      ...rest,
+      organizationId: new Types.ObjectId(targetOrganizationId),
+      teamId: teamId ? new Types.ObjectId(teamId) : undefined,
     });
     return NextResponse.json(user, { status: 201 });
   } catch (e: unknown) {
