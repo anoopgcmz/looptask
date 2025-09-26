@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  type FormEvent,
+  type ChangeEvent,
+} from 'react';
 import Link from 'next/link';
 
 interface User {
@@ -11,33 +17,73 @@ interface User {
   role: string;
 }
 
+interface Organization {
+  _id: string;
+  name: string;
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [q, setQ] = useState('');
+  const [appliedQ, setAppliedQ] = useState('');
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState('');
 
-  const load = async (search = '') => {
-    const res = await fetch('/api/users?q=' + encodeURIComponent(search));
-    const data = (await res.json()) as User[];
-    setUsers(data);
-  };
+  const load = useCallback(
+    async (search = '', organizationId = '') => {
+      const params = new URLSearchParams();
+      if (search) {
+        params.set('q', search);
+      }
+      if (organizationId) {
+        params.set('organizationId', organizationId);
+      }
+      const query = params.toString();
+      const res = await fetch(`/api/users${query ? `?${query}` : ''}`);
+      const data = (await res.json()) as User[];
+      setUsers(data);
+    },
+    []
+  );
 
   useEffect(() => {
-    void load();
+    const fetchOrganizations = async () => {
+      try {
+        const res = await fetch('/api/organizations');
+        if (!res.ok) {
+          throw new Error('Failed to load organizations');
+        }
+        const data = (await res.json()) as Organization[];
+        setOrganizations(data);
+      } catch {
+        setOrganizations([]);
+      }
+    };
+    void fetchOrganizations();
   }, []);
 
-  const handleSearch = async (e: React.FormEvent) => {
+  useEffect(() => {
+    void load(appliedQ, selectedOrganizationId);
+  }, [load, appliedQ, selectedOrganizationId]);
+
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await load(q);
+    setAppliedQ(q);
   };
 
   const handleDelete = async (id: string) => {
     await fetch('/api/users/' + id, { method: 'DELETE' });
-    await load(q);
+    await load(appliedQ, selectedOrganizationId);
+  };
+
+  const handleOrganizationChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const newOrganizationId = event.target.value;
+    setSelectedOrganizationId(newOrganizationId);
   };
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             type="text"
@@ -50,6 +96,21 @@ export default function UsersPage() {
             Search
           </button>
         </form>
+        <label className="flex items-center gap-2">
+          <span>Organization</span>
+          <select
+            className="border p-2"
+            value={selectedOrganizationId}
+            onChange={handleOrganizationChange}
+          >
+            <option value="">All organizations</option>
+            {organizations.map((organization) => (
+              <option key={organization._id} value={organization._id}>
+                {organization.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <Link href="/admin/users/new" className="ml-auto bg-green-500 text-white px-2 py-1">
           Add User
         </Link>

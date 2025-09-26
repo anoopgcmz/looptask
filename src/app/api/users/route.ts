@@ -8,18 +8,34 @@ import { problem } from '@/lib/http';
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.userId || !session.organizationId) {
+  const isPlatform = session?.role === 'PLATFORM';
+  if (!session?.userId || (!isPlatform && !session.organizationId)) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q') || '';
   const ids = searchParams.getAll('id').filter((v) => v);
+  const organizationIdParam = searchParams.get('organizationId');
 
   await dbConnect();
 
-  const query: FilterQuery<IUser> = {
-    organizationId: new Types.ObjectId(session.organizationId),
-  };
+  const query: FilterQuery<IUser> = {};
+
+  if (isPlatform) {
+    if (organizationIdParam) {
+      if (!Types.ObjectId.isValid(organizationIdParam)) {
+        return problem(400, 'Invalid request', 'organizationId is invalid');
+      }
+      query.organizationId = new Types.ObjectId(organizationIdParam);
+    } else if (session.organizationId && Types.ObjectId.isValid(session.organizationId)) {
+      query.organizationId = new Types.ObjectId(session.organizationId);
+    }
+  } else {
+    if (!session.organizationId || !Types.ObjectId.isValid(session.organizationId)) {
+      return problem(400, 'Invalid request', 'organizationId is invalid');
+    }
+    query.organizationId = new Types.ObjectId(session.organizationId);
+  }
 
   if (ids.length) {
     const parsedIds = ids
@@ -37,8 +53,8 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const isAdmin = session.role === 'ADMIN';
-  const selection = isAdmin
+  const isElevatedAdmin = session.role === 'ADMIN' || session.role === 'PLATFORM';
+  const selection = isElevatedAdmin
     ? '-password -pushSubscriptions'
     : '_id name avatar teamId role';
 
