@@ -10,12 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { getTodayDateInputValue, isDateInputBeforeToday } from '@/lib/dateInput';
-import type { UserRole } from '@/lib/roles';
 
 export interface TaskFormUser {
   _id: string;
   name: string;
-  role?: UserRole;
+  role?: string;
 }
 
 export interface TaskFormStepInput {
@@ -184,10 +183,7 @@ export default function TaskForm({
         const res = await fetch('/api/users', { credentials: 'include' });
         if (!res.ok) return;
         const data = (await res.json()) as TaskFormUser[];
-        if (isMounted)
-          setUsers(
-            data.filter((user) => user.role !== 'ADMIN' && user.role !== 'PLATFORM')
-          );
+        if (isMounted) setUsers(data.filter((user) => user.role !== 'ADMIN'));
       } catch {
         // swallow fetch errors; list will remain empty
       }

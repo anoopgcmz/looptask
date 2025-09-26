@@ -83,12 +83,7 @@ export const GET = withOrganization(
   if (
     !task ||
     !canReadTask(
-      {
-        _id: session.userId,
-        teamId: session.teamId,
-        organizationId: session.organizationId,
-        role: session.role,
-      },
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
       task
     )
   ) {
@@ -138,7 +133,7 @@ export const PATCH = withOrganization(
   if (body.ownerId) {
     const owner = await User.findOne({
       _id: new Types.ObjectId(body.ownerId),
-      organizationId: new Types.ObjectId(task.organizationId),
+      organizationId: new Types.ObjectId(session.organizationId),
     });
     if (!owner) {
       return problem(400, 'Invalid request', 'Owner must be in your organization');
@@ -148,7 +143,7 @@ export const PATCH = withOrganization(
     for (const s of body.steps) {
       const stepOwner = await User.findOne({
         _id: new Types.ObjectId(s.ownerId),
-        organizationId: new Types.ObjectId(task.organizationId),
+        organizationId: new Types.ObjectId(session.organizationId),
       });
       if (!stepOwner) {
         return problem(400, 'Invalid request', 'Step owner must be in your organization');
@@ -320,10 +315,10 @@ export const PUT = withOrganization(
       )
     )
       return problem(403, 'Forbidden', 'You cannot edit this task');
-  const owner = await User.findOne({
-    _id: new Types.ObjectId(body.ownerId),
-    organizationId: new Types.ObjectId(task.organizationId),
-  });
+    const owner = await User.findOne({
+      _id: new Types.ObjectId(body.ownerId),
+      organizationId: new Types.ObjectId(session.organizationId),
+    });
     if (!owner) {
       return problem(400, 'Invalid request', 'Owner must be in your organization');
     }
@@ -337,10 +332,10 @@ export const PUT = withOrganization(
       return problem(400, 'Invalid request', message);
     }
     for (const s of body.steps) {
-    const stepOwner = await User.findOne({
-      _id: new Types.ObjectId(s.ownerId),
-      organizationId: new Types.ObjectId(task.organizationId),
-    });
+      const stepOwner = await User.findOne({
+        _id: new Types.ObjectId(s.ownerId),
+        organizationId: new Types.ObjectId(session.organizationId),
+      });
       if (!stepOwner) {
         return problem(400, 'Invalid request', 'Step owner must be in your organization');
       }

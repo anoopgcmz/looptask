@@ -7,7 +7,6 @@ import {
   type Model,
 } from 'mongoose';
 import bcrypt from 'bcrypt';
-import { USER_ROLE_VALUES } from '@/lib/roles';
 
 const SALT_ROUNDS = 10;
 
@@ -40,7 +39,7 @@ const userSchema = new Schema(
     teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
     timezone: { type: String, default: 'Asia/Kolkata' },
     isActive: { type: Boolean, default: true },
-    role: { type: String, enum: USER_ROLE_VALUES, default: 'USER' },
+    role: { type: String, enum: ['ADMIN', 'USER'], default: 'USER' },
     avatar: { type: String },
     permissions: { type: [String], default: [] },
     notificationSettings: {

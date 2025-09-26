@@ -10,17 +10,6 @@ const organizationMocks = vi.hoisted(() => ({
   orgCreate: vi.fn(),
 }));
 
-const bcryptMocks = vi.hoisted(() => ({
-  compare: vi.fn(),
-}));
-
-vi.mock('bcrypt', () => ({
-  __esModule: true,
-  default: {
-    compare: bcryptMocks.compare,
-  },
-}));
-
 vi.mock('@/models/Organization', () => ({
   __esModule: true,
   Organization: {
@@ -54,8 +43,6 @@ describe('seedAdmin', () => {
     userMocks.userFindOne.mockReset();
     userMocks.userCreate.mockReset();
     logSpy.mockClear();
-    bcryptMocks.compare.mockReset();
-    bcryptMocks.compare.mockResolvedValue(true);
   });
 
   it('creates an admin when one does not exist', async () => {
@@ -74,14 +61,14 @@ describe('seedAdmin', () => {
       name: 'LoopTask Admin',
       email: 'admin@looptask.local',
       username: 'admin',
-      password: 'admin',
+      password: 'admin123',
       organizationId: 'org1',
       role: 'ADMIN',
     });
     expect(logSpy).toHaveBeenCalledWith('Admin account created.', {
       email: 'admin@looptask.local',
       username: 'admin',
-      password: 'admin',
+      password: 'admin123',
     });
   });
 
@@ -89,14 +76,12 @@ describe('seedAdmin', () => {
     const save = vi.fn().mockResolvedValue(undefined);
     userMocks.userFindOne.mockResolvedValue({
       role: 'USER',
-      password: 'hashed',
       save,
     });
 
     await seedAdmin();
 
-    expect(bcryptMocks.compare).toHaveBeenCalledWith('admin', 'hashed');
-    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith('Admin account already exists.', {
       email: 'admin@looptask.local',
       username: 'admin',
@@ -107,7 +92,6 @@ describe('seedAdmin', () => {
     const save = vi.fn().mockResolvedValue(undefined);
     userMocks.userFindOne.mockResolvedValue({
       role: 'ADMIN',
-      password: 'hashed',
       save,
     });
 
@@ -116,28 +100,6 @@ describe('seedAdmin', () => {
     expect(save).not.toHaveBeenCalled();
     expect(organizationMocks.orgCreate).not.toHaveBeenCalled();
     expect(userMocks.userCreate).not.toHaveBeenCalled();
-  });
-
-  it('updates the password when it does not match the config', async () => {
-    const save = vi.fn().mockResolvedValue(undefined);
-    const existingUser = {
-      role: 'ADMIN',
-      password: 'old-hash',
-      save,
-    };
-
-    bcryptMocks.compare.mockResolvedValue(false);
-    userMocks.userFindOne.mockResolvedValue(existingUser);
-
-    await seedAdmin();
-
-    expect(bcryptMocks.compare).toHaveBeenCalledWith('admin', 'old-hash');
-    expect(existingUser.password).toBe('admin');
-    expect(save).toHaveBeenCalledTimes(1);
-    expect(logSpy).toHaveBeenCalledWith('Admin account already exists.', {
-      email: 'admin@looptask.local',
-      username: 'admin',
-    });
   });
 });
 

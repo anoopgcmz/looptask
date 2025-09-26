@@ -18,7 +18,6 @@ import DeleteTaskModal from '@/components/delete-task-modal';
 import type { TaskStatus } from '@/models/Task';
 import { Button } from '@/components/ui/button';
 import type { TaskStep } from '@/types/api/task';
-import { isElevatedAdminRole } from '@/lib/roles';
 
 interface Task {
   _id: string;
@@ -227,7 +226,7 @@ function TaskPageContent({ id }: { id: string }) {
 
   const canEdit = useMemo(() => {
     if (!user?.userId || !task) return false;
-    if (isElevatedAdminRole(user.role)) return true;
+    if (user.role === 'ADMIN') return true;
     return user.userId === task.createdBy;
   }, [task, user?.role, user?.userId]);
 

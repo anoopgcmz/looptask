@@ -1,22 +1,18 @@
 import type { Types } from 'mongoose';
 import type { ITask } from '@/models/Task';
-import { isPlatformRole, isTenantAdminRole } from '@/lib/roles';
-import type { UserRole } from '@/lib/roles';
 
 type UserLike = {
   _id: Types.ObjectId | string;
   organizationId?: Types.ObjectId | string | undefined;
   teamId?: Types.ObjectId | string | undefined;
-  role?: UserRole | undefined;
+  role?: string | undefined;
 };
 
 export function canReadTask(user: UserLike, task: ITask): boolean {
   const userId = user?._id?.toString();
   const orgId = user.organizationId?.toString();
   if (!userId) return false;
-  if (!isPlatformRole(user.role)) {
-    if (!orgId || task.organizationId.toString() !== orgId) return false;
-  }
+  if (!orgId || task.organizationId.toString() !== orgId) return false;
 
   if (task.createdBy.toString() === userId) return true;
   if (task.ownerId?.toString() === userId) return true;
@@ -39,10 +35,7 @@ export function canReadTask(user: UserLike, task: ITask): boolean {
 export function canWriteTask(user: UserLike, task: ITask): boolean {
   const userId = user?._id?.toString();
   const orgId = user.organizationId?.toString();
-  if (!userId) return false;
-  if (!isPlatformRole(user.role)) {
-    if (!orgId || task.organizationId.toString() !== orgId) return false;
-  }
-  if (isPlatformRole(user.role) || isTenantAdminRole(user.role)) return true;
+  if (!userId || !orgId || task.organizationId.toString() !== orgId) return false;
+  if (user.role === 'ADMIN') return true;
   return task.createdBy.toString() === userId;
 }

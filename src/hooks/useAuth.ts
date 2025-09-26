@@ -3,7 +3,6 @@
 import { useCallback, useMemo } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
-import type { UserRole } from '@/lib/roles';
 
 type BaseUser = NonNullable<Session['user']>;
 
@@ -11,7 +10,7 @@ type AuthUser = BaseUser & {
   userId?: string;
   organizationId?: string;
   teamId?: string;
-  role?: UserRole;
+  role?: string;
   accessToken?: string;
   accessTokenExpires?: number;
   refreshToken?: string;

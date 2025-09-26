@@ -9,7 +9,6 @@ import { Task } from '@/models/Task';
 import { ActivityLog } from '@/models/ActivityLog';
 import { emitCommentCreated } from '@/lib/ws';
 import { problem } from '@/lib/http';
-import { isPlatformRole } from '@/lib/roles';
 
 const postSchema = z.object({
   taskId: z.string(),
@@ -28,8 +27,7 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  const isPlatform = isPlatformRole(session?.role);
-  if (!session?.userId || (!isPlatform && !session.organizationId)) {
+  if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   let body: z.infer<typeof postSchema>;
@@ -44,12 +42,7 @@ export async function POST(req: NextRequest) {
   if (
     !task ||
     !canReadTask(
-      {
-        _id: session.userId,
-        teamId: session.teamId,
-        organizationId: session.organizationId,
-        role: session.role,
-      },
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
       task
     )
   ) {
@@ -73,8 +66,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  const isPlatform = isPlatformRole(session?.role);
-  if (!session?.userId || (!isPlatform && !session.organizationId)) {
+  if (!session?.userId || !session.organizationId) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   const url = new URL(req.url);
@@ -94,12 +86,7 @@ export async function GET(req: NextRequest) {
   if (
     !task ||
     !canReadTask(
-      {
-        _id: session.userId,
-        teamId: session.teamId,
-        organizationId: session.organizationId,
-        role: session.role,
-      },
+      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
       task
     )
   ) {

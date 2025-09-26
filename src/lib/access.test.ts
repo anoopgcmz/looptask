@@ -46,13 +46,6 @@ describe('task access', () => {
     expect(canWriteTask(user, task)).toBe(true);
   });
 
-  it('platform admin can read and write across organizations', () => {
-    const task = { ...baseTask, organizationId: otherOrgId };
-    const user = { _id: ownerId, teamId, organizationId: orgId, role: 'PLATFORM' };
-    expect(canReadTask(user, task)).toBe(true);
-    expect(canWriteTask(user, task)).toBe(true);
-  });
-
   it('helper can read but not write', () => {
     const task = { ...baseTask, helpers: [helperId] };
     const user = { _id: helperId, teamId, organizationId: orgId };
