@@ -31,22 +31,6 @@ describe('middleware', () => {
     expect(response.status).toBe(200);
   });
 
-  it('allows admin register page without a session', async () => {
-    vi.mocked(getToken).mockResolvedValue(null);
-
-    const response = await middleware(createRequest('/admin/register'));
-
-    expect(response.status).toBe(200);
-  });
-
-  it('allows admin register api without a session', async () => {
-    vi.mocked(getToken).mockResolvedValue(null);
-
-    const response = await middleware(createRequest('/api/admin/register'));
-
-    expect(response.status).toBe(200);
-  });
-
   const protectedPaths = [
     '/dashboard',
     '/tasks',
@@ -89,9 +73,9 @@ describe('middleware', () => {
     expect(response.status).toBe(200);
   });
 
-  const adminProtectedPaths = ['/admin', '/admin/users', '/admin/users/new'];
+  const adminRestrictedPaths = ['/admin', '/admin/register', '/admin/users', '/admin/users/new'];
 
-  it.each(adminProtectedPaths)(
+  it.each(adminRestrictedPaths)(
     'redirects to admin login when hitting %s without a session',
     async (path) => {
       vi.mocked(getToken).mockResolvedValue(null);
@@ -104,6 +88,8 @@ describe('middleware', () => {
       expect(location).toContain('/admin/login');
     }
   );
+
+  const adminProtectedPaths = ['/admin', '/admin/users', '/admin/users/new'];
 
   it.each(adminProtectedPaths)(
     'allows authenticated users to access %s',

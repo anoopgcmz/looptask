@@ -9,12 +9,10 @@ const PUBLIC_ROUTES = new Set([
   '/login',
   '/signin',
   '/register',
-  '/admin/register',
   '/forgot-password',
   '/terms',
   '/privacy',
   '/api/register',
-  '/api/admin/register',
   ADMIN_LOGIN_PATH,
 ]);
 
