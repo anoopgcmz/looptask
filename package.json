@@ -11,6 +11,7 @@
     "build": "npm run lint && npm run typecheck && next build",
     "worker": "tsx scripts/worker.ts",
     "seed": "tsx scripts/seed.ts",
+    "seed:admin": "tsx scripts/seed-admin.ts",
     "digest": "tsx scripts/digest.ts",
     "test": "vitest run",
     "test:e2e": "playwright test"
