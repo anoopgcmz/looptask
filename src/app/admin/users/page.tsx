@@ -8,14 +8,21 @@ import {
   type ChangeEvent,
 } from 'react';
 import Link from 'next/link';
+import type { UserRole } from '@/lib/roles';
 
 interface User {
   _id: string;
   name: string;
   email: string;
   username: string;
-  role: string;
+  role: UserRole;
 }
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  USER: 'Member',
+  ADMIN: 'Tenant Admin',
+  PLATFORM: 'Platform Admin',
+};
 
 interface Organization {
   _id: string;
@@ -124,7 +131,7 @@ export default function UsersPage() {
             <th className="border p-2">Name</th>
             <th className="border p-2">Email</th>
             <th className="border p-2">Username</th>
-            <th className="border p-2">Admin</th>
+            <th className="border p-2">Role</th>
             <th className="border p-2">Actions</th>
           </tr>
         </thead>
@@ -134,7 +141,7 @@ export default function UsersPage() {
               <td className="border p-2">{u.name}</td>
               <td className="border p-2">{u.email}</td>
               <td className="border p-2">{u.username}</td>
-              <td className="border p-2">{u.role === 'ADMIN' ? 'Yes' : 'No'}</td>
+              <td className="border p-2">{ROLE_LABELS[u.role] ?? u.role}</td>
               <td className="border p-2 flex gap-2">
                 <Link
                   href={`/admin/users/${u._id}`}

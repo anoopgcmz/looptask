@@ -17,13 +17,18 @@ export const GET = withOrganization(
     session: Session
   ) => {
     const { params } = context;
-const { id } = await params;
+    const { id } = await params;
     await dbConnect();
     const task = await Task.findById(id);
     if (
       !task ||
       !canReadTask(
-        { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+        {
+          _id: session.userId,
+          teamId: session.teamId,
+          organizationId: session.organizationId,
+          role: session.role,
+        },
         task
       )
     ) {

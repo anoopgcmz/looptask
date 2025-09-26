@@ -6,6 +6,7 @@ import { ActivityLog } from '@/models/ActivityLog';
 import { auth } from '@/lib/auth';
 import { canReadTask } from '@/lib/access';
 import { problem } from '@/lib/http';
+import { isPlatformRole } from '@/lib/roles';
 
 export async function GET(
   req: NextRequest,
@@ -14,7 +15,8 @@ export async function GET(
   const { params } = context;
   const { id } = await params;
   const session = await auth();
-  if (!session?.userId || !session.organizationId) {
+  const isPlatform = isPlatformRole(session?.role);
+  if (!session?.userId || (!isPlatform && !session.organizationId)) {
     return problem(401, 'Unauthorized', 'You must be signed in.');
   }
   await dbConnect();
@@ -22,7 +24,12 @@ export async function GET(
   if (
     !task ||
     !canReadTask(
-      { _id: session.userId, teamId: session.teamId, organizationId: session.organizationId },
+      {
+        _id: session.userId,
+        teamId: session.teamId,
+        organizationId: session.organizationId,
+        role: session.role,
+      },
       task
     )
   ) {

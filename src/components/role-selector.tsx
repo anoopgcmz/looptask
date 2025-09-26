@@ -1,8 +1,9 @@
 'use client';
 
 import React, { forwardRef } from 'react';
+import type { OrganizationRole } from '@/lib/roles';
 
-export type Role = 'ADMIN' | 'USER';
+export type Role = OrganizationRole;
 
 const RoleSelector = forwardRef<
   HTMLSelectElement,

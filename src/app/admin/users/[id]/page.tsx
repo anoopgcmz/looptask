@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import RoleSelector from '@/components/role-selector';
+import PlatformRoleSelector from '@/components/platform-role-selector';
+import type { UserRole } from '@/lib/roles';
+import useAuth from '@/hooks/useAuth';
 
 export default function EditUserPage() {
   const params = useParams();
   const id = params?.id as string;
+  const { user: currentUser } = useAuth();
+  const canAssignPlatform = currentUser?.role === 'PLATFORM';
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -14,7 +18,7 @@ export default function EditUserPage() {
     password: '',
     organizationId: '',
     teamId: '',
-    role: 'USER',
+    role: 'USER' as UserRole,
   });
   const [status, setStatus] = useState<{ success?: string; error?: string }>({});
 
@@ -29,7 +33,7 @@ export default function EditUserPage() {
         password: '',
         organizationId: data.organizationId ?? '',
         teamId: data.teamId ?? '',
-        role: data.role ?? 'USER',
+        role: (data.role as UserRole | undefined) ?? 'USER',
       });
     };
     if (id) void load();
@@ -39,7 +43,10 @@ export default function EditUserPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === 'role' ? ((canAssignPlatform ? value : prev.role) as UserRole) : value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,10 +81,11 @@ export default function EditUserPage() {
       <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Password" className="border p-2" />
       <input name="organizationId" value={form.organizationId} onChange={handleChange} placeholder="Organization ID" className="border p-2" required />
       <input name="teamId" value={form.teamId} onChange={handleChange} placeholder="Team ID" className="border p-2" />
-      <RoleSelector
+      <PlatformRoleSelector
         name="role"
         value={form.role}
         onChange={handleChange}
+        includePlatform={canAssignPlatform}
         className="border p-2"
       />
       {status.success && <p className="text-green-600">{status.success}</p>}

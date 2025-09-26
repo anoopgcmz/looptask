@@ -21,6 +21,7 @@ import { serializeTask } from '@/lib/serializeTask';
 import type { ITask } from '@/models/Task';
 import loopUtils from '@/lib/loop';
 import { runWithOptionalTransaction } from '@/lib/transaction';
+import { isElevatedAdminRole, isPlatformRole } from '@/lib/roles';
 
 const bodySchema = z.object({
   action: z.enum(['START', 'SEND_FOR_REVIEW', 'REQUEST_CHANGES', 'DONE']),
@@ -35,9 +36,10 @@ export async function POST(
   const { params } = context;
   const { id } = await params;
   const session = await auth();
-  if (!session?.userId || !session.organizationId)
+  const isPlatform = isPlatformRole(session?.role);
+  if (!session?.userId || (!isPlatform && !session.organizationId))
     return problem(401, 'Unauthorized', 'You must be signed in.');
-  const isAdmin = session.role === 'ADMIN';
+  const isAdmin = isElevatedAdminRole(session.role);
 
   let body: z.infer<typeof bodySchema>;
   try {
@@ -49,7 +51,10 @@ export async function POST(
 
   await dbConnect();
   const task = await Task.findById(id).lean<ITask>();
-  if (!task || task.organizationId.toString() !== session.organizationId)
+  if (
+    !task ||
+    (!isPlatform && task.organizationId.toString() !== session.organizationId)
+  )
     return problem(404, 'Not Found', 'Task not found');
 
   const actorId = session.userId;
