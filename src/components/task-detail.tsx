@@ -162,21 +162,6 @@ export default function TaskDetail({
   }, [loadProjectDetail, task?.projectId]);
 
   useEffect(() => {
-    if (!fieldsEditable) return;
-    void loadProjectOptions();
-  }, [fieldsEditable, loadProjectOptions]);
-
-  useEffect(() => {
-    if (!project) return;
-    setProjectOptions((prev) => {
-      if (prev.some((item) => item._id === project._id)) {
-        return prev;
-      }
-      return [...prev, project];
-    });
-  }, [project]);
-
-  useEffect(() => {
     const ownerId = task?.ownerId;
     if (!ownerId) {
       setOwnerName(null);
@@ -228,6 +213,21 @@ export default function TaskDetail({
   }, [canEditProp, task, user?.userId]);
 
   const fieldsEditable = canEdit && !readOnly;
+
+  useEffect(() => {
+    if (!fieldsEditable) return;
+    void loadProjectOptions();
+  }, [fieldsEditable, loadProjectOptions]);
+
+  useEffect(() => {
+    if (!project) return;
+    setProjectOptions((prev) => {
+      if (prev.some((item) => item._id === project._id)) {
+        return prev;
+      }
+      return [...prev, project];
+    });
+  }, [project]);
   const minDueDate = useMemo(() => getTodayDateInputValue(), []);
 
   const updateField = async (field: keyof Task, value: string) => {
