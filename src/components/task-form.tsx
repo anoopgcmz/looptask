@@ -53,6 +53,7 @@ export interface TaskFormProps {
   initialValues?: Partial<TaskFormValues>;
   projects: ProjectSummary[];
   projectsLoading?: boolean;
+  projectSelectDisabled?: boolean;
   onProjectsRefresh?: () => Promise<void>;
   onSubmit: (values: TaskFormSubmitValues) => Promise<void | { error?: string }>;
   onCancel?: () => void;
@@ -137,6 +138,7 @@ export default function TaskForm({
   initialValues,
   projects,
   projectsLoading = false,
+  projectSelectDisabled = false,
   onProjectsRefresh,
   onSubmit,
   onCancel,
@@ -224,12 +226,12 @@ export default function TaskForm({
   }, [initialValues?.projectId]);
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId || projectsLoading) return;
     if (projects.some((project) => project._id === projectId)) {
       return;
     }
     setProjectId('');
-  }, [projectId, projects]);
+  }, [projectId, projects, projectsLoading]);
 
   useEffect(() => {
     setSteps(mapInitialSteps(initialValues?.steps, currentUserId));
@@ -443,7 +445,11 @@ export default function TaskForm({
                   clearFormFieldError('projectId');
                 }
               }}
-              disabled={projectsLoading || projects.length === 0}
+              disabled={
+                (projectSelectDisabled && Boolean(projectId)) ||
+                projectsLoading ||
+                projects.length === 0
+              }
               className={cn(
                 'border border-[#E5E7EB] bg-white text-[#111827]',
                 formErrors.projectId && 'border-red-500 focus:border-red-500 focus:ring-red-200',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
 import useAuth from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/toast-provider';
@@ -10,6 +10,7 @@ import type { ProjectSummary } from '@/types/api/project';
 
 function NewTaskPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, status, isLoading } = useAuth();
   const { showToast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -58,12 +59,18 @@ function NewTaskPageInner() {
   }
 
   const currentUserId = user?.userId ?? '';
+  const preselectedProjectId = searchParams?.get('projectId') ?? undefined;
+  const isProjectLocked = Boolean(preselectedProjectId);
 
   return (
     <TaskForm
       currentUserId={currentUserId}
+      initialValues={
+        preselectedProjectId ? { projectId: preselectedProjectId } : undefined
+      }
       projects={projects}
       projectsLoading={projectsLoading}
+      projectSelectDisabled={isProjectLocked}
       onProjectsRefresh={loadProjects}
       submitLabel="Create Task"
       submitPendingLabel="Creating…"
