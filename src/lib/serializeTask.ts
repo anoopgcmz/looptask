@@ -12,7 +12,7 @@ export function serializeTask(task: ITask): TaskResponse {
     helpers: task.helpers?.map((id) => id.toString()),
     mentions: task.mentions?.map((id) => id.toString()),
     organizationId: task.organizationId.toString(),
-    projectId: task.projectId.toString(),
+    projectId: task.projectId ? task.projectId.toString() : undefined,
     teamId: task.teamId?.toString(),
     status: task.status,
     priority: task.priority,
