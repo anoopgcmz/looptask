@@ -133,6 +133,27 @@ export const PATCH = withOrganization(
     )
   )
     return problem(403, 'Forbidden', 'You cannot edit this task');
+  const projectObjectId = body.projectId
+    ? new Types.ObjectId(body.projectId)
+    : task.projectId
+      ? new Types.ObjectId(task.projectId.toString())
+      : null;
+  let projectValidated = false;
+  const ensureProject = async (): Promise<Response | null> => {
+    if (projectValidated) return null;
+    if (!projectObjectId) {
+      return problem(400, 'Invalid request', 'Project must be in your organization');
+    }
+    const project = await Project.findOne({
+      _id: projectObjectId,
+      organizationId: new Types.ObjectId(session.organizationId),
+    });
+    if (!project) {
+      return problem(400, 'Invalid request', 'Project must be in your organization');
+    }
+    projectValidated = true;
+    return null;
+  };
   if (body.ownerId) {
     const owner = await User.findOne({
       _id: new Types.ObjectId(body.ownerId),
@@ -141,21 +162,15 @@ export const PATCH = withOrganization(
     if (!owner) {
       return problem(400, 'Invalid request', 'Owner must be in your organization');
     }
-    const project = await Project.findOne({
-      _id: new Types.ObjectId(body.projectId),
-      organizationId: new Types.ObjectId(session.organizationId),
-    });
-    if (!project) {
-      return problem(400, 'Invalid request', 'Project must be in your organization');
+    const projectError = await ensureProject();
+    if (projectError) {
+      return projectError;
     }
   }
   if (body.projectId) {
-    const project = await Project.findOne({
-      _id: new Types.ObjectId(body.projectId),
-      organizationId: new Types.ObjectId(session.organizationId),
-    });
-    if (!project) {
-      return problem(400, 'Invalid request', 'Project must be in your organization');
+    const projectError = await ensureProject();
+    if (projectError) {
+      return projectError;
     }
   }
   if (body.steps) {
