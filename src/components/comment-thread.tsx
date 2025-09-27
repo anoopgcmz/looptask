@@ -188,18 +188,18 @@ export default function CommentThread({
             />
             <div className="flex-1">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="text-sm font-semibold text-[#111827]">{name}</span>
-                <time className="text-xs text-[#6B7280]">
+                <span className="text-sm font-semibold text-[var(--tone-text-strong)]">{name}</span>
+                <time className="text-xs text-[var(--color-text-muted)]">
                   {formatTimestamp(comment.createdAt)}
                 </time>
               </div>
-              <div className="mt-2 rounded-2xl bg-[#F3F4F6] px-4 py-3 text-sm text-[#111827] shadow-sm">
+              <div className="mt-2 rounded-2xl bg-[var(--surface-page)] px-4 py-3 text-sm text-[var(--tone-text)] shadow-sm">
                 {comment.content}
               </div>
               <div className="mt-2 flex items-center gap-3">
                 <button
                   type="button"
-                  className="text-xs font-medium text-[#4F46E5] transition hover:text-[#4338CA]"
+                  className="text-xs font-medium text-[var(--brand-primary)] transition hover:text-[color:rgba(3,2,19,0.7)]"
                   onClick={() => setReplyingTo(comment._id)}
                   disabled={!user}
                 >
@@ -210,13 +210,13 @@ export default function CommentThread({
           </div>
           {replyingTo === comment._id ? (
             <div className="ml-12">
-              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
                 <textarea
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
                   placeholder={user ? 'Write a reply…' : 'Sign in to reply'}
                   disabled={!user}
-                  className="min-h-[72px] w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F46E5] focus:outline-none focus:ring-2 focus:ring-[#C7D2FE]"
+                  className="min-h-[72px] w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--tone-text)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
                 />
                 <div className="mt-3 flex justify-end gap-2">
                   <Button
@@ -251,7 +251,7 @@ export default function CommentThread({
     <div
       className={cn(
         parentId
-          ? 'mt-4 space-y-6 border-l border-gray-200 pl-6'
+          ? 'mt-4 space-y-6 border-l border-[var(--color-border)] pl-6'
           : 'flex flex-1 flex-col gap-6',
         className
       )}
@@ -260,20 +260,20 @@ export default function CommentThread({
         {comments.length ? (
           comments.map((comment) => renderComment(comment))
         ) : parentId ? null : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-[#F9FAFB] px-4 py-6 text-center text-sm text-[#6B7280]">
+          <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--surface-page)] px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
             No comments yet. Start the conversation!
           </div>
         )}
       </div>
       {!parentId && (
         <form
-          className="mt-auto space-y-4 border-t border-gray-200 pt-4"
+          className="mt-auto space-y-4 border-t border-[var(--color-border)] pt-4"
           onSubmit={(event) => {
             event.preventDefault();
             void handleCreate(null);
           }}
         >
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
             <textarea
               value={newContent}
               onChange={(e) => {
@@ -285,11 +285,11 @@ export default function CommentThread({
               }}
               placeholder={user ? 'Share an update…' : 'Sign in to comment'}
               disabled={!user}
-              className="min-h-[96px] w-full resize-none rounded-xl border-0 bg-transparent px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-0"
+              className="min-h-[96px] w-full resize-none rounded-xl border-0 bg-transparent px-4 py-3 text-sm text-[var(--tone-text)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-0"
             />
           </div>
           {displayUsers.length ? (
-            <div className="text-xs text-[#6B7280]">
+            <div className="text-xs text-[var(--color-text-muted)]">
               {displayUsers.map((u) => (
                 <span key={u._id} className="block">
                   {`${u.name ?? 'Someone'} is typing…`}

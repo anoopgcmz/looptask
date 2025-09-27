@@ -2,16 +2,29 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
+type BadgeVariant =
+  | 'default'
+  | 'secondary'
+  | 'outline'
+  | 'destructive'
+  | 'success'
+  | 'warning'
+  | 'info';
+
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?:
-    | 'default'
-    | 'secondary'
-    | 'success'
-    | 'inProgress'
-    | 'backlog'
-    | 'urgent'
-    | 'low';
+  variant?: BadgeVariant;
 }
+
+const variantClasses: Record<BadgeVariant, string> = {
+  default: 'bg-[var(--brand-primary)] text-white',
+  secondary: 'bg-[var(--brand-secondary)] text-[var(--brand-primary)]',
+  outline:
+    'border border-[var(--color-border-strong)] bg-transparent text-[var(--tone-text-strong)]',
+  destructive: 'bg-[var(--color-status-destructive)] text-white',
+  success: 'bg-[var(--color-status-success)] text-white',
+  warning: 'bg-[var(--color-status-warning)] text-white',
+  info: 'bg-[var(--color-status-info)] text-white',
+};
 
 const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant = 'default', ...props }, ref) => {
@@ -19,16 +32,8 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       <span
         ref={ref}
         className={cn(
-          'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium capitalize',
-          {
-            default: 'bg-gray-100 text-gray-800',
-            secondary: 'bg-blue-100 text-blue-800',
-            success: 'bg-[#10B981] text-white',
-            inProgress: 'bg-[#3B82F6] text-white',
-            backlog: 'bg-[#F59E0B] text-white',
-            urgent: 'bg-[#EF4444] text-white',
-            low: 'bg-[#6B7280] text-white',
-          }[variant],
+          'inline-flex items-center gap-1 rounded-full border border-transparent px-2.5 py-1 text-xs font-medium capitalize tracking-wide transition-colors',
+          variantClasses[variant],
           className
         )}
         {...props}

@@ -78,19 +78,19 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#E5E7EB] bg-[#F9FAFB] px-3 py-6 transition-all duration-300 ease-in-out',
+        'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[var(--color-border)] bg-[var(--surface-page)] px-3 py-6 transition-all duration-300 ease-in-out',
         collapsed ? 'w-20' : 'w-72'
       )}
     >
       <div className="space-y-8">
         <div className={cn('flex items-center gap-3 px-2', collapsed && 'justify-center px-0')}>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
-            <span className="text-lg font-semibold text-[#4F46E5]">LT</span>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-surface)] shadow-sm">
+            <span className="text-lg font-semibold text-[var(--brand-primary)]">LT</span>
           </div>
           {!collapsed && (
             <div>
-              <p className="text-base font-semibold text-[#111827]">LoopTask</p>
-              <p className="text-xs text-[#6B7280]">Productivity Hub</p>
+              <p className="text-base font-semibold text-[var(--tone-text-strong)]">LoopTask</p>
+              <p className="text-xs text-[var(--color-text-muted)]">Productivity Hub</p>
             </div>
           )}
         </div>
@@ -105,12 +105,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[#1F2937] transition-colors hover:bg-white hover:text-[#111827]',
-                  isActive && 'bg-white text-[#111827] shadow-sm',
+                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[var(--tone-text)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--tone-text-strong)]',
+                  isActive && 'bg-[var(--color-surface)] text-[var(--tone-text-strong)] shadow-sm',
                   collapsed && 'justify-center px-0'
                 )}
               >
-                <Icon className="h-5 w-5 text-[#4F46E5]" />
+                <Icon className="h-5 w-5 text-[var(--brand-primary)]" />
                 <span
                   className={cn(
                     'whitespace-nowrap transition-all duration-200',
@@ -125,10 +125,10 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
         </nav>
       </div>
 
-      <div className={cn('mt-auto rounded-2xl border border-[#E5E7EB] bg-white p-3 shadow-sm', collapsed && 'px-0 text-center')}>
-        {loading && <p className="text-xs text-[#6B7280]">Loading user...</p>}
+      <div className={cn('mt-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm', collapsed && 'px-0 text-center')}>
+        {loading && <p className="text-xs text-[var(--color-text-muted)]">Loading user...</p>}
         {error && !loading && (
-          <p className="text-xs text-red-500" role="alert">
+          <p className="text-xs text-[var(--color-status-destructive)]" role="alert">
             {error}
           </p>
         )}
@@ -137,12 +137,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
             <Avatar src={user.avatar ?? undefined} fallback={initials} className="h-10 w-10 text-base" />
             {!collapsed && (
               <div className="flex flex-col">
-                <p className="text-sm font-medium text-[#111827]">{user.name}</p>
-                <p className="text-xs text-[#6B7280]">{user.email}</p>
+                <p className="text-sm font-medium text-[var(--tone-text-strong)]">{user.name}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{user.email}</p>
               </div>
             )}
             {collapsed && (
-              <p className="text-xs font-medium text-[#111827]">{user.name ?? user.email}</p>
+              <p className="text-xs font-medium text-[var(--tone-text-strong)]">{user.name ?? user.email}</p>
             )}
           </div>
         )}

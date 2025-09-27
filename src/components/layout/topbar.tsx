@@ -50,14 +50,14 @@ export default function Topbar({ onNewTask, onToggleSidebar, isSidebarCollapsed 
   const currentPageTitle = breadcrumbs.at(-1)?.label ?? 'Overview';
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#E5E7EB] bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
       <div className="flex h-16 items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={onToggleSidebar}
             disabled={!onToggleSidebar}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#111827] shadow-sm transition hover:border-[#4F46E5] hover:text-[#4F46E5] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--tone-text-strong)] shadow-sm transition hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] disabled:cursor-not-allowed disabled:opacity-60"
             aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <MenuIcon className="h-5 w-5" />
