@@ -61,7 +61,7 @@ export interface TaskResponse {
   helpers?: string[] | undefined;
   mentions?: string[] | undefined;
   organizationId: string;
-  projectId: string;
+  projectId?: string | undefined;
   teamId?: string | undefined;
   status: TaskStatus;
   priority: TaskPriority;
