@@ -78,7 +78,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[var(--color-border)] bg-[var(--surface-page)] px-3 py-6 transition-all duration-300 ease-in-out',
+        'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] px-3 py-6 transition-all duration-300 ease-in-out',
         collapsed ? 'w-20' : 'w-72'
       )}
     >
@@ -89,8 +89,8 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
           </div>
           {!collapsed && (
             <div>
-              <p className="text-base font-semibold text-[var(--tone-text-strong)]">LoopTask</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Productivity Hub</p>
+              <p className="text-heading-6 text-[var(--tone-text-strong)]">LoopTask</p>
+              <p className="text-body-xs text-[var(--color-text-muted)]">Productivity Hub</p>
             </div>
           )}
         </div>
@@ -105,7 +105,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[var(--tone-text)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--tone-text-strong)]',
+                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-body-sm font-medium text-[var(--tone-text)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--tone-text-strong)]',
                   isActive && 'bg-[var(--color-surface)] text-[var(--tone-text-strong)] shadow-sm',
                   collapsed && 'justify-center px-0'
                 )}
@@ -126,9 +126,9 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
       </div>
 
       <div className={cn('mt-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm', collapsed && 'px-0 text-center')}>
-        {loading && <p className="text-xs text-[var(--color-text-muted)]">Loading user...</p>}
+        {loading && <p className="text-body-xs text-[var(--color-text-muted)]">Loading user...</p>}
         {error && !loading && (
-          <p className="text-xs text-[var(--color-status-destructive)]" role="alert">
+          <p className="text-body-xs text-[var(--color-status-destructive)]" role="alert">
             {error}
           </p>
         )}
@@ -137,12 +137,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
             <Avatar src={user.avatar ?? undefined} fallback={initials} className="h-10 w-10 text-base" />
             {!collapsed && (
               <div className="flex flex-col">
-                <p className="text-sm font-medium text-[var(--tone-text-strong)]">{user.name}</p>
-                <p className="text-xs text-[var(--color-text-muted)]">{user.email}</p>
+                <p className="text-body-sm font-medium text-[var(--tone-text-strong)]">{user.name}</p>
+                <p className="text-body-xs text-[var(--color-text-muted)]">{user.email}</p>
               </div>
             )}
             {collapsed && (
-              <p className="text-xs font-medium text-[var(--tone-text-strong)]">{user.name ?? user.email}</p>
+              <p className="text-body-xs font-medium text-[var(--tone-text-strong)]">{user.name ?? user.email}</p>
             )}
           </div>
         )}

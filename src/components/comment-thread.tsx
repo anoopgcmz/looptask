@@ -193,7 +193,7 @@ export default function CommentThread({
                   {formatTimestamp(comment.createdAt)}
                 </time>
               </div>
-              <div className="mt-2 rounded-2xl bg-[var(--surface-page)] px-4 py-3 text-sm text-[var(--tone-text)] shadow-sm">
+              <div className="mt-2 rounded-2xl bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--tone-text)] shadow-sm">
                 {comment.content}
               </div>
               <div className="mt-2 flex items-center gap-3">
@@ -260,7 +260,7 @@ export default function CommentThread({
         {comments.length ? (
           comments.map((comment) => renderComment(comment))
         ) : parentId ? null : (
-          <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--surface-page)] px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
+          <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--surface-muted)] px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
             No comments yet. Start the conversation!
           </div>
         )}
