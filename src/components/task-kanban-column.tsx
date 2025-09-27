@@ -31,209 +31,125 @@ export default function TaskKanbanColumn({
   const normalizedStatus = label.trim().toUpperCase().replace(/\s+/g, '_');
 
   const statusAccent = getStatusAccentStyles(normalizedStatus);
-  const completedTasks = cardTasks.filter((task) => task.status === 'DONE').length;
-  const progressPercentage = cardTasks.length
-    ? Math.round((completedTasks / cardTasks.length) * 100)
-    : 0;
 
   return (
-    <div className="flex gap-6 overflow-x-auto pb-6">
-      <section className="min-w-80 shrink-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5">
-        <header
-          className={cn(
-            'flex flex-col gap-4 px-5 py-5 text-white',
-            statusAccent.header
-          )}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
-                <span
-                  className={cn('h-2.5 w-2.5 rounded-full', statusAccent.dot)}
-                  aria-hidden
+    <section className="flex min-w-80 shrink-0 flex-col rounded-lg bg-[#f9fafb] p-4">
+      <header className="flex flex-col">
+        <div className="flex items-center gap-2">
+          <span className={cn('h-3 w-3 rounded-full', statusAccent.dot)} aria-hidden />
+          <h2 className="text-sm font-medium text-slate-900">{label}</h2>
+          <span className="ml-auto rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+            {cardTasks.length}
+          </span>
+        </div>
+        <div className="my-4 h-px w-full bg-black" aria-hidden />
+      </header>
+      <div className="flex max-h-[70vh] flex-1 flex-col overflow-hidden">
+        <div className="flex-1 space-y-3 overflow-y-auto scroll-pt-4 scroll-pb-4">
+          {isLoading ? (
+            <ul className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <li
+                  key={i}
+                  className="h-28 animate-pulse rounded-lg border border-slate-200 bg-white"
                 />
-                {label}
-              </span>
-              <p className="mt-2 text-sm font-medium text-white/90">
-                {cardTasks.length} tasks
+              ))}
+            </ul>
+          ) : isEmpty ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-500">
+              <p className="font-medium text-slate-700">No tasks found.</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Start by creating a new item for this stage.
               </p>
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 shadow-sm transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M10 4.167v11.666" />
-                <path d="M4.167 10h11.666" />
-              </svg>
-              Add task
-            </button>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/30">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all duration-300 ease-out',
-                  statusAccent.progress
-                )}
-                style={{ width: `${progressPercentage}%` }}
-                aria-hidden
-              />
-            </div>
-            <span className="text-xs font-semibold text-white/90">
-              {progressPercentage}%
-            </span>
-          </div>
-        </header>
-        <div className="flex max-h-[70vh] flex-1 flex-col overflow-hidden">
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
-            {isLoading ? (
-              <ul className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <li
-                    key={i}
-                    className="h-28 animate-pulse rounded-2xl border border-white/40 bg-white/30"
+          ) : (
+            cardTasks.map((task) => {
+              const extendedTask = task as Task & { assignee?: string };
+              const canEdit = Boolean(
+                currentUserId &&
+                  (currentUserId === task.createdBy || currentUserId === task.ownerId)
+              );
+              const isSelected = Boolean(
+                currentUserId &&
+                  (currentUserId === task.ownerId || currentUserId === extendedTask.assignee)
+              );
+              return (
+                <motion.div
+                  key={task._id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className={cn(
+                    'group rounded-lg ring-1 ring-transparent transition duration-200',
+                    'hover:-translate-y-0.5 hover:ring-2 hover:ring-slate-300 hover:shadow-sm',
+                    'focus-within:outline-none focus-within:ring-2 focus-within:ring-slate-400 focus-within:shadow-sm',
+                    isSelected && 'ring-2 ring-slate-400 shadow-sm'
+                  )}
+                  data-selected={isSelected}
+                >
+                  <TaskCard
+                    task={{
+                      _id: task._id,
+                      title: task.title,
+                      description: (task as Task & { description?: string }).description,
+                      assignee: extendedTask.assignee || task.ownerId,
+                      assigneeAvatar: (task as Task & { assigneeAvatar?: string }).assigneeAvatar,
+                      dueDate: task.dueDate,
+                      priority: task.priority,
+                      status: task.status,
+                      tags: (task as Task & { tags?: string[] }).tags,
+                    }}
+                    href={`/tasks/${task._id}`}
+                    onChange={onTaskChange}
+                    canEdit={canEdit}
                   />
-                ))}
-              </ul>
-            ) : isEmpty ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/40 bg-white/10 px-6 py-10 text-center text-sm text-slate-100">
-                <p className="font-medium text-white/80">No tasks found.</p>
-                <p className="mt-1 text-xs text-white/70">
-                  Start by creating a new item for this stage.
-                </p>
-              </div>
-            ) : (
-              cardTasks.map((task) => {
-                const extendedTask = task as Task & { assignee?: string };
-                const canEdit = Boolean(
-                  currentUserId &&
-                    (currentUserId === task.createdBy || currentUserId === task.ownerId)
-                );
-                const isSelected = Boolean(
-                  currentUserId &&
-                    (currentUserId === task.ownerId || currentUserId === extendedTask.assignee)
-                );
-                return (
-                  <motion.div
-                    key={task._id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className={cn(
-                      'group rounded-2xl ring-1 ring-transparent ring-offset-2 ring-offset-white transition duration-200',
-                      'hover:-translate-y-0.5 hover:ring-2 hover:ring-white/80 hover:shadow-[0_20px_45px_rgba(15,23,42,0.18)]',
-                      'focus-within:outline-none focus-within:ring-2 focus-within:ring-white focus-within:shadow-[0_18px_40px_rgba(15,23,42,0.16)]',
-                      isSelected && 'ring-2 ring-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]'
-                    )}
-                    data-selected={isSelected}
-                  >
-                    <TaskCard
-                      task={{
-                        _id: task._id,
-                        title: task.title,
-                        description: (task as Task & { description?: string }).description,
-                        assignee: extendedTask.assignee || task.ownerId,
-                        assigneeAvatar: (task as Task & { assigneeAvatar?: string }).assigneeAvatar,
-                        dueDate: task.dueDate,
-                        priority: task.priority,
-                        status: task.status,
-                        tags: (task as Task & { tags?: string[] }).tags,
-                      }}
-                      href={`/tasks/${task._id}`}
-                      onChange={onTaskChange}
-                      canEdit={canEdit}
-                    />
-                  </motion.div>
-                );
-              })
-            )}
-          </div>
-          <div className="border-t border-dashed border-white/30 px-5 py-4">
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white/70 py-3 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path d="M10 4.167v11.666" />
-                <path d="M4.167 10h11.666" />
-              </svg>
-              Add task
-            </button>
-          </div>
+                </motion.div>
+              );
+            })
+          )}
         </div>
-        {hasMore && onLoadMore && (
-          <div className="border-t border-slate-200 bg-white px-5 py-3">
-            <button
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => void onLoadMore()}
-              disabled={isLoadingMore}
-            >
-              {isLoadingMore ? 'Loading…' : 'Load more'}
-            </button>
-          </div>
-        )}
-      </section>
-    </div>
+      </div>
+      {hasMore && onLoadMore && (
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          <button
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => void onLoadMore()}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? 'Loading…' : 'Load more'}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 
 function getStatusAccentStyles(
   status: string
-): { header: string; dot: string; progress: string } {
+): { dot: string } {
   switch (status) {
     case 'OPEN':
       return {
-        header: 'bg-red-500',
-        dot: 'bg-white',
-        progress: 'bg-white',
+        dot: 'bg-red-500',
       };
     case 'IN_PROGRESS':
     case 'FLOW_IN_PROGRESS':
       return {
-        header: 'bg-blue-500',
-        dot: 'bg-white',
-        progress: 'bg-white',
+        dot: 'bg-blue-500',
       };
     case 'IN_REVIEW':
     case 'REVIEW':
     case 'REVISIONS':
       return {
-        header: 'bg-yellow-500',
-        dot: 'bg-slate-900/80',
-        progress: 'bg-white',
+        dot: 'bg-blue-500',
       };
     case 'DONE':
       return {
-        header: 'bg-green-500',
-        dot: 'bg-white',
-        progress: 'bg-white',
+        dot: 'bg-green-500',
       };
     default:
       return {
-        header: 'bg-slate-600',
-        dot: 'bg-white/80',
-        progress: 'bg-white',
+        dot: 'bg-slate-400',
       };
   }
 }
