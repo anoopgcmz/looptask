@@ -53,6 +53,26 @@ const TasksIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const ProjectsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
+    <path
+      d="M4.5 6.75A2.25 2.25 0 016.75 4.5h3.19a2.25 2.25 0 011.74.84l.72.9a.75.75 0 00.58.28h4.27a1.5 1.5 0 011.5 1.5V18a1.5 1.5 0 01-1.5 1.5H6.75A2.25 2.25 0 014.5 17.25z"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <path
+      d="M8 14h8M8 11h5"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const ReportsIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" {...props}>
     <path
@@ -117,6 +137,7 @@ const LogoIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const NAVIGATION_LINKS: NavigationLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+  { href: "/projects", label: "Projects", icon: <ProjectsIcon /> },
   {
     href: "/tasks",
     label: "My Tasks",

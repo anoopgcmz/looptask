@@ -61,6 +61,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   const navItems = useMemo(
     () => [
       { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+      { href: '/projects', label: 'Projects', icon: ProjectsIcon },
       { href: '/tasks', label: 'My Tasks', icon: TasksIcon },
       { href: '/settings', label: 'Settings', icon: SettingsIcon },
     ],
@@ -182,6 +183,24 @@ function TasksIcon({ className }: { className?: string }) {
     >
       <path d="M9 11l2 2 4-4" />
       <rect x="3" y="4" width="18" height="16" rx="2" ry="2" />
+    </svg>
+  );
+}
+
+function ProjectsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M3 7.5A2.5 2.5 0 015.5 5H9l1.2 1.6a2 2 0 001.6.8H18.5A2.5 2.5 0 0121 9.9V18a2 2 0 01-2 2H5.5A2.5 2.5 0 013 17.5z" />
+      <path d="M8 13h7M8 10h4" />
     </svg>
   );
 }
