@@ -6,6 +6,7 @@ export interface NotificationPayload {
   type: string;
   message: string;
   taskId?: string;
+  priority?: string;
   read: boolean;
   readAt: string | null;
   createdAt: string;
