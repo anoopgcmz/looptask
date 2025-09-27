@@ -1,33 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #4f46e5;
-  --color-secondary: #3730a3;
+  --brand-primary: #030213;
+  --brand-secondary: #e3e1ff;
 
-  --surface-page: #f5f7ff;
+  --surface-page: #f5f6fa;
   --surface-card: #ffffff;
 
-  --color-text-strong: #111827;
-  --color-text: #1f2937;
-  --color-text-muted: #6b7280;
+  --tone-text-strong: #0b1024;
+  --tone-text: #1b2137;
+  --tone-text-muted: #5c6376;
 
-  --color-border: #dfe4ff;
-  --color-border-strong: #c7cffd;
+  --border-subtle: #d7dbe6;
+  --border-strong: #c2c7d6;
 
-  --shadow-soft: 0 6px 16px rgba(79, 70, 229, 0.12);
+  --shadow-soft: 0 16px 40px rgba(3, 2, 19, 0.08);
 
-  --status-todo: #4f46e5;
-  --status-inprogress: #a5b4fc;
-  --status-done: #22c55e;
+  --color-status-destructive: #f04438;
+  --color-status-success: #12b76a;
+  --color-status-warning: #f79009;
+  --color-status-info: #2e90fa;
 
-  --priority-high: #ef4444;
-  --priority-medium: #f59e0b;
-  --priority-low: #22c55e;
+  --radius-base: 0.625rem;
+  --ring-color: rgba(3, 2, 19, 0.12);
+
+  --priority-high: var(--color-status-destructive);
+  --priority-medium: var(--color-status-warning);
+  --priority-low: var(--color-status-success);
 
   --layout-header-height: 4.5rem;
   --layout-footer-height: 3.5rem;
 
   /* Legacy aliases */
+  --color-primary: var(--brand-primary);
+  --color-secondary: var(--brand-secondary);
+  --color-text-strong: var(--tone-text-strong);
+  --color-text: var(--tone-text);
+  --color-text-muted: var(--tone-text-muted);
+  --color-border: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
   --color-background: var(--surface-page);
   --color-surface: var(--surface-card);
   --color-text-secondary: var(--color-text-muted);
@@ -36,7 +47,20 @@
 
 @theme inline {
   --color-background: var(--surface-page);
-  --color-foreground: var(--color-text);
+  --color-foreground: var(--tone-text);
+  --color-primary: var(--brand-primary);
+  --color-secondary: var(--brand-secondary);
+  --color-muted: var(--tone-text-muted);
+  --color-border: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-destructive: var(--color-status-destructive);
+  --color-success: var(--color-status-success);
+  --color-warning: var(--color-status-warning);
+  --color-info: var(--color-status-info);
+  --color-ring: var(--ring-color);
+  --radius: var(--radius-base);
+  --radius-md: var(--radius-base);
+  --radius-lg: calc(var(--radius-base) + 0.125rem);
   --font-sans: var(
     --font-inter,
     "Inter",
@@ -52,12 +76,63 @@
 
 body {
   background: var(--surface-page);
-  color: var(--color-text);
+  color: var(--tone-text);
   font-family: var(--font-inter), "Inter", "SF Pro Text", -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.6;
+  font-weight: 500;
+  line-height: 1.5;
   letter-spacing: -0.01em;
   margin: 0;
+}
+
+@layer base {
+  h1 {
+    font-size: clamp(2.5rem, 1.5vw + 2.1rem, 3.25rem);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--tone-text-strong);
+  }
+
+  h2 {
+    font-size: clamp(2.1rem, 1.2vw + 1.7rem, 2.65rem);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: var(--tone-text-strong);
+  }
+
+  h3 {
+    font-size: clamp(1.75rem, 1vw + 1.45rem, 2.25rem);
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--tone-text-strong);
+  }
+
+  h4 {
+    font-size: clamp(1.5rem, 0.8vw + 1.3rem, 1.9rem);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--tone-text-strong);
+  }
+
+  h5 {
+    font-size: clamp(1.25rem, 0.6vw + 1.15rem, 1.55rem);
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.005em;
+    color: var(--tone-text-strong);
+  }
+
+  h6 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: -0.0025em;
+    color: var(--tone-text-strong);
+  }
 }
 
 .app-shell {
