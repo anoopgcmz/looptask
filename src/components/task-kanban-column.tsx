@@ -14,6 +14,7 @@ export interface TaskKanbanColumnProps {
   onLoadMore?: () => void | Promise<void>;
   onTaskChange?: () => void | Promise<void>;
   currentUserId?: string;
+  projectLookup?: Record<string, { name: string; typeName?: string }>;
 }
 
 export default function TaskKanbanColumn({
@@ -25,6 +26,7 @@ export default function TaskKanbanColumn({
   onLoadMore,
   onTaskChange,
   currentUserId,
+  projectLookup,
 }: TaskKanbanColumnProps) {
   const cardTasks = tasks ?? [];
   const isEmpty = !isLoading && cardTasks.length === 0;
@@ -73,6 +75,9 @@ export default function TaskKanbanColumn({
                 currentUserId &&
                   (currentUserId === task.ownerId || currentUserId === extendedTask.assignee)
               );
+              const projectMeta = task.projectId
+                ? projectLookup?.[task.projectId]
+                : undefined;
               return (
                 <motion.div
                   key={task._id}
@@ -98,6 +103,7 @@ export default function TaskKanbanColumn({
                       priority: task.priority,
                       status: task.status,
                       tags: (task as Task & { tags?: string[] }).tags,
+                      ...(projectMeta ? { project: projectMeta } : {}),
                     }}
                     href={`/tasks/${task._id}`}
                     onChange={onTaskChange}

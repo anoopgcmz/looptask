@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useCallback, useEffect, useRef, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
 import TaskForm from '@/components/task-form';
 import useAuth from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/toast-provider';
 import type { TaskResponse } from '@/types/api/task';
+import type { ProjectSummary } from '@/types/api/project';
 
 function EditTaskPageInner({ id }: { id: string }) {
   const router = useRouter();
@@ -16,6 +17,35 @@ function EditTaskPageInner({ id }: { id: string }) {
   const [loadingTask, setLoadingTask] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const loadProjects = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    setProjectsLoading(true);
+    try {
+      const response = await fetch('/api/projects?limit=200', { credentials: 'include' });
+      if (!response.ok) {
+        throw new Error('Failed to load projects');
+      }
+      const data = (await response.json()) as ProjectSummary[];
+      if (!isMountedRef.current) return;
+      setProjects(data);
+    } catch {
+      if (!isMountedRef.current) return;
+      setProjects([]);
+    } finally {
+      if (!isMountedRef.current) return;
+      setProjectsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated' && !isLoading) {
@@ -88,7 +118,11 @@ function EditTaskPageInner({ id }: { id: string }) {
             ownerId: step.ownerId ?? '',
             dueAt: step.dueAt ?? null,
           })) ?? [],
+        projectId: task.projectId,
       }}
+      projects={projects}
+      projectsLoading={projectsLoading}
+      onProjectsRefresh={loadProjects}
       submitLabel="Save Changes"
       submitPendingLabel="Saving…"
       onCancel={() => router.push(`/tasks/${task._id}`)}
