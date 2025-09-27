@@ -16,6 +16,7 @@ interface Task {
   participantIds: mongoose.Types.ObjectId[];
   visibility?: string;
   teamId?: mongoose.Types.ObjectId | undefined;
+  projectId: mongoose.Types.ObjectId;
 }
 
 interface TaskQuery {
@@ -42,12 +43,18 @@ vi.mock('@/models/Objective', () => ({
       objectives.set(_id.toString(), objective);
       return objective;
     }),
-    find: vi.fn(async (filter: unknown) => {
-      return Array.from(objectives.values()).filter(
-        (o) =>
-          o.date === filter.date &&
-          o.teamId.toString() === filter.teamId.toString()
-      );
+    find: vi.fn((filter: unknown) => {
+      const results = Array.from(objectives.values())
+        .filter(
+          (o) =>
+            o.date === filter.date &&
+            o.teamId.toString() === filter.teamId.toString()
+        )
+        .sort((a, b) => a.ownerId.toString().localeCompare(b.ownerId.toString()));
+      return {
+        sort: vi.fn(async () => results),
+        then: (resolve: (value: typeof results) => void) => resolve(results),
+      };
     }),
     findById: vi.fn(async (id: string) => {
       const obj = objectives.get(id);
@@ -147,6 +154,7 @@ describe('objectives api', () => {
       ownerId: u1,
       dueDate: new Date('2023-01-01T10:00:00Z'),
       participantIds: [u1],
+      projectId: new Types.ObjectId(),
     };
     const task2 = {
       _id: new Types.ObjectId(),
@@ -156,6 +164,7 @@ describe('objectives api', () => {
       visibility: 'TEAM',
       teamId,
       participantIds: [],
+      projectId: new Types.ObjectId(),
     };
     tasks.set(task1._id.toString(), task1);
     tasks.set(task2._id.toString(), task2);

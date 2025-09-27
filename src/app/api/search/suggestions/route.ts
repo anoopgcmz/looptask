@@ -16,6 +16,14 @@ export async function GET(req: NextRequest) {
   if (!q) {
     return NextResponse.json({ suggestions: [] });
   }
+  const projectId = url.searchParams.get('projectId');
+  let projectObjectId: Types.ObjectId | null = null;
+  if (projectId) {
+    if (!Types.ObjectId.isValid(projectId)) {
+      return problem(400, 'Invalid request', 'projectId is invalid');
+    }
+    projectObjectId = new Types.ObjectId(projectId);
+  }
 
   await dbConnect();
 
@@ -27,6 +35,9 @@ export async function GET(req: NextRequest) {
   }
 
   const useAtlas = process.env.ATLAS_SEARCH === 'true';
+  const matchFilter = projectObjectId
+    ? { $and: [{ $or: access }, { projectId: projectObjectId }] }
+    : { $or: access };
   const suggestions = new Set<string>();
 
   if (useAtlas) {
@@ -37,7 +48,7 @@ export async function GET(req: NextRequest) {
           autocomplete: { query: q, path: 'title' },
         },
       },
-      { $match: { $or: access } },
+      { $match: matchFilter },
       { $limit: 5 },
       { $project: { title: 1 } },
     ];
@@ -53,7 +64,7 @@ export async function GET(req: NextRequest) {
           autocomplete: { query: q, path: 'tags' },
         },
       },
-      { $match: { $or: access } },
+      { $match: matchFilter },
       { $limit: 5 },
       { $project: { tags: 1 } },
     ];
@@ -64,7 +75,12 @@ export async function GET(req: NextRequest) {
   } else {
     const regex = new RegExp('^' + q, 'i');
     const results = await Task.find(
-      { $and: [{ $or: [{ title: regex }, { tags: regex }] }, { $or: access }] },
+      {
+        $and: [
+          { $or: [{ title: regex }, { tags: regex }] },
+          matchFilter,
+        ],
+      },
       { title: 1, tags: 1 }
     )
       .limit(10)

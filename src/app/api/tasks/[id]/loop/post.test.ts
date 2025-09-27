@@ -45,6 +45,7 @@ describe('POST /tasks/:id/loop', () => {
         _id: taskId,
         organizationId: orgId,
         teamId: null,
+        projectId: new Types.ObjectId(),
       }),
     });
     findUsers.mockReset();

@@ -4,6 +4,7 @@ import { Types, type FilterQuery } from 'mongoose';
 import dbConnect from '@/lib/db';
 import { Task } from '@/models/Task';
 import type { ITask, TaskStatus } from '@/models/Task';
+import { Project } from '@/models/Project';
 import { ActivityLog } from '@/models/ActivityLog';
 import { User } from '@/models/User';
 import { TaskLoop } from '@/models/TaskLoop';
@@ -31,6 +32,7 @@ const createTaskSchema: z.ZodType<TaskPayload> = z
     ownerId: z.string().trim().optional(),
     helpers: z.array(z.string()).optional(),
     mentions: z.array(z.string()).optional(),
+    projectId: z.string().trim().min(1, 'projectId is required'),
     teamId: z.string().optional(),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
     tags: z.array(z.string()).optional(),
@@ -94,6 +96,13 @@ export const POST = withOrganization(async (req, session) => {
       return problem(400, 'Invalid request', 'Step owner must be in your organization');
     }
   }
+  const project = await Project.findOne({
+    _id: new Types.ObjectId(body.projectId),
+    organizationId: new Types.ObjectId(session.organizationId),
+  });
+  if (!project) {
+    return problem(400, 'Invalid request', 'Project must be in your organization');
+  }
   const task: ITask = await Task.create({
     title: body.title,
     description: body.description,
@@ -102,6 +111,7 @@ export const POST = withOrganization(async (req, session) => {
     helpers: body.helpers?.map((id) => new Types.ObjectId(id)),
     mentions: body.mentions?.map((id) => new Types.ObjectId(id)),
     organizationId: new Types.ObjectId(session.organizationId),
+    projectId: new Types.ObjectId(body.projectId),
     teamId: body.teamId ? new Types.ObjectId(body.teamId) : undefined,
     status,
     priority: body.priority ?? 'LOW',
@@ -184,6 +194,7 @@ const listQuerySchema: z.ZodType<TaskListQuery> = z
   .object({
     ownerId: z.string().optional(),
     createdBy: z.string().optional(),
+    projectId: z.string().optional(),
     status: z
       .union([z.string(), z.array(z.string())])
       .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
@@ -234,6 +245,7 @@ export const GET = withOrganization(async (req, session) => {
   };
   if (query.ownerId) filter.ownerId = new Types.ObjectId(query.ownerId);
   if (query.createdBy) filter.createdBy = new Types.ObjectId(query.createdBy);
+  if (query.projectId) filter.projectId = new Types.ObjectId(query.projectId);
   if (query.status && query.status.length) filter.status = { $in: query.status };
   if (query.dueFrom || query.dueTo) {
     filter.dueDate = {};

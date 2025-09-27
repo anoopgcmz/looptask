@@ -15,6 +15,7 @@ export interface TaskPayload {
   ownerId?: string | undefined;
   helpers?: string[] | undefined;
   mentions?: string[] | undefined;
+  projectId: string;
   teamId?: string | undefined;
   status?: TaskStatus | undefined;
   priority?: TaskPriority | undefined;
@@ -28,6 +29,7 @@ export interface TaskPayload {
 export interface TaskListQuery {
   ownerId?: string | undefined;
   createdBy?: string | undefined;
+  projectId?: string | undefined;
   status?: TaskStatus[] | undefined;
   dueFrom?: Date | undefined;
   dueTo?: Date | undefined;
@@ -59,6 +61,7 @@ export interface TaskResponse {
   helpers?: string[] | undefined;
   mentions?: string[] | undefined;
   organizationId: string;
+  projectId: string;
   teamId?: string | undefined;
   status: TaskStatus;
   priority: TaskPriority;

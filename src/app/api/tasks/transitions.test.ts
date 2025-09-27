@@ -31,6 +31,7 @@ interface Task {
   createdBy: mongoose.Types.ObjectId;
   ownerId: mongoose.Types.ObjectId;
   organizationId: mongoose.Types.ObjectId;
+  projectId: mongoose.Types.ObjectId;
   status: string;
   steps: { title: string; ownerId: mongoose.Types.ObjectId; status: string }[];
   currentStepIndex: number;
@@ -121,6 +122,7 @@ describe('task flow with steps', () => {
       createdBy: u1,
       ownerId: u1,
       organizationId: orgId,
+      projectId: new Types.ObjectId(),
       status: 'OPEN',
       steps: [
         { title: 'Step 1', ownerId: u1, status: 'OPEN' },
@@ -243,6 +245,7 @@ describe('task flow with steps', () => {
       createdBy: u1,
       ownerId: u2,
       organizationId: orgId,
+      projectId: new Types.ObjectId(),
       status: 'IN_PROGRESS',
       steps: [
         { title: 'Step 1', ownerId: u1, status: 'DONE' },
@@ -286,6 +289,7 @@ describe('task flow with steps', () => {
       createdBy: u1,
       ownerId: u1,
       organizationId: orgId,
+      projectId: new Types.ObjectId(),
       status: 'DONE',
       steps: [{ title: 'Step 1', ownerId: u1, status: 'DONE' }],
       currentStepIndex: 0,
@@ -324,6 +328,7 @@ describe('simple task status transitions', () => {
       createdBy: u1,
       ownerId: u1,
       organizationId: orgId,
+      projectId: new Types.ObjectId(),
       status: 'OPEN',
       steps: [],
       currentStepIndex: 0,
@@ -375,6 +380,7 @@ describe('simple task status transitions', () => {
       status: 'OPEN',
       steps: [],
       currentStepIndex: 0,
+      projectId: new Types.ObjectId(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -420,6 +426,7 @@ describe('simple task status transitions', () => {
       status: 'OPEN',
       steps: [],
       currentStepIndex: 0,
+      projectId: new Types.ObjectId(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });

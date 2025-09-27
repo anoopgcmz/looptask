@@ -3,8 +3,8 @@ import type { TaskResponse } from '@/types/api/task';
 import type { ObjectId } from 'mongoose';
 
 export function serializeTask(task: ITask): TaskResponse {
-    return {
-      _id: (task._id as ObjectId).toString(),
+  return {
+    _id: (task._id as ObjectId).toString(),
     title: task.title,
     description: task.description,
     createdBy: task.createdBy.toString(),
@@ -12,6 +12,7 @@ export function serializeTask(task: ITask): TaskResponse {
     helpers: task.helpers?.map((id) => id.toString()),
     mentions: task.mentions?.map((id) => id.toString()),
     organizationId: task.organizationId.toString(),
+    projectId: task.projectId.toString(),
     teamId: task.teamId?.toString(),
     status: task.status,
     priority: task.priority,

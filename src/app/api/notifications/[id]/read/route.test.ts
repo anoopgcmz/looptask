@@ -17,10 +17,10 @@ vi.mock('next/server', () => ({
 
 vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 
-const auth = vi.fn();
+const auth = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/auth', () => ({ auth }));
 
-const findOneAndUpdate = vi.fn();
+const findOneAndUpdate = vi.hoisted(() => vi.fn());
 vi.mock('@/models/Notification', () => ({ Notification: { findOneAndUpdate } }));
 
 import { POST } from './route';
