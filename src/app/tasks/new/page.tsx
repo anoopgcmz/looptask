@@ -45,6 +45,10 @@ function NewTaskPageInner() {
   }, []);
 
   useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
+
+  useEffect(() => {
     if (status === 'unauthenticated' && !isLoading) {
       router.push('/login');
     }
