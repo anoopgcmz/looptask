@@ -88,6 +88,7 @@ function ProjectsPageInner() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {projects.map((project) => {
             const description = project.description?.trim();
+            const stats = project.stats ?? { pending: 0, done: 0, total: 0 };
             return (
               <Link key={project._id} href={`/projects/${project._id}`} className="block h-full">
                 <Card className="flex h-full flex-col justify-between">
@@ -119,7 +120,7 @@ function ProjectsPageInner() {
                         Pending
                       </p>
                       <p className="mt-1 text-lg font-semibold text-[var(--tone-text-strong)]">
-                        {project.stats.pending}
+                        {stats.pending}
                       </p>
                     </div>
                     <div>
@@ -127,7 +128,7 @@ function ProjectsPageInner() {
                         Done
                       </p>
                       <p className="mt-1 text-lg font-semibold text-[var(--tone-text-strong)]">
-                        {project.stats.done}
+                        {stats.done}
                       </p>
                     </div>
                     <div>
@@ -135,7 +136,7 @@ function ProjectsPageInner() {
                         Total
                       </p>
                       <p className="mt-1 text-lg font-semibold text-[var(--tone-text-strong)]">
-                        {project.stats.total}
+                        {stats.total}
                       </p>
                     </div>
                   </div>
