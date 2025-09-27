@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import NotificationsBadge from "@/components/notifications-badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -105,6 +105,16 @@ const BellIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const LogoIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false" {...props}>
+    <g fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <rect x={5.5} y={5.5} width={21} height={21} rx={6} />
+      <path d="M11 11h10v10H11z" />
+      <path d="M16 6v5M16 21v5M6 16h5M21 16h5" strokeLinecap="round" />
+    </g>
+  </svg>
+);
+
 const NAVIGATION_LINKS: NavigationLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
   {
@@ -124,14 +134,19 @@ const NAVIGATION_LINKS: NavigationLink[] = [
 
 const AUTH_ROUTES = new Set(["/signin", "/signin/verify", "/login", "/", "/admin/login"]);
 
+type LayoutMode = "desktop" | "tablet" | "mobile";
+
 export function closeSidebarOnNavigation({
-  isDesktop,
+  isPinned,
   closeSidebar,
 }: {
-  isDesktop: boolean;
+  isPinned: boolean;
   closeSidebar: () => void;
 }) {
-  void isDesktop;
+  if (isPinned) {
+    return;
+  }
+
   closeSidebar();
 }
 
@@ -157,9 +172,8 @@ function AuthenticatedAppShell({
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const previousOpenRef = useRef(false);
-  const hasDetectedNonDesktopRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("desktop");
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [userError, setUserError] = useState<string | null>(null);
@@ -170,48 +184,63 @@ function AuthenticatedAppShell({
       return undefined;
     }
 
-    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const desktopQuery = window.matchMedia("(min-width: 1024px)");
+    const tabletQuery = window.matchMedia("(min-width: 768px)");
 
-    const applyLayoutFromMatch = (matches: boolean) => {
-      setIsDesktop(matches);
-      if (matches) {
-        hasDetectedNonDesktopRef.current = false;
-        setSidebarOpen(true);
-      } else {
-        hasDetectedNonDesktopRef.current = true;
-        setSidebarOpen(false);
+    const resolveLayoutMode = () => {
+      if (desktopQuery.matches) {
+        return "desktop" as const;
       }
+
+      if (tabletQuery.matches) {
+        return "tablet" as const;
+      }
+
+      return "mobile" as const;
     };
 
-    const handleMediaChange = (event: MediaQueryListEvent) => {
-      applyLayoutFromMatch(event.matches);
+    const applyLayoutMode = () => {
+      setLayoutMode(resolveLayoutMode());
     };
 
-    applyLayoutFromMatch(mediaQuery.matches);
-    mediaQuery.addEventListener("change", handleMediaChange);
+    applyLayoutMode();
+    desktopQuery.addEventListener("change", applyLayoutMode);
+    tabletQuery.addEventListener("change", applyLayoutMode);
 
     return () => {
-      mediaQuery.removeEventListener("change", handleMediaChange);
+      desktopQuery.removeEventListener("change", applyLayoutMode);
+      tabletQuery.removeEventListener("change", applyLayoutMode);
     };
   }, []);
 
   useEffect(() => {
-    if (!isDesktop && hasDetectedNonDesktopRef.current) {
-      setSidebarOpen(false);
-    }
-  }, [pathname, isDesktop]);
+    setSidebarOpen(layoutMode === "desktop");
+  }, [layoutMode]);
 
   useEffect(() => {
-    if (!isDesktop && sidebarOpen && !previousOpenRef.current) {
+    if (layoutMode === "desktop") {
+      return;
+    }
+
+    setSidebarOpen(false);
+  }, [pathname, layoutMode]);
+
+  useEffect(() => {
+    if (layoutMode === "desktop") {
+      previousOpenRef.current = sidebarOpen;
+      return;
+    }
+
+    if (sidebarOpen && !previousOpenRef.current) {
       firstLinkRef.current?.focus();
     }
 
-    if (!isDesktop && !sidebarOpen && previousOpenRef.current) {
+    if (!sidebarOpen && previousOpenRef.current) {
       toggleButtonRef.current?.focus();
     }
 
     previousOpenRef.current = sidebarOpen;
-  }, [sidebarOpen, isDesktop]);
+  }, [sidebarOpen, layoutMode]);
 
   const handleToggle = useCallback(() => {
     setSidebarOpen((previous) => !previous);
@@ -219,10 +248,10 @@ function AuthenticatedAppShell({
 
   const handleNavigationLinkActivation = useCallback(() => {
     closeSidebarOnNavigation({
-      isDesktop,
+      isPinned: layoutMode === "desktop",
       closeSidebar: () => setSidebarOpen(false),
     });
-  }, [isDesktop]);
+  }, [layoutMode]);
 
   const handleNavigationLinkKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLAnchorElement>) => {
@@ -236,12 +265,12 @@ function AuthenticatedAppShell({
 
   const handleSidebarKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
-      if (event.key === "Escape" && !isDesktop) {
+      if (event.key === "Escape" && layoutMode !== "desktop") {
         event.preventDefault();
         setSidebarOpen(false);
       }
     },
-    [isDesktop],
+    [layoutMode],
   );
 
   useEffect(() => {
@@ -298,9 +327,11 @@ function AuthenticatedAppShell({
   }, [user?.name]);
 
   const navigationLinks = useMemo(() => NAVIGATION_LINKS, []);
-  const isSidebarVisible = sidebarOpen;
+  const isSidebarPinned = layoutMode === "desktop";
+  const isSidebarVisible = isSidebarPinned ? true : sidebarOpen;
+  const showOverlay = !isSidebarPinned && sidebarOpen;
 
-  const userGreeting = useMemo(() => {
+  const userDisplayName = useMemo(() => {
     if (!user?.name) {
       return null;
     }
@@ -313,138 +344,169 @@ function AuthenticatedAppShell({
     const parts = trimmedName.split(/\s+/);
     const firstName = parts[0];
     const lastName = parts.length > 1 ? parts[parts.length - 1] : undefined;
-    const displayName = lastName ? `${firstName} ${lastName}` : firstName;
 
-    return `Hi, ${displayName}`;
+    return lastName ? `${firstName} ${lastName}` : firstName;
   }, [user?.name]);
 
+  const userGreeting = useMemo(() => {
+    return userDisplayName ? `Hi, ${userDisplayName}` : null;
+  }, [userDisplayName]);
+
   return (
-    <div className={`app-shell ${sidebarOpen ? "app-shell--sidebar-open" : ""}`}>
-      <header className="app-header">
-        <div className="app-header__start">
-          <button
-            ref={toggleButtonRef}
-            type="button"
-            className="app-header__toggle"
-            aria-expanded={sidebarOpen}
-            aria-controls={navId}
-            aria-label={sidebarOpen ? "Hide navigation" : "Show navigation"}
-            onClick={handleToggle}
-          >
-            <svg
-              aria-hidden="true"
-              focusable="false"
-              className="app-header__toggle-icon"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M4 7h16M4 12h16M4 17h16"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-          <div className="app-header__branding">
-            <span className="app-header__logo" aria-hidden>
-              ⬡
-            </span>
-            <span className="app-header__name">LoopTask</span>
+    <div
+      className={`app-shell app-shell--mode-${layoutMode} ${
+        sidebarOpen ? "app-shell--sidebar-open" : ""
+      }`}
+    >
+      <div className="app-shell__layout">
+        <nav
+          id={navId}
+          className="app-sidebar"
+          aria-hidden={!isSidebarVisible}
+          aria-label="Primary"
+          onKeyDown={handleSidebarKeyDown}
+          data-state={isSidebarVisible ? "open" : "closed"}
+          data-pinned={isSidebarPinned ? "true" : "false"}
+        >
+          <div className="app-sidebar__inner">
+            <div className="app-sidebar__header">
+              <span className="app-sidebar__logo" aria-hidden>
+                <LogoIcon />
+              </span>
+              <div className="app-sidebar__brand">
+                <span className="app-sidebar__brand-name">LoopTask</span>
+                <span className="app-sidebar__brand-subtitle">Unified Workspace</span>
+              </div>
+            </div>
+
+            <div className="app-sidebar__content">
+              <ul className="app-sidebar__nav" aria-label="Primary navigation">
+                {navigationLinks.map((link, index) => {
+                  const isActive = pathname?.startsWith(link.href);
+
+                  return (
+                    <li key={link.href}>
+                      <Link
+                        ref={index === 0 ? firstLinkRef : undefined}
+                        href={link.href}
+                        className={`app-sidebar__link ${
+                          isActive ? "app-sidebar__link--active" : ""
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                        tabIndex={isSidebarVisible ? 0 : -1}
+                        onClick={handleNavigationLinkActivation}
+                        onKeyDown={handleNavigationLinkKeyDown}
+                      >
+                        <span className="app-sidebar__link-icon" aria-hidden>
+                          {link.icon}
+                        </span>
+                        <span className="app-sidebar__link-label">{link.label}</span>
+                        {link.badge ? (
+                          <span
+                            className={`app-sidebar__badge ${
+                              link.badge.tone === "accent"
+                                ? "app-sidebar__badge--accent"
+                                : ""
+                            }`}
+                          >
+                            {link.badge.label}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="app-sidebar__footer">
+              {!isLoadingUser && !userError && user ? (
+                <div className="app-sidebar__profile">
+                  <div className="app-sidebar__profile-avatar" aria-hidden>
+                    <Avatar
+                      src={user.avatar ?? undefined}
+                      fallback={avatarFallback}
+                      className="h-12 w-12"
+                    />
+                  </div>
+                  <div className="app-sidebar__profile-details">
+                    {userDisplayName ? (
+                      <p className="app-sidebar__profile-name">{userDisplayName}</p>
+                    ) : null}
+                    {userGreeting ? (
+                      <p className="app-sidebar__profile-greeting">{userGreeting}</p>
+                    ) : null}
+                    {user?.email ? (
+                      <p className="app-sidebar__profile-email">{user.email}</p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="app-sidebar__logout"
+                onClick={() => {
+                  void signOut({ callbackUrl: "/login", redirect: true });
+                }}
+                tabIndex={isSidebarVisible ? 0 : -1}
+              >
+                Log out
+              </button>
+            </div>
           </div>
+        </nav>
+
+        <div className="app-shell__main">
+          <header className="app-main-header">
+            <div className="app-main-header__start">
+              {layoutMode !== "desktop" ? (
+                <button
+                  ref={toggleButtonRef}
+                  type="button"
+                  className="app-main-header__toggle"
+                  aria-expanded={sidebarOpen}
+                  aria-controls={navId}
+                  aria-label={sidebarOpen ? "Hide navigation" : "Show navigation"}
+                  onClick={handleToggle}
+                >
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    className="app-main-header__toggle-icon"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M4 7h16M4 12h16M4 17h16"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+            <div className="app-main-header__actions">
+              <Link
+                href="/notifications"
+                className="app-main-header__icon-button"
+                aria-label="View notifications"
+              >
+                <BellIcon />
+                <NotificationsBadge className="app-main-header__notification-badge" />
+              </Link>
+            </div>
+          </header>
+
+          <main className="app-main-content">{children}</main>
         </div>
-        <div className="app-header__actions">
-          <Link
-            href="/notifications"
-            className="app-header__icon-button"
-            aria-label="View notifications"
-          >
-            <BellIcon />
-            <NotificationsBadge className="app-header__notification-badge" />
-          </Link>
-        </div>
-      </header>
+      </div>
 
       <div
         className="app-shell__overlay"
         role="presentation"
-        hidden={!sidebarOpen || isDesktop}
+        hidden={!showOverlay}
         onClick={() => setSidebarOpen(false)}
       />
-
-      <nav
-        id={navId}
-        className="app-sidebar"
-        aria-hidden={!isSidebarVisible}
-        aria-label="Primary"
-        onKeyDown={handleSidebarKeyDown}
-      >
-        <div className="app-sidebar__nav-container">
-          {!isLoadingUser && !userError && user ? (
-            <div className="app-sidebar__profile">
-              <div className="app-sidebar__profile-avatar" aria-hidden>
-                <Avatar
-                  src={user.avatar ?? undefined}
-                  fallback={avatarFallback}
-                  className="h-14 w-14"
-                />
-              </div>
-              {userGreeting ? (
-                <p className="app-sidebar__profile-greeting">{userGreeting}</p>
-              ) : null}
-            </div>
-          ) : null}
-          <ul className="app-sidebar__nav" aria-label="Primary navigation">
-            {navigationLinks.map((link, index) => {
-              const isActive = pathname?.startsWith(link.href);
-
-              return (
-                <li key={link.href}>
-                  <Link
-                    ref={index === 0 ? firstLinkRef : undefined}
-                    href={link.href}
-                    className={`app-sidebar__link ${isActive ? "app-sidebar__link--active" : ""}`}
-                    aria-current={isActive ? "page" : undefined}
-                    tabIndex={isSidebarVisible ? 0 : -1}
-                    onClick={handleNavigationLinkActivation}
-                    onKeyDown={handleNavigationLinkKeyDown}
-                  >
-                    <span className="app-sidebar__link-icon" aria-hidden>
-                      {link.icon}
-                    </span>
-                    <span className="app-sidebar__link-label">{link.label}</span>
-                    {link.badge ? (
-                      <span
-                        className={`app-sidebar__badge ${
-                          link.badge.tone === "accent" ? "app-sidebar__badge--accent" : ""
-                        }`}
-                      >
-                        {link.badge.label}
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          <button
-            type="button"
-            className="app-sidebar__logout"
-            onClick={() => {
-              void signOut({ callbackUrl: "/login", redirect: true });
-            }}
-            tabIndex={isSidebarVisible ? 0 : -1}
-          >
-            Log out
-          </button>
-        </div>
-      </nav>
-
-      <div className="app-shell__content">
-        <main className="app-main">{children}</main>
-        <footer className="app-footer">
-          <p>© {new Date().getFullYear()} LoopTask. All rights reserved.</p>
-        </footer>
-      </div>
     </div>
   );
 }

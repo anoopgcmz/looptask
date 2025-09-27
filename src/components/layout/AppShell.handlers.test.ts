@@ -3,19 +3,19 @@ import { describe, expect, it, vi } from "vitest";
 import { closeSidebarOnNavigation } from "./AppShell";
 
 describe("closeSidebarOnNavigation", () => {
-  it("closes the sidebar when not on desktop", () => {
+  it("closes the sidebar when the navigation is in overlay mode", () => {
     const closeSidebar = vi.fn();
 
-    closeSidebarOnNavigation({ isDesktop: false, closeSidebar });
+    closeSidebarOnNavigation({ isPinned: false, closeSidebar });
 
     expect(closeSidebar).toHaveBeenCalledTimes(1);
   });
 
-  it("closes the sidebar on desktop", () => {
+  it("keeps the sidebar open when it is pinned", () => {
     const closeSidebar = vi.fn();
 
-    closeSidebarOnNavigation({ isDesktop: true, closeSidebar });
+    closeSidebarOnNavigation({ isPinned: true, closeSidebar });
 
-    expect(closeSidebar).toHaveBeenCalledTimes(1);
+    expect(closeSidebar).not.toHaveBeenCalled();
   });
 });
