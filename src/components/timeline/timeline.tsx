@@ -31,7 +31,7 @@ function formatTimestamp(date: string) {
 export function Timeline({ events }: { events: TimelineEvent[] }) {
   if (!events.length) {
     return (
-      <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--surface-page)] px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
+      <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--surface-muted)] px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
         No activity yet.
       </div>
     );
@@ -62,7 +62,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
             <div
               className={cn(
                 'flex items-start gap-3 rounded-lg border border-transparent px-4 py-3 transition-colors',
-                'group-hover:border-[var(--color-border)] group-hover:bg-[var(--surface-page)]',
+                'group-hover:border-[var(--color-border)] group-hover:bg-[var(--surface-muted)]',
                 'group-aria-[disabled=true]:opacity-70 group-aria-[disabled=true]:hover:border-transparent group-aria-[disabled=true]:hover:bg-transparent'
               )}
             >

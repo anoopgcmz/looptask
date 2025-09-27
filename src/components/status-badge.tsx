@@ -34,7 +34,7 @@ const STATUS_STYLES: Record<
     label: 'Flow In Progress',
     icon: '🔄',
     variant: 'info',
-    className: 'bg-[color:rgba(46,144,250,0.16)] text-[var(--color-status-info)]',
+    className: 'bg-[var(--status-info-soft)] text-[var(--color-status-info)]',
   },
   DONE: {
     label: 'Done',
@@ -71,7 +71,8 @@ export function StatusBadge({
       variant={variant}
       className={cn(
         'gap-1 rounded-full font-semibold normal-case shadow-sm ring-1 ring-inset ring-black/10 transition',
-        'hover:ring-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]',
+        'hover:ring-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2',
+        'focus-visible:ring-offset-[var(--color-background)]',
         SIZE_STYLES[size],
         statusClassName,
         className,
