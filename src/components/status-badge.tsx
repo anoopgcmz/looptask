@@ -1,37 +1,45 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { TaskStatus } from '@/models/Task';
 
-const STATUS_STYLES: Record<TaskStatus, { label: string; icon: string; className: string }> = {
+type BadgeVariant = NonNullable<BadgeProps['variant']>;
+
+const STATUS_STYLES: Record<
+  TaskStatus,
+  { label: string; icon: string; variant: BadgeVariant; className?: string }
+> = {
   OPEN: {
     label: 'Open',
     icon: '📝',
-    className: 'bg-[#6B7280] text-white',
+    variant: 'outline',
+    className: 'text-[var(--tone-text)]',
   },
   IN_PROGRESS: {
     label: 'In Progress',
     icon: '⏳',
-    className: 'bg-[#3B82F6] text-white',
+    variant: 'info',
   },
   IN_REVIEW: {
     label: 'In Review',
     icon: '👀',
-    className: 'bg-[#6366F1] text-white',
+    variant: 'secondary',
+    className: 'text-[var(--brand-primary)]',
   },
   REVISIONS: {
     label: 'Revisions',
     icon: '✏️',
-    className: 'bg-[#EF4444] text-white',
+    variant: 'destructive',
   },
   FLOW_IN_PROGRESS: {
     label: 'Flow In Progress',
     icon: '🔄',
-    className: 'bg-[#8B5CF6] text-white',
+    variant: 'info',
+    className: 'bg-[color:rgba(46,144,250,0.16)] text-[var(--color-status-info)]',
   },
   DONE: {
     label: 'Done',
     icon: '✅',
-    className: 'bg-[#10B981] text-white',
+    variant: 'success',
   },
 };
 
@@ -55,13 +63,15 @@ export function StatusBadge({
   className,
   showIcon = true,
 }: StatusBadgeProps) {
-  const { label, icon, className: statusClassName } = STATUS_STYLES[status];
+  const { label, icon, variant, className: statusClassName } =
+    STATUS_STYLES[status];
 
   return (
     <Badge
+      variant={variant}
       className={cn(
-        'gap-1 rounded-full font-semibold normal-case text-white shadow-sm ring-1 ring-inset ring-black/10 transition',
-        'hover:ring-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F2937] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9FAFB]',
+        'gap-1 rounded-full font-semibold normal-case shadow-sm ring-1 ring-inset ring-black/10 transition',
+        'hover:ring-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]',
         SIZE_STYLES[size],
         statusClassName,
         className,

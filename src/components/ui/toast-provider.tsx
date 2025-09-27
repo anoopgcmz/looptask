@@ -71,9 +71,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               role="status"
               className={cn(
                 "pointer-events-auto rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg",
-                toast.tone === "success" && "bg-[#10B981]",
-                toast.tone === "error" && "bg-[#EF4444]",
-                toast.tone === "info" && "bg-[#6366F1]",
+                toast.tone === "success" && "bg-[var(--color-status-success)]",
+                toast.tone === "error" && "bg-[var(--color-status-destructive)]",
+                toast.tone === "info" && "bg-[var(--brand-primary)]",
               )}
             >
               {toast.message}

@@ -48,7 +48,7 @@ export default function NotificationsBadge({ className }: NotificationsBadgeProp
 
   return (
     <Badge
-      variant="urgent"
+      variant="destructive"
       className={cn('ml-2 px-2 py-[2px] text-[11px] leading-none', className)}
     >
       {count}
