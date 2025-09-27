@@ -37,55 +37,88 @@ export default function TaskKanbanColumn({
     : 0;
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-sm md:max-h-[70vh]">
-      <header className="flex flex-col gap-3 border-b border-gray-200 bg-white px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-            {label}
-          </div>
-          <span
-            className={cn(
-              'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
-              statusAccent.badge
-            )}
-          >
-            {cardTasks.length} tasks
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
-            <div
-              className={cn('h-full rounded-full transition-all duration-300 ease-out', statusAccent.progress)}
-              style={{ width: `${progressPercentage}%` }}
-              aria-hidden
-            />
-          </div>
-          <span className="text-xs font-medium text-gray-500">{progressPercentage}%</span>
-        </div>
-      </header>
-      <div className="flex-1 overflow-hidden">
-        <div className="flex h-full flex-col px-4 py-4 md:overflow-y-auto">
-          {isLoading ? (
-            <ul className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <li
-                  key={i}
-                  className="h-24 animate-pulse rounded-xl border border-gray-200 bg-gray-100"
+    <div className="flex gap-6 overflow-x-auto pb-6">
+      <section className="min-w-80 shrink-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5">
+        <header
+          className={cn(
+            'flex flex-col gap-4 px-5 py-5 text-white',
+            statusAccent.header
+          )}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
+                <span
+                  className={cn('h-2.5 w-2.5 rounded-full', statusAccent.dot)}
+                  aria-hidden
                 />
-              ))}
-            </ul>
-          ) : isEmpty ? (
-            <div className="py-6 text-center text-sm text-gray-500">
-              No tasks found.
+                {label}
+              </span>
+              <p className="mt-2 text-sm font-medium text-white/90">
+                {cardTasks.length} tasks
+              </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {cardTasks.map((task) => {
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 shadow-sm transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path d="M10 4.167v11.666" />
+                <path d="M4.167 10h11.666" />
+              </svg>
+              Add task
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/30">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all duration-300 ease-out',
+                  statusAccent.progress
+                )}
+                style={{ width: `${progressPercentage}%` }}
+                aria-hidden
+              />
+            </div>
+            <span className="text-xs font-semibold text-white/90">
+              {progressPercentage}%
+            </span>
+          </div>
+        </header>
+        <div className="flex max-h-[70vh] flex-1 flex-col overflow-hidden">
+          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+            {isLoading ? (
+              <ul className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <li
+                    key={i}
+                    className="h-28 animate-pulse rounded-2xl border border-white/40 bg-white/30"
+                  />
+                ))}
+              </ul>
+            ) : isEmpty ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/40 bg-white/10 px-6 py-10 text-center text-sm text-slate-100">
+                <p className="font-medium text-white/80">No tasks found.</p>
+                <p className="mt-1 text-xs text-white/70">
+                  Start by creating a new item for this stage.
+                </p>
+              </div>
+            ) : (
+              cardTasks.map((task) => {
                 const extendedTask = task as Task & { assignee?: string };
                 const canEdit = Boolean(
                   currentUserId &&
-                    (currentUserId === task.createdBy ||
-                      currentUserId === task.ownerId)
+                    (currentUserId === task.createdBy || currentUserId === task.ownerId)
                 );
                 const isSelected = Boolean(
                   currentUserId &&
@@ -94,14 +127,14 @@ export default function TaskKanbanColumn({
                 return (
                   <motion.div
                     key={task._id}
-                    initial={{ opacity: 0, y: 6 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
+                    exit={{ opacity: 0, y: 8 }}
                     className={cn(
-                      'group rounded-xl ring-1 ring-transparent ring-offset-2 ring-offset-gray-50 transition duration-200',
-                      'hover:-translate-y-0.5 hover:ring-2 hover:ring-indigo-200 hover:shadow-md',
-                      'focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-300 focus-within:shadow-md',
-                      isSelected && 'ring-2 ring-indigo-300 shadow-md'
+                      'group rounded-2xl ring-1 ring-transparent ring-offset-2 ring-offset-white transition duration-200',
+                      'hover:-translate-y-0.5 hover:ring-2 hover:ring-white/80 hover:shadow-[0_20px_45px_rgba(15,23,42,0.18)]',
+                      'focus-within:outline-none focus-within:ring-2 focus-within:ring-white focus-within:shadow-[0_18px_40px_rgba(15,23,42,0.16)]',
+                      isSelected && 'ring-2 ring-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]'
                     )}
                     data-selected={isSelected}
                   >
@@ -109,10 +142,13 @@ export default function TaskKanbanColumn({
                       task={{
                         _id: task._id,
                         title: task.title,
+                        description: (task as Task & { description?: string }).description,
                         assignee: extendedTask.assignee || task.ownerId,
+                        assigneeAvatar: (task as Task & { assigneeAvatar?: string }).assigneeAvatar,
                         dueDate: task.dueDate,
                         priority: task.priority,
                         status: task.status,
+                        tags: (task as Task & { tags?: string[] }).tags,
                       }}
                       href={`/tasks/${task._id}`}
                       onChange={onTaskChange}
@@ -120,52 +156,84 @@ export default function TaskKanbanColumn({
                     />
                   </motion.div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
+          <div className="border-t border-dashed border-white/30 px-5 py-4">
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white/70 py-3 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <path d="M10 4.167v11.666" />
+                <path d="M4.167 10h11.666" />
+              </svg>
+              Add task
+            </button>
+          </div>
         </div>
-      </div>
-      {hasMore && onLoadMore && (
-        <div className="border-t border-gray-200 bg-white px-4 py-3">
-          <button
-            className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={() => void onLoadMore()}
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? 'Loading…' : 'Load more'}
-          </button>
-        </div>
-      )}
-    </section>
+        {hasMore && onLoadMore && (
+          <div className="border-t border-slate-200 bg-white px-5 py-3">
+            <button
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => void onLoadMore()}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore ? 'Loading…' : 'Load more'}
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
 function getStatusAccentStyles(
   status: string
-): { badge: string; progress: string } {
+): { header: string; dot: string; progress: string } {
   switch (status) {
     case 'OPEN':
       return {
-        badge: 'bg-sky-100 text-sky-700',
-        progress: 'bg-sky-500',
+        header: 'bg-red-500',
+        dot: 'bg-white',
+        progress: 'bg-white',
       };
     case 'IN_PROGRESS':
-    case 'IN_REVIEW':
-    case 'REVISIONS':
     case 'FLOW_IN_PROGRESS':
       return {
-        badge: 'bg-amber-100 text-amber-700',
-        progress: 'bg-amber-500',
+        header: 'bg-blue-500',
+        dot: 'bg-white',
+        progress: 'bg-white',
+      };
+    case 'IN_REVIEW':
+    case 'REVIEW':
+    case 'REVISIONS':
+      return {
+        header: 'bg-yellow-500',
+        dot: 'bg-slate-900/80',
+        progress: 'bg-white',
       };
     case 'DONE':
       return {
-        badge: 'bg-emerald-100 text-emerald-700',
-        progress: 'bg-emerald-500',
+        header: 'bg-green-500',
+        dot: 'bg-white',
+        progress: 'bg-white',
       };
     default:
       return {
-        badge: 'bg-indigo-100 text-indigo-700',
-        progress: 'bg-indigo-500',
+        header: 'bg-slate-600',
+        dot: 'bg-white/80',
+        progress: 'bg-white',
       };
   }
 }
