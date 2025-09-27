@@ -4,9 +4,19 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
-import type { TaskResponse as Task } from '@/types/api/task';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import StatusBadge from '@/components/status-badge';
+import type {
+  TaskPriority,
+  TaskResponse as Task,
+  TaskStatus,
+} from '@/types/api/task';
 import TaskKanbanColumn from '@/components/task-kanban-column';
 import useAuth from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -19,6 +29,65 @@ const statusTabs = [
 ];
 
 const PAGE_SIZE = 20;
+
+const PRIORITY_STYLES: Record<TaskPriority, string> = {
+  HIGH: 'bg-rose-100 text-rose-600 ring-rose-200',
+  MEDIUM: 'bg-amber-100 text-amber-700 ring-amber-200',
+  LOW: 'bg-emerald-100 text-emerald-600 ring-emerald-200',
+};
+
+const KNOWN_STATUSES: readonly TaskStatus[] = [
+  'OPEN',
+  'IN_PROGRESS',
+  'IN_REVIEW',
+  'REVISIONS',
+  'FLOW_IN_PROGRESS',
+  'DONE',
+];
+
+const toTaskStatus = (status: string): TaskStatus | null =>
+  (KNOWN_STATUSES.includes(status as TaskStatus) ? (status as TaskStatus) : null);
+
+const getDueMeta = (dueDate?: string) => {
+  if (!dueDate) {
+    return { label: 'No due date', isOverdue: false };
+  }
+  const date = new Date(dueDate);
+  if (Number.isNaN(date.getTime())) {
+    return { label: 'No due date', isOverdue: false };
+  }
+  const formatted = date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const comparisonDate = new Date(date);
+  comparisonDate.setHours(23, 59, 59, 999);
+  const isOverdue = comparisonDate.getTime() < Date.now();
+  return {
+    label: `Due ${formatted}`,
+    isOverdue,
+  };
+};
+
+const CalendarIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-5 w-5"
+    aria-hidden="true"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <path d="M16 2v4" />
+    <path d="M8 2v4" />
+    <path d="M3 10h18" />
+  </svg>
+);
 
 function TasksPageInner() {
   const router = useRouter();
@@ -165,121 +234,142 @@ function TasksPageInner() {
 
   const listTasks = statusTabs.flatMap((s) => tasks[s.value] ?? []);
 
-  const formatDueDate = (dueDate?: string) => {
-    if (!dueDate) return '—';
-    const date = new Date(dueDate);
-    if (Number.isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold text-slate-800">Tasks</h1>
-        <input
-          type="text"
-          placeholder="Search"
-          className="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-            {viewTabs.map((tab) => {
-              const isActive = view === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setView(tab.value)}
-                  className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${
-                    isActive
-                      ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-200 hover:bg-indigo-100'
-                      : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
-                  }`}
-                  aria-pressed={isActive}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
           </div>
-          <Link
-            href="/tasks/new"
-            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
-          >
-            Create Task
-          </Link>
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+            <div className="relative flex-1 sm:w-64">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--color-text-secondary)]">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+              </span>
+              <Input
+                type="search"
+                placeholder="Search tasks"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2 sm:justify-start">
+              <div className="flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-white/80 p-1 shadow-sm">
+                {viewTabs.map((tab) => {
+                  const isActive = view === tab.value;
+                  return (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => setView(tab.value)}
+                      className={cn(
+                        'inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                        isActive
+                          ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-200'
+                          : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
+                      )}
+                      aria-pressed={isActive}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <Link
+                href="/tasks/new"
+                className="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              >
+                Create Task
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="mb-6 flex flex-wrap gap-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-600">Sort By</label>
-          <select
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.sort}
-            onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value }))}
-          >
-            <option value="">Updated</option>
-            <option value="dueDate">Due Date</option>
-            <option value="priority">Priority</option>
-            <option value="createdAt">Created</option>
-            <option value="title">Title</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-600">Assignee</label>
-          <select
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.assignee}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, assignee: e.target.value }))
-            }
-          >
-            <option value="">All</option>
-            {user?.userId && <option value={user.userId}>Me</option>}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-600">Priority</label>
-          <select
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.priority}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, priority: e.target.value }))
-            }
-          >
-            <option value="">All</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-600">From</label>
-          <input
-            type="date"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.dueFrom}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, dueFrom: e.target.value }))
-            }
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-600">To</label>
-          <input
-            type="date"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.dueTo}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, dueTo: e.target.value }))
-            }
-          />
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm md:p-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+                Sort By
+              </label>
+              <Select
+                value={filters.sort}
+                onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value }))}
+              >
+                <option value="">Updated</option>
+                <option value="dueDate">Due Date</option>
+                <option value="priority">Priority</option>
+                <option value="createdAt">Created</option>
+                <option value="title">Title</option>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+                Assignee
+              </label>
+              <Select
+                value={filters.assignee}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, assignee: e.target.value }))
+                }
+              >
+                <option value="">All</option>
+                {user?.userId && <option value={user.userId}>Me</option>}
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+                Priority
+              </label>
+              <Select
+                value={filters.priority}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, priority: e.target.value }))
+                }
+              >
+                <option value="">All</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+                Due From
+              </label>
+              <Input
+                type="date"
+                value={filters.dueFrom}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, dueFrom: e.target.value }))
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+                Due To
+              </label>
+              <Input
+                type="date"
+                value={filters.dueTo}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, dueTo: e.target.value }))
+                }
+              />
+            </div>
+          </div>
         </div>
       </div>
       {view === 'board' && (
@@ -307,45 +397,99 @@ function TasksPageInner() {
       )}
 
       {view === 'list' && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Priority</th>
-                <th className="px-4 py-3">Due</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white text-sm text-slate-700">
-              {listTasks.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-slate-500">
-                    No tasks found for the selected filters.
-                  </td>
-                </tr>
-              )}
-              {loading && listTasks.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-slate-500">
-                    Loading tasks…
-                  </td>
-                </tr>
-              )}
-              {listTasks.map((task) => (
-                <tr key={task._id} className="hover:bg-indigo-50/40">
-                  <td className="px-4 py-3 font-medium text-slate-800">{task.title}</td>
-                  <td className="px-4 py-3 uppercase tracking-wide text-xs text-slate-500">
-                    {task.status.replaceAll('_', ' ')}
-                  </td>
-                  <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    {task.priority}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-500">{formatDueDate(task.dueDate)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {listTasks.length === 0 && !loading ? (
+            <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-white/80 p-10 text-center text-sm text-[var(--color-text-secondary)]">
+              No tasks found for the selected filters.
+            </div>
+          ) : null}
+          {loading && listTasks.length === 0 ? (
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white/80 p-10 text-center text-sm text-[var(--color-text-secondary)]">
+              Loading tasks…
+            </div>
+          ) : null}
+          {listTasks.map((task) => {
+            const extendedTask = task as Task & {
+              assignee?: string;
+              assigneeAvatar?: string;
+            };
+            const assigneeName = extendedTask.assignee;
+            const assigneeInitial = assigneeName?.[0]?.toUpperCase() ?? '?';
+            const status = toTaskStatus(task.status);
+            const dueMeta = getDueMeta(task.dueDate);
+
+            return (
+              <article
+                key={task._id}
+                className="group rounded-2xl border border-[var(--color-border)] bg-white/90 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_35px_rgba(15,23,42,0.12)] focus-within:-translate-y-0.5 focus-within:shadow-[0_18px_35px_rgba(15,23,42,0.12)]"
+              >
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="space-y-2">
+                      <h2 className="text-lg font-semibold text-slate-900">{task.title}</h2>
+                      {task.description ? (
+                        <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                          {task.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {status ? (
+                        <StatusBadge status={status} size="sm" />
+                      ) : (
+                        <Badge className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          {task.status.replaceAll('_', ' ')}
+                        </Badge>
+                      )}
+                      <Badge
+                        className={cn(
+                          'rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide shadow-sm ring-1 ring-inset',
+                          PRIORITY_STYLES[task.priority] ?? 'bg-slate-100 text-slate-600 ring-slate-200'
+                        )}
+                      >
+                        {task.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        src={extendedTask.assigneeAvatar}
+                        fallback={assigneeInitial}
+                        className="h-10 w-10 text-sm"
+                      />
+                      <div className="flex flex-col text-sm">
+                        <span className="font-medium text-slate-900">
+                          {assigneeName ?? 'Unassigned'}
+                        </span>
+                        <span className="text-[var(--color-text-secondary)]">
+                          {assigneeName ? 'Primary assignee' : 'Assign a teammate'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                      <CalendarIcon />
+                      <span
+                        className={cn(
+                          'font-medium',
+                          dueMeta.isOverdue
+                            ? 'text-rose-600'
+                            : 'text-[var(--color-text-secondary)]'
+                        )}
+                      >
+                        {dueMeta.label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+          {loading && listTasks.length > 0 ? (
+            <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-white/60 p-6 text-center text-sm text-[var(--color-text-secondary)]">
+              Loading tasks…
+            </div>
+          ) : null}
         </div>
       )}
 
