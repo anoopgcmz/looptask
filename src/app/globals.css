@@ -2,9 +2,9 @@
 
 :root {
   /* Core palette */
-  --brand-primary: #2563eb;
-  --brand-secondary: #dbeafe;
-  --brand-accent: #1d4ed8;
+  --brand-primary: #0b1d3f;
+  --brand-secondary: #d6deed;
+  --brand-accent: #173063;
 
   --surface-page: #ffffff;
   --surface-card: #ffffff;
@@ -37,20 +37,20 @@
   --status-info-soft: rgba(53, 56, 205, 0.16);
 
   --radius-base: 0.625rem;
-  --ring-color: rgba(37, 99, 235, 0.24);
+  --ring-color: rgba(11, 29, 63, 0.24);
 
-  --brand-primary-08: rgba(37, 99, 235, 0.08);
-  --brand-primary-10: rgba(37, 99, 235, 0.1);
-  --brand-primary-12: rgba(37, 99, 235, 0.12);
-  --brand-primary-15: rgba(37, 99, 235, 0.15);
-  --brand-primary-16: rgba(37, 99, 235, 0.16);
-  --brand-primary-18: rgba(37, 99, 235, 0.18);
-  --brand-primary-22: rgba(37, 99, 235, 0.22);
-  --brand-primary-25: rgba(37, 99, 235, 0.25);
-  --brand-primary-32: rgba(37, 99, 235, 0.32);
-  --brand-primary-35: rgba(37, 99, 235, 0.35);
-  --brand-primary-40: rgba(37, 99, 235, 0.4);
-  --brand-primary-45: rgba(37, 99, 235, 0.45);
+  --brand-primary-08: rgba(11, 29, 63, 0.08);
+  --brand-primary-10: rgba(11, 29, 63, 0.1);
+  --brand-primary-12: rgba(11, 29, 63, 0.12);
+  --brand-primary-15: rgba(11, 29, 63, 0.15);
+  --brand-primary-16: rgba(11, 29, 63, 0.16);
+  --brand-primary-18: rgba(11, 29, 63, 0.18);
+  --brand-primary-22: rgba(11, 29, 63, 0.22);
+  --brand-primary-25: rgba(11, 29, 63, 0.25);
+  --brand-primary-32: rgba(11, 29, 63, 0.32);
+  --brand-primary-35: rgba(11, 29, 63, 0.35);
+  --brand-primary-40: rgba(11, 29, 63, 0.4);
+  --brand-primary-45: rgba(11, 29, 63, 0.45);
 
   --priority-high: var(--color-status-destructive);
   --priority-medium: var(--color-status-warning);
