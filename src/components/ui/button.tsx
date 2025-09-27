@@ -13,20 +13,20 @@ export interface ButtonProps
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-[var(--brand-primary)] text-white shadow-sm hover:bg-[#151433] focus-visible:ring-[var(--brand-primary)] disabled:bg-[color:rgba(3,2,19,0.35)] disabled:text-white/70',
+    'bg-[#0b1d3f] text-white shadow-sm hover:bg-[#091632] focus-visible:ring-[#0b1d3f] disabled:bg-[#0b1d3f]/60 disabled:text-white/80',
   secondary:
-    'bg-[var(--brand-secondary)] text-[var(--brand-primary)] shadow-sm hover:bg-[#d8d3ff] focus-visible:ring-[var(--brand-primary)] disabled:bg-[color:rgba(227,225,255,0.6)] disabled:text-[var(--brand-primary)]/60',
+    'bg-[#f3f3f5] text-[#111827] shadow-sm hover:bg-[#e5e6eb] focus-visible:ring-[#0b1d3f] disabled:bg-[#f3f3f5] disabled:text-[#6b7280] disabled:shadow-none',
   ghost:
-    'bg-transparent text-[var(--brand-primary)] hover:bg-[color:rgba(227,225,255,0.5)] focus-visible:ring-[var(--brand-primary)] disabled:text-[var(--brand-primary)]/50',
+    'bg-transparent text-[#0b1d3f] hover:bg-[#e5e6eb]/70 focus-visible:ring-[#0b1d3f]/40 disabled:text-[#0b1d3f]/40',
   outline:
-    'border border-[var(--color-border-strong)] bg-transparent text-[var(--brand-primary)] shadow-sm hover:bg-[color:rgba(227,225,255,0.4)] focus-visible:ring-[var(--brand-primary)] disabled:text-[var(--brand-primary)]/50 disabled:border-[color:rgba(194,199,214,0.8)]',
+    'border border-[#c9ccd6] bg-transparent text-[#0b1d3f] shadow-sm hover:bg-[#f3f3f5] focus-visible:ring-[#0b1d3f] disabled:text-[#0b1d3f]/40 disabled:border-[#c9ccd6]/60',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs',
-  md: 'h-9 px-4 text-sm',
-  lg: 'h-11 px-6 text-base',
-  icon: 'h-9 w-9',
+  sm: 'px-3 py-1.5 text-xs',
+  md: 'px-3 py-2 text-sm',
+  lg: 'px-4 py-3 text-base',
+  icon: 'h-10 w-10',
 };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -43,7 +43,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] disabled:pointer-events-none disabled:opacity-90',
+          'inline-flex items-center justify-center rounded-[6px] font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-80',
           sizeClasses[size],
           variantClasses[variant],
           className
