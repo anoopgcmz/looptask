@@ -13,12 +13,14 @@ vi.mock('@/lib/db', () => ({ default: vi.fn() }));
 const tokens: unknown[] = [];
 vi.mock('@/models/OtpToken', () => ({
   OtpToken: {
-    findOne: vi.fn(async (query: unknown) =>
-      tokens
-        .filter((t) => t.email === query.email)
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .at(0) || null
-    ),
+    findOne: vi.fn((query: { email: string }) => ({
+      sort: vi.fn(async () =>
+        tokens
+          .filter((t) => t.email === query.email)
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .at(0) || null
+      ),
+    })),
     create: vi.fn(async (doc: unknown) => {
       tokens.push({ ...doc, attempts: 0, createdAt: new Date() });
     }),

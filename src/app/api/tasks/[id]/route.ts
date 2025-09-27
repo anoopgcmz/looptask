@@ -9,6 +9,7 @@ import { ActivityLog } from '@/models/ActivityLog';
 import { User } from '@/models/User';
 import { TaskLoop } from '@/models/TaskLoop';
 import { LoopHistory } from '@/models/LoopHistory';
+import { Project } from '@/models/Project';
 import { canReadTask, canWriteTask } from '@/lib/access';
 import { scheduleTaskJobs } from '@/lib/agenda';
 import { emitTaskUpdated, emitLoopUpdated } from '@/lib/ws';
@@ -32,6 +33,7 @@ const patchSchema: z.ZodType<Partial<TaskPayload>> = z
     ownerId: z.string().optional(),
     helpers: z.array(z.string()).optional(),
     mentions: z.array(z.string()).optional(),
+    projectId: z.string().trim().min(1).optional(),
     teamId: z.string().optional(),
     status: z
       .enum(['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'REVISIONS', 'FLOW_IN_PROGRESS', 'DONE'])
@@ -53,6 +55,7 @@ const putSchema: z.ZodType<TaskPayload> = z
     ownerId: z.string(),
     helpers: z.array(z.string()),
     mentions: z.array(z.string()),
+    projectId: z.string().trim().min(1),
     teamId: z.string().optional(),
     status: z.enum([
       'OPEN',
@@ -138,6 +141,22 @@ export const PATCH = withOrganization(
     if (!owner) {
       return problem(400, 'Invalid request', 'Owner must be in your organization');
     }
+    const project = await Project.findOne({
+      _id: new Types.ObjectId(body.projectId),
+      organizationId: new Types.ObjectId(session.organizationId),
+    });
+    if (!project) {
+      return problem(400, 'Invalid request', 'Project must be in your organization');
+    }
+  }
+  if (body.projectId) {
+    const project = await Project.findOne({
+      _id: new Types.ObjectId(body.projectId),
+      organizationId: new Types.ObjectId(session.organizationId),
+    });
+    if (!project) {
+      return problem(400, 'Invalid request', 'Project must be in your organization');
+    }
   }
   if (body.steps) {
     for (const s of body.steps) {
@@ -155,6 +174,9 @@ export const PATCH = withOrganization(
     ownerId: body.ownerId ? new Types.ObjectId(body.ownerId) : task.ownerId,
     helpers: body.helpers?.map((id) => new Types.ObjectId(id)) ?? task.helpers,
     mentions: body.mentions?.map((id) => new Types.ObjectId(id)) ?? task.mentions,
+    projectId: body.projectId
+      ? new Types.ObjectId(body.projectId)
+      : task.projectId,
     teamId: body.teamId ? new Types.ObjectId(body.teamId) : task.teamId,
     steps: body.steps
       ? body.steps.map((s) => ({
@@ -347,6 +369,7 @@ export const PUT = withOrganization(
       ownerId: new Types.ObjectId(body.ownerId),
       helpers: body.helpers?.map((id) => new Types.ObjectId(id)) ?? [],
       mentions: body.mentions?.map((id) => new Types.ObjectId(id)) ?? [],
+      projectId: new Types.ObjectId(body.projectId),
       teamId: body.teamId ? new Types.ObjectId(body.teamId) : undefined,
       status: body.status,
       priority: body.priority,

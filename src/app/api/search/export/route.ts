@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   // Decide which search endpoint to use
   const sort = url.searchParams.get('sort');
   const hasTaskSpecific =
-    ['status', 'tag', 'ownerId', 'helpers', 'createdBy', 'teamId', 'visibility'].some((p) =>
+    ['status', 'tag', 'ownerId', 'helpers', 'createdBy', 'teamId', 'visibility', 'projectId'].some((p) =>
       url.searchParams.has(p)
     ) || (sort ? ['relevance', 'updatedAt', 'dueDate'].includes(sort) : false);
 

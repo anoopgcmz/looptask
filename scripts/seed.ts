@@ -5,6 +5,8 @@ import { User } from '@/models/User';
 import { Task } from '@/models/Task';
 import { TaskLoop } from '@/models/TaskLoop';
 import { LoopHistory } from '@/models/LoopHistory';
+import { ProjectType } from '@/models/ProjectType';
+import { Project } from '@/models/Project';
 import { prepareLoopFromSteps } from '@/lib/taskLoopSync';
 
 export async function seed() {
@@ -16,6 +18,8 @@ export async function seed() {
     Task.deleteMany({}),
     TaskLoop.deleteMany({}),
     LoopHistory.deleteMany({}),
+    ProjectType.deleteMany({}),
+    Project.deleteMany({}),
   ]);
 
   const organizations = await Organization.create([
@@ -67,12 +71,52 @@ export async function seed() {
       throw new Error('Failed to create seed users');
     }
 
+    const [internalType, clientType] = await ProjectType.create([
+      {
+        organizationId: org._id,
+        name: 'Internal',
+        createdBy: user1._id,
+        updatedBy: user1._id,
+      },
+      {
+        organizationId: org._id,
+        name: 'Client',
+        createdBy: user1._id,
+        updatedBy: user1._id,
+      },
+    ]);
+    if (!internalType) {
+      throw new Error('Failed to create internal project type');
+    }
+    const [internalProject, clientProject] = await Project.create([
+      {
+        organizationId: org._id,
+        name: `${org.name} Internal Initiatives`,
+        description: 'Internal goals and improvements',
+        type: internalType._id,
+        createdBy: user1._id,
+        updatedBy: user1._id,
+      },
+      {
+        organizationId: org._id,
+        name: `${org.name} Client Delivery`,
+        description: 'Client-facing projects',
+        type: clientType?._id,
+        createdBy: user1._id,
+        updatedBy: user1._id,
+      },
+    ]);
+    if (!internalProject) {
+      throw new Error('Failed to create seed project');
+    }
+
     const simpleDue = new Date(Date.now() + 2 * 60 * 60 * 1000);
     await Task.create({
       title: 'Simple task',
       createdBy: user1._id,
       ownerId: user1._id,
       organizationId: org._id,
+      projectId: internalProject._id,
       teamId: team._id,
       dueDate: simpleDue,
     });
@@ -82,6 +126,7 @@ export async function seed() {
       createdBy: user1._id,
       ownerId: user1._id,
       organizationId: org._id,
+      projectId: clientProject?._id ?? internalProject._id,
       teamId: team._id,
       status: 'OPEN',
       steps: [

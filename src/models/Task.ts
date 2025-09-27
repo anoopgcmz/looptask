@@ -61,6 +61,7 @@ const taskSchema = new Schema(
     helpers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     mentions: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
     teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
     status: {
       type: String,
@@ -90,6 +91,7 @@ taskSchema.index({ createdBy: 1 });
 taskSchema.index({ teamId: 1 });
 taskSchema.index({ tags: 1 });
 taskSchema.index({ visibility: 1 });
+taskSchema.index({ projectId: 1 });
 taskSchema.index({ title: 'text', description: 'text' });
 
 taskSchema.pre('save', function (next) {

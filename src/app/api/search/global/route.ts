@@ -13,6 +13,7 @@ const querySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
   page: z.coerce.number().min(1).default(1),
   sort: z.enum(['recent', 'oldest']).optional(),
+  projectId: z.string().optional(),
 });
 
 export const runtime = 'nodejs';
@@ -42,6 +43,14 @@ export async function GET(req: NextRequest) {
   const regex = query.q ? new RegExp(query.q, 'i') : null;
   const hlRegex = query.q ? new RegExp(query.q, 'gi') : null;
 
+  let projectObjectId: Types.ObjectId | null = null;
+  if (query.projectId) {
+    if (!Types.ObjectId.isValid(query.projectId)) {
+      return problem(400, 'Invalid request', 'projectId is invalid');
+    }
+    projectObjectId = new Types.ObjectId(query.projectId);
+  }
+
   const highlight = (text: string) =>
     hlRegex ? text.replace(hlRegex, (m) => `<mark>${m}</mark>`) : text;
 
@@ -65,10 +74,11 @@ export async function GET(req: NextRequest) {
     access.push({ visibility: 'TEAM', teamId: new Types.ObjectId(session.teamId) });
   }
 
-  const taskFilter: Record<string, unknown> = { $or: access };
-  if (regex) {
-    taskFilter.$and = [{ $or: access }, { $or: [{ title: regex }, { description: regex }] }];
-  }
+  const taskConditions: Record<string, unknown>[] = [{ $or: access }];
+  if (regex) taskConditions.push({ $or: [{ title: regex }, { description: regex }] });
+  if (projectObjectId) taskConditions.push({ projectId: projectObjectId });
+  const taskFilter =
+    taskConditions.length === 1 ? taskConditions[0] : { $and: taskConditions };
 
   const tasks = await Task.find(taskFilter)
     .select('title description createdAt')

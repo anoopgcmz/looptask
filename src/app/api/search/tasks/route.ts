@@ -29,6 +29,7 @@ const querySchema = z.object({
     .union([z.string(), z.array(z.string())])
     .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
     .optional(),
+  projectId: z.string().optional(),
   tag: z
     .union([z.string(), z.array(z.string())])
     .transform((val) => (Array.isArray(val) ? val : val ? [val] : []))
@@ -104,6 +105,13 @@ export async function GET(req: NextRequest) {
   const limit = query.limit;
   const skip = (query.page - 1) * limit;
 
+  if (query.projectId && !Types.ObjectId.isValid(query.projectId)) {
+    return problem(400, 'Invalid request', 'projectId is invalid');
+  }
+  const projectFilterId = query.projectId
+    ? new Types.ObjectId(query.projectId)
+    : undefined;
+
   const filters: FilterQuery<ITask>[] = [];
   if (query.ownerId?.length)
     filters.push({ ownerId: { $in: query.ownerId.map((id) => new Types.ObjectId(id)) } });
@@ -111,6 +119,7 @@ export async function GET(req: NextRequest) {
     filters.push({ createdBy: { $in: query.createdBy.map((id) => new Types.ObjectId(id)) } });
   if (query.helpers?.length)
     filters.push({ helpers: { $in: query.helpers.map((id) => new Types.ObjectId(id)) } });
+  if (projectFilterId) filters.push({ projectId: projectFilterId });
   if (query.status && query.status.length) filters.push({ status: { $in: query.status } });
   if (query.tag && query.tag.length) filters.push({ tags: { $in: query.tag } });
   if (query.visibility) filters.push({ visibility: query.visibility });
