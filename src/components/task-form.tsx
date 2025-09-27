@@ -419,14 +419,15 @@ export default function TaskForm({
     <div className="min-h-screen bg-[#F9FAFB] px-8 py-6">
       <form onSubmit={submitFlow} noValidate className="mx-auto max-w-3xl space-y-6">
         <Card className="space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
             <h2 className="text-lg font-semibold text-[#111827]">Project</h2>
-            <Link
-              href="/projects/new"
-              className="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
-            >
-              Create project
-            </Link>
+            <p className="text-sm text-[#4B5563]">
+              Tasks must be associated with an existing project. Manage projects from the{' '}
+              <Link href="/projects" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Projects page
+              </Link>
+              .
+            </p>
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-[#4B5563]" htmlFor="task-project">
@@ -442,7 +443,7 @@ export default function TaskForm({
                   clearFormFieldError('projectId');
                 }
               }}
-              disabled={projects.length === 0}
+              disabled={projectsLoading || projects.length === 0}
               className={cn(
                 'border border-[#E5E7EB] bg-white text-[#111827]',
                 formErrors.projectId && 'border-red-500 focus:border-red-500 focus:ring-red-200',
@@ -450,22 +451,28 @@ export default function TaskForm({
               aria-invalid={Boolean(formErrors.projectId)}
             >
               <option value="" disabled>
-                {projectsLoading ? 'Loading projects…' : 'Select a project'}
+                {projectsLoading
+                  ? 'Loading projects…'
+                  : projects.length === 0
+                    ? 'No projects available'
+                    : 'Select a project'}
               </option>
-              {projects.map((project) => (
-                <option key={project._id} value={project._id}>
-                  {project.name}
-                  {project.type?.name ? ` • ${project.type.name}` : ''}
-                </option>
-              ))}
+              {!projectsLoading
+                ? projects.map((project) => (
+                  <option key={project._id} value={project._id}>
+                    {project.name}
+                    {project.type?.name ? ` • ${project.type.name}` : ''}
+                  </option>
+                ))
+                : null}
             </Select>
             {projects.length === 0 && !projectsLoading ? (
               <p className="text-sm text-[#4B5563]">
-                No projects yet.{' '}
-                <Link href="/projects/new" className="font-medium text-indigo-600 hover:text-indigo-500">
-                  Create a project
+                No projects yet. Visit the{' '}
+                <Link href="/projects" className="font-medium text-indigo-600 hover:text-indigo-500">
+                  Projects page
                 </Link>{' '}
-                to get started.
+                to create one before adding tasks.
               </p>
             ) : null}
             {formErrors.projectId ? (
