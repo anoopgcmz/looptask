@@ -538,27 +538,28 @@ body {
   border: 1px solid transparent;
   color: var(--tone-text-muted);
   font-weight: 600;
+  font-size: 0.95rem;
   text-decoration: none;
   transition: background-color 0.2s ease, color 0.2s ease,
     border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .app-sidebar__link:hover {
-  background: var(--brand-primary-12);
-  border-color: var(--brand-primary-22);
+  background: rgba(16, 24, 40, 0.04);
+  border-color: var(--border-subtle);
   color: var(--tone-text-strong);
 }
 
 .app-sidebar__link:focus-visible {
-  outline: 2px solid var(--brand-primary-45);
+  outline: 2px solid rgba(16, 24, 40, 0.2);
   outline-offset: 3px;
 }
 
 .app-sidebar__link--active {
-  background: linear-gradient(135deg, var(--brand-accent), var(--brand-primary));
-  border-color: transparent;
-  color: var(--tone-text-inverse);
-  box-shadow: 0 20px 32px var(--brand-primary-35);
+  background: var(--surface-muted);
+  border-color: var(--border-subtle);
+  color: var(--tone-text-strong);
+  box-shadow: none;
 }
 
 .app-sidebar__link-icon {
@@ -583,10 +584,10 @@ body {
   justify-content: center;
   padding: 0.2rem 0.6rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  background: var(--brand-primary-15);
-  color: var(--brand-accent);
+  background: rgba(16, 24, 40, 0.08);
+  color: var(--tone-text);
 }
 
 .app-sidebar__badge--accent {
@@ -595,12 +596,12 @@ body {
 }
 
 .app-sidebar__link--active .app-sidebar__badge {
-  background: var(--surface-on-accent);
-  color: var(--tone-text-inverse);
+  background: rgba(16, 24, 40, 0.12);
+  color: var(--tone-text-strong);
 }
 
 .app-sidebar__link--active .app-sidebar__badge--accent {
-  background: var(--surface-on-accent-strong);
+  background: rgba(220, 104, 3, 0.12);
   color: var(--color-status-warning);
 }
 
@@ -658,9 +659,9 @@ body {
   width: 100%;
   padding: 0.65rem 0.9rem;
   border-radius: 0.95rem;
-  border: 1px solid var(--brand-primary-25);
-  background: var(--brand-primary-12);
-  color: var(--brand-accent);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  color: var(--tone-text-strong);
   font-weight: 600;
   transition: background-color 0.2s ease, border-color 0.2s ease,
     color 0.2s ease, transform 0.2s ease;
@@ -668,14 +669,14 @@ body {
 }
 
 .app-sidebar__logout:hover {
-  background: linear-gradient(135deg, var(--brand-accent), var(--brand-primary));
-  border-color: transparent;
-  color: var(--tone-text-inverse);
+  background: var(--surface-card);
+  border-color: var(--border-strong);
+  color: var(--tone-text-strong);
   transform: translateY(-1px);
 }
 
 .app-sidebar__logout:focus-visible {
-  outline: 2px solid var(--brand-primary-45);
+  outline: 2px solid rgba(16, 24, 40, 0.2);
   outline-offset: 3px;
 }
 
