@@ -16,6 +16,10 @@ export interface TaskCardProps {
     priority?: string;
     status: string;
     tags?: string[];
+    project?: {
+      name: string;
+      typeName?: string;
+    };
   };
   onChange?: () => void;
   href?: string;
@@ -68,6 +72,28 @@ export default function TaskCard({ task, href }: TaskCardProps) {
           </span>
         )}
       </div>
+      {task.project ? (
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M3 10h18v10H3z" />
+            <path d="M7 10V6a2 2 0 012-2h6a2 2 0 012 2v4" />
+          </svg>
+          <span className="font-medium text-slate-700">{task.project.name}</span>
+          {task.project.typeName ? (
+            <span className="text-slate-400">• {task.project.typeName}</span>
+          ) : null}
+        </div>
+      ) : null}
       {task.description && (
         <p className="text-sm text-[#6b7280] line-clamp-2">{task.description}</p>
       )}
@@ -88,7 +114,7 @@ export default function TaskCard({ task, href }: TaskCardProps) {
           {task.assignee && (
             <>
               <Avatar
-                src={task.assigneeAvatar}
+                {...(task.assigneeAvatar ? { src: task.assigneeAvatar } : {})}
                 fallback={task.assignee.charAt(0)}
                 className="h-6 w-6 text-xs"
               />

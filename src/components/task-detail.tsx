@@ -12,6 +12,7 @@ import useAuth from "@/hooks/useAuth";
 import LoopTasksSection from "@/components/loop-tasks-section";
 import { cn } from "@/lib/utils";
 import { getTodayDateInputValue, isDateInputBeforeToday } from "@/lib/dateInput";
+import type { ProjectSummary } from "@/types/api/project";
 
 interface User {
   _id: string;
@@ -28,6 +29,7 @@ interface Task {
   status?: string;
   updatedAt?: string;
   createdBy?: string;
+  projectId?: string;
 }
 
 export default function TaskDetail({
@@ -46,6 +48,10 @@ export default function TaskDetail({
   const [ownerName, setOwnerName] = useState<string | null>(null);
   const [taskVersion, setTaskVersion] = useState(0);
   const [dueDateError, setDueDateError] = useState<string | null>(null);
+  const [project, setProject] = useState<ProjectSummary | null>(null);
+  const [projectOptions, setProjectOptions] = useState<ProjectSummary[]>([]);
+  const [projectListLoading, setProjectListLoading] = useState(false);
+  const [projectSelectError, setProjectSelectError] = useState<string | null>(null);
   const viewers = usePresence(id);
   const { user } = useAuth();
 
@@ -110,9 +116,65 @@ export default function TaskDetail({
     }
   }, [id, loadUsers]);
 
+  const loadProjectDetail = useCallback(async (projectIdValue: string) => {
+    if (!projectIdValue) {
+      setProject(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/projects/${projectIdValue}`, { credentials: "include" });
+      if (!res.ok) {
+        throw new Error("Unable to load project");
+      }
+      const data = (await res.json()) as ProjectSummary;
+      setProject(data);
+    } catch {
+      setProject(null);
+    }
+  }, []);
+
+  const loadProjectOptions = useCallback(async () => {
+    setProjectListLoading(true);
+    try {
+      const res = await fetch("/api/projects?limit=200", { credentials: "include" });
+      if (!res.ok) {
+        throw new Error("Unable to load projects");
+      }
+      const data = (await res.json()) as ProjectSummary[];
+      setProjectOptions(data);
+    } catch {
+      setProjectOptions([]);
+    } finally {
+      setProjectListLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void refreshTask();
   }, [refreshTask]);
+
+  useEffect(() => {
+    if (!task?.projectId) {
+      setProject(null);
+      return;
+    }
+    void loadProjectDetail(task.projectId);
+  }, [loadProjectDetail, task?.projectId]);
+
+  useEffect(() => {
+    if (!fieldsEditable) return;
+    void loadProjectOptions();
+  }, [fieldsEditable, loadProjectOptions]);
+
+  useEffect(() => {
+    if (!project) return;
+    setProjectOptions((prev) => {
+      if (prev.some((item) => item._id === project._id)) {
+        return prev;
+      }
+      return [...prev, project];
+    });
+  }, [project]);
 
   useEffect(() => {
     const ownerId = task?.ownerId;
@@ -211,6 +273,43 @@ export default function TaskDetail({
     }
   };
 
+  const handleProjectChange = async (value: string) => {
+    if (!task || !fieldsEditable) return;
+    if (!value) {
+      setProjectSelectError("Select a project");
+      return;
+    }
+
+    if (task.projectId === value) {
+      setProjectSelectError(null);
+      return;
+    }
+
+    setProjectSelectError(null);
+    const previousProjectId = task.projectId;
+    setTask((prev) => (prev ? { ...prev, projectId: value } : prev));
+    try {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: value }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(body.detail ?? "Failed to update project");
+      }
+      setProjectSelectError(null);
+      void loadProjectDetail(value);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update project";
+      setProjectSelectError(message);
+      setTask((prev) => (prev ? { ...prev, projectId: previousProjectId } : prev));
+      if (previousProjectId) {
+        void loadProjectDetail(previousProjectId);
+      }
+    }
+  };
+
   if (!task) {
     return <div>Loading...</div>;
   }
@@ -276,6 +375,50 @@ export default function TaskDetail({
             ) : (
               <p className="whitespace-pre-wrap text-sm text-gray-900">
                 {task.description?.trim() ? task.description : "No description provided."}
+              </p>
+            )}
+          </Card>
+          <Card className="flex flex-col gap-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Project
+            </label>
+            {fieldsEditable ? (
+              <div className="space-y-1">
+                <Select
+                  value={task.projectId ?? ''}
+                  onChange={(event) => void handleProjectChange(event.target.value)}
+                  disabled={projectListLoading}
+                >
+                  <option value="" disabled>
+                    {projectListLoading ? 'Loading projects…' : 'Select project'}
+                  </option>
+                  {projectOptions.map((option) => (
+                    <option key={option._id} value={option._id}>
+                      {option.name}
+                      {option.type?.name ? ` • ${option.type.name}` : ''}
+                    </option>
+                  ))}
+                </Select>
+                {projectSelectError ? (
+                  <p className="text-sm text-red-600">{projectSelectError}</p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-900">
+                {task.projectId ? (
+                  project ? (
+                    <>
+                      {project.name}
+                      {project.type?.name ? (
+                        <span className="text-gray-500">{' '}• {project.type.name}</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    'Loading project…'
+                  )
+                ) : (
+                  'No project assigned'
+                )}
               </p>
             )}
           </Card>

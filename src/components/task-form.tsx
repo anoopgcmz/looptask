@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, type CSSProperties } from 'react';
+import Link from 'next/link';
 import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -8,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { getTodayDateInputValue, isDateInputBeforeToday } from '@/lib/dateInput';
+import type { ProjectSummary } from '@/types/api/project';
 
 export interface TaskFormUser {
   _id: string;
@@ -29,12 +32,14 @@ export interface TaskFormValues {
   description?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   steps: TaskFormStepInput[];
+  projectId: string;
 }
 
 export interface TaskFormSubmitValues {
   title: string;
   description?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  projectId: string;
   steps: Array<{
     title: string;
     description: string;
@@ -46,6 +51,9 @@ export interface TaskFormSubmitValues {
 export interface TaskFormProps {
   currentUserId: string;
   initialValues?: Partial<TaskFormValues>;
+  projects: ProjectSummary[];
+  projectsLoading?: boolean;
+  onProjectsRefresh?: () => Promise<void>;
   onSubmit: (values: TaskFormSubmitValues) => Promise<void | { error?: string }>;
   onCancel?: () => void;
   submitLabel?: string;
@@ -67,6 +75,7 @@ type StepErrors = Partial<Record<StepFieldKey, string>>;
 interface FormErrors {
   title?: string;
   description?: string;
+  projectId?: string;
   steps: Record<string, StepErrors>;
 }
 
@@ -126,6 +135,9 @@ const mapInitialSteps = (steps: TaskFormStepInput[] | undefined, fallbackOwnerId
 export default function TaskForm({
   currentUserId,
   initialValues,
+  projects,
+  projectsLoading = false,
+  onProjectsRefresh,
   onSubmit,
   onCancel,
   submitLabel = 'Save Task',
@@ -138,6 +150,7 @@ export default function TaskForm({
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>(
     initialValues?.priority ?? 'LOW',
   );
+  const [projectId, setProjectId] = useState(initialValues?.projectId ?? '');
   const [steps, setSteps] = useState<InternalStep[]>(() =>
     mapInitialSteps(initialValues?.steps, currentUserId),
   );
@@ -145,7 +158,7 @@ export default function TaskForm({
   const [formErrors, setFormErrors] = useState<FormErrors>({ steps: {} });
   const minDueDate = useMemo(() => getTodayDateInputValue(), []);
 
-  const clearFormFieldError = (field: 'title' | 'description') => {
+  const clearFormFieldError = (field: 'title' | 'description' | 'projectId') => {
     setFormErrors((prev) => {
       if (!prev[field]) return prev;
       return { ...prev, [field]: undefined };
@@ -207,6 +220,18 @@ export default function TaskForm({
   }, [initialValues?.priority]);
 
   useEffect(() => {
+    setProjectId(initialValues?.projectId ?? '');
+  }, [initialValues?.projectId]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    if (projects.some((project) => project._id === projectId)) {
+      return;
+    }
+    setProjectId('');
+  }, [projectId, projects]);
+
+  useEffect(() => {
     setSteps(mapInitialSteps(initialValues?.steps, currentUserId));
   }, [currentUserId, initialValues?.steps]);
 
@@ -216,6 +241,18 @@ export default function TaskForm({
       prev.map((step) => (step.ownerId ? step : { ...step, ownerId: currentUserId })),
     );
   }, [currentUserId]);
+
+  useEffect(() => {
+    if (!onProjectsRefresh) return;
+    void onProjectsRefresh();
+    const handleFocus = () => {
+      void onProjectsRefresh();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [onProjectsRefresh]);
 
   const addStep = () => {
     setSteps((prev) => [
@@ -297,6 +334,11 @@ export default function TaskForm({
       hasError = true;
     }
 
+    if (!projectId) {
+      errors.projectId = 'Select a project';
+      hasError = true;
+    }
+
     steps.forEach((step) => {
       const stepErrors: StepErrors = {};
       if (!step.title.trim()) {
@@ -344,6 +386,7 @@ export default function TaskForm({
         title: flowTitle,
         description,
         priority,
+        projectId,
         steps: steps.map((step) => {
           const base = {
             title: step.title,
@@ -375,6 +418,62 @@ export default function TaskForm({
   return (
     <div className="min-h-screen bg-[#F9FAFB] px-8 py-6">
       <form onSubmit={submitFlow} noValidate className="mx-auto max-w-3xl space-y-6">
+        <Card className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold text-[#111827]">Project</h2>
+            <Link
+              href="/projects/new"
+              className="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+            >
+              Create project
+            </Link>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-[#4B5563]" htmlFor="task-project">
+              Select project
+            </label>
+            <Select
+              id="task-project"
+              value={projectId}
+              onChange={(event) => {
+                const value = event.target.value;
+                setProjectId(value);
+                if (value) {
+                  clearFormFieldError('projectId');
+                }
+              }}
+              disabled={projects.length === 0}
+              className={cn(
+                'border border-[#E5E7EB] bg-white text-[#111827]',
+                formErrors.projectId && 'border-red-500 focus:border-red-500 focus:ring-red-200',
+              )}
+              aria-invalid={Boolean(formErrors.projectId)}
+            >
+              <option value="" disabled>
+                {projectsLoading ? 'Loading projects…' : 'Select a project'}
+              </option>
+              {projects.map((project) => (
+                <option key={project._id} value={project._id}>
+                  {project.name}
+                  {project.type?.name ? ` • ${project.type.name}` : ''}
+                </option>
+              ))}
+            </Select>
+            {projects.length === 0 && !projectsLoading ? (
+              <p className="text-sm text-[#4B5563]">
+                No projects yet.{' '}
+                <Link href="/projects/new" className="font-medium text-indigo-600 hover:text-indigo-500">
+                  Create a project
+                </Link>{' '}
+                to get started.
+              </p>
+            ) : null}
+            {formErrors.projectId ? (
+              <p className="text-sm text-red-600">{formErrors.projectId}</p>
+            ) : null}
+          </div>
+        </Card>
+
         <Card className="space-y-5">
           <h2 className="text-lg font-semibold text-[#111827]">Task Info</h2>
           <div className="space-y-4">

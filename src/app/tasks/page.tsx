@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
@@ -17,6 +17,7 @@ import type {
 import TaskKanbanColumn from '@/components/task-kanban-column';
 import useAuth from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import type { ProjectSummary } from '@/types/api/project';
 
 const statusTabs = [
   { value: 'OPEN', label: 'Open', query: ['OPEN'] },
@@ -29,6 +30,35 @@ const statusTabs = [
 ];
 
 const PAGE_SIZE = 20;
+
+export interface TaskFilterState {
+  assignee: string;
+  priority: string;
+  dueFrom: string;
+  dueTo: string;
+  sort: string;
+  projectId: string;
+}
+
+export const buildTaskQueryParams = (
+  filters: TaskFilterState,
+  search: string,
+  statuses: string[],
+  page: number,
+) => {
+  const params = new URLSearchParams();
+  if (filters.assignee) params.append('ownerId', filters.assignee);
+  if (filters.priority) params.append('priority', filters.priority);
+  if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
+  if (filters.dueTo) params.append('dueTo', filters.dueTo);
+  if (filters.sort) params.append('sort', filters.sort);
+  if (filters.projectId) params.append('projectId', filters.projectId);
+  if (search) params.append('q', search);
+  statuses.forEach((status) => params.append('status', status));
+  params.append('limit', PAGE_SIZE.toString());
+  params.append('page', page.toString());
+  return params;
+};
 
 const PRIORITY_STYLES: Record<TaskPriority, string> = {
   HIGH: 'bg-rose-100 text-rose-600 ring-rose-200',
@@ -89,15 +119,33 @@ const CalendarIcon = () => (
   </svg>
 );
 
+const ProjectIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+    aria-hidden="true"
+  >
+    <path d="M3 10h18v10H3z" />
+    <path d="M7 10V6a2 2 0 012-2h6a2 2 0 012 2v4" />
+  </svg>
+);
+
 function TasksPageInner() {
   const router = useRouter();
   const { user, status, isLoading } = useAuth();
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<TaskFilterState>({
     assignee: '',
     priority: '',
     dueFrom: '',
     dueTo: '',
     sort: '',
+    projectId: '',
   });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -118,6 +166,19 @@ function TasksPageInner() {
     DONE: true,
   });
   const [loading, setLoading] = useState(false);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+
+  const projectLookup = useMemo(() => {
+    const map: Record<string, { name: string; typeName?: string }> = {};
+    projects.forEach((project) => {
+      const typeName = project.type?.name;
+      map[project._id] = typeName
+        ? { name: project.name, typeName }
+        : { name: project.name };
+    });
+    return map;
+  }, [projects]);
 
   const viewTabs: { value: 'board' | 'list' | 'calendar'; label: string }[] = [
     { value: 'board', label: 'Board' },
@@ -125,21 +186,28 @@ function TasksPageInner() {
     { value: 'calendar', label: 'Calendar' },
   ];
 
+  const loadProjects = useCallback(async () => {
+    setProjectsLoading(true);
+    try {
+      const res = await fetch('/api/projects?limit=200', { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error('Failed to load projects');
+      }
+      const data = (await res.json()) as ProjectSummary[];
+      setProjects(data);
+    } catch {
+      setProjects([]);
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, []);
+
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
       const results = await Promise.all(
         statusTabs.map(async (s) => {
-          const params = new URLSearchParams();
-          if (filters.assignee) params.append('ownerId', filters.assignee);
-          if (filters.priority) params.append('priority', filters.priority);
-          if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
-          if (filters.dueTo) params.append('dueTo', filters.dueTo);
-          if (filters.sort) params.append('sort', filters.sort);
-          if (search) params.append('q', search);
-          s.query.forEach((st) => params.append('status', st));
-          params.append('limit', PAGE_SIZE.toString());
-          params.append('page', '1');
+          const params = buildTaskQueryParams(filters, search, s.query, 1);
           try {
             const res = await fetch(`/api/tasks?${params.toString()}`);
             if (!res.ok) return [] as Task[];
@@ -170,19 +238,11 @@ function TasksPageInner() {
     async (status: string) => {
       const tab = statusTabs.find((s) => s.value === status);
       if (!tab) return;
-      const nextPage = pages[status] + 1;
+      const currentPage = pages[status] ?? 1;
+      const nextPage = currentPage + 1;
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (filters.assignee) params.append('ownerId', filters.assignee);
-        if (filters.priority) params.append('priority', filters.priority);
-        if (filters.dueFrom) params.append('dueFrom', filters.dueFrom);
-        if (filters.dueTo) params.append('dueTo', filters.dueTo);
-        if (filters.sort) params.append('sort', filters.sort);
-        if (search) params.append('q', search);
-        tab.query.forEach((st) => params.append('status', st));
-        params.append('limit', PAGE_SIZE.toString());
-        params.append('page', nextPage.toString());
+        const params = buildTaskQueryParams(filters, search, tab.query, nextPage);
         let result: Task[] = [];
         try {
           const res = await fetch(`/api/tasks?${params.toString()}`);
@@ -194,7 +254,7 @@ function TasksPageInner() {
         }
         setTasks((prev) => ({
           ...prev,
-          [status]: [...prev[status], ...result],
+          [status]: [...(prev[status] ?? []), ...result],
         }));
         setPages((prev) => ({ ...prev, [status]: nextPage }));
         setHasMore((prev) => ({
@@ -218,6 +278,10 @@ function TasksPageInner() {
     if (status !== 'authenticated') return;
     void loadTasks();
   }, [loadTasks, status]);
+
+  useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
 
   useEffect(() => {
     const handle = setTimeout(() => setSearch(searchInput), 300);
@@ -299,7 +363,7 @@ function TasksPageInner() {
           </div>
         </div>
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm md:p-5">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                 Sort By
@@ -347,6 +411,26 @@ function TasksPageInner() {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+                Project
+              </label>
+              <Select
+                value={filters.projectId}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, projectId: e.target.value }))
+                }
+              >
+                <option value="">All</option>
+                {projectsLoading ? <option value="" disabled>Loading projects…</option> : null}
+                {projects.map((project) => (
+                  <option key={project._id} value={project._id}>
+                    {project.name}
+                    {project.type?.name ? ` • ${project.type.name}` : ''}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                 Due From
               </label>
               <Input
@@ -379,17 +463,19 @@ function TasksPageInner() {
             const isInitialLoading =
               loading && columnTasks.length === 0 && pages[s.value] === 1;
             const isLoadingMore = loading && !isInitialLoading;
+            const columnHasMore = Boolean(hasMore[s.value]);
             return (
               <TaskKanbanColumn
                 key={s.value}
                 label={s.label}
                 tasks={columnTasks}
                 isLoading={isInitialLoading}
-                hasMore={hasMore[s.value]}
+                hasMore={columnHasMore}
                 isLoadingMore={isLoadingMore}
                 onLoadMore={() => loadMore(s.value)}
                 onTaskChange={loadTasks}
                 currentUserId={user?.userId}
+                projectLookup={projectLookup}
               />
             );
           })}
@@ -417,6 +503,7 @@ function TasksPageInner() {
             const assigneeInitial = assigneeName?.[0]?.toUpperCase() ?? '?';
             const status = toTaskStatus(task.status);
             const dueMeta = getDueMeta(task.dueDate);
+            const project = task.projectId ? projectLookup[task.projectId] : undefined;
 
             return (
               <article
@@ -427,6 +514,15 @@ function TasksPageInner() {
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="space-y-2">
                       <h2 className="text-lg font-semibold text-slate-900">{task.title}</h2>
+                      {project ? (
+                        <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                          <ProjectIcon />
+                          <span className="font-medium text-slate-700">{project.name}</span>
+                          {project.typeName ? (
+                            <span className="text-slate-400">• {project.typeName}</span>
+                          ) : null}
+                        </div>
+                      ) : null}
                       {task.description ? (
                         <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
                           {task.description}
@@ -454,7 +550,9 @@ function TasksPageInner() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar
-                        src={extendedTask.assigneeAvatar}
+                        {...(extendedTask.assigneeAvatar
+                          ? { src: extendedTask.assigneeAvatar }
+                          : {})}
                         fallback={assigneeInitial}
                         className="h-10 w-10 text-sm"
                       />

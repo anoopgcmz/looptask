@@ -1,17 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
 import useAuth from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/toast-provider';
 import TaskForm from '@/components/task-form';
+import type { ProjectSummary } from '@/types/api/project';
 
 function NewTaskPageInner() {
   const router = useRouter();
   const { user, status, isLoading } = useAuth();
   const { showToast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const loadProjects = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    setProjectsLoading(true);
+    try {
+      const response = await fetch('/api/projects?limit=200', { credentials: 'include' });
+      if (!response.ok) {
+        throw new Error('Failed to load projects');
+      }
+      const data = (await response.json()) as ProjectSummary[];
+      if (!isMountedRef.current) return;
+      setProjects(data);
+    } catch {
+      if (!isMountedRef.current) return;
+      setProjects([]);
+    } finally {
+      if (!isMountedRef.current) return;
+      setProjectsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated' && !isLoading) {
@@ -32,6 +62,9 @@ function NewTaskPageInner() {
   return (
     <TaskForm
       currentUserId={currentUserId}
+      projects={projects}
+      projectsLoading={projectsLoading}
+      onProjectsRefresh={loadProjects}
       submitLabel="Create Task"
       submitPendingLabel="Creating…"
       onCancel={() => router.push('/tasks')}
