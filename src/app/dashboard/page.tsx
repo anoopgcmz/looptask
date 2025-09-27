@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { SessionProvider } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import TaskKanbanColumn from '@/components/task-kanban-column';
 import type { TaskResponse as Task } from '@/types/api/task';
 import useAuth from '@/hooks/useAuth';
 
@@ -49,7 +48,7 @@ function MetricCard({
   progressClassName,
 }: MetricCardProps) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{title}</p>
@@ -100,7 +99,7 @@ function RecentActivityCard({ task }: { task: Task }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -132,6 +131,20 @@ const statusTabs = [
   { value: 'DONE', label: 'Done', query: ['DONE'] },
 ];
 
+type Objective = {
+  _id: string;
+  title: string;
+  status: 'OPEN' | 'DONE';
+  linkedTaskIds?: string[];
+};
+
+type ObjectiveSummary = {
+  objective: Objective;
+  progress: number;
+  completedCount: number;
+  totalLinked: number;
+};
+
 function DashboardInner() {
   const { user, status } = useAuth();
   const [tasks, setTasks] = useState<Record<string, Task[]>>({
@@ -139,32 +152,26 @@ function DashboardInner() {
     IN_PROGRESS: [],
     DONE: [],
   });
-  const [loading, setLoading] = useState(false);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [objectivesLoading, setObjectivesLoading] = useState(false);
 
   const loadTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const results = await Promise.all(
-        statusTabs.map(async (s) => {
-          try {
-            const res = await fetch(
-              `/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`
-            );
-            if (!res.ok) return [] as Task[];
-            return (await res.json()) as Task[];
-          } catch {
-            return [] as Task[];
-          }
-        })
-      );
-      const next: Record<string, Task[]> = {};
-      statusTabs.forEach((s, i) => {
-        next[s.value] = results[i] as Task[];
-      });
-      setTasks(next);
-    } finally {
-      setLoading(false);
-    }
+    const results = await Promise.all(
+      statusTabs.map(async (s) => {
+        try {
+          const res = await fetch(`/api/tasks?${s.query.map((st) => `status=${st}`).join('&')}`);
+          if (!res.ok) return [] as Task[];
+          return (await res.json()) as Task[];
+        } catch {
+          return [] as Task[];
+        }
+      })
+    );
+    const next: Record<string, Task[]> = {};
+    statusTabs.forEach((s, i) => {
+      next[s.value] = results[i] as Task[];
+    });
+    setTasks(next);
   }, []);
 
   useEffect(() => {
@@ -172,62 +179,55 @@ function DashboardInner() {
   }, [loadTasks]);
 
   const allTasks = useMemo(() => Object.values(tasks).flat(), [tasks]);
+  const tasksById = useMemo(() => {
+    const map = new Map<string, Task>();
+    allTasks.forEach((task) => {
+      map.set(task._id, task);
+    });
+    return map;
+  }, [allTasks]);
+
+  const today = useMemo(() => new Date().toISOString().split('T')[0] ?? '', []);
+
+  useEffect(() => {
+    if (!user?.teamId) {
+      setObjectives([]);
+      return;
+    }
+    const loadObjectives = async () => {
+      setObjectivesLoading(true);
+      try {
+        const res = await fetch(`/api/objectives?date=${today}&teamId=${user.teamId}`);
+        if (!res.ok) {
+          setObjectives([]);
+          return;
+        }
+        setObjectives((await res.json()) as Objective[]);
+      } catch {
+        setObjectives([]);
+      } finally {
+        setObjectivesLoading(false);
+      }
+    };
+    void loadObjectives();
+  }, [today, user?.teamId]);
 
   const metrics = useMemo(() => {
     const totalTasks = allTasks.length;
-    const completedTasks = tasks.DONE?.length ?? 0;
-    const activeTasks = (tasks.OPEN?.length ?? 0) + (tasks.IN_PROGRESS?.length ?? 0);
-    const highPriority = allTasks.filter((t) => t.priority === 'HIGH').length;
-    const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
-    const activeRate = totalTasks ? Math.round((activeTasks / totalTasks) * 100) : 0;
-    const highPriorityRate = totalTasks ? Math.round((highPriority / totalTasks) * 100) : 0;
+    const openCount = tasks.OPEN?.length ?? 0;
+    const inProgressCount = tasks.IN_PROGRESS?.length ?? 0;
+    const completedCount = tasks.DONE?.length ?? 0;
+
+    const openRate = totalTasks ? Math.round((openCount / totalTasks) * 100) : 0;
+    const inProgressRate = totalTasks ? Math.round((inProgressCount / totalTasks) * 100) : 0;
+    const completedRate = totalTasks ? Math.round((completedCount / totalTasks) * 100) : 0;
 
     return [
       {
-        title: 'Tasks Completed',
-        value: completedTasks.toString(),
-        subtext: `${completionRate}% of your workload is complete`,
-        progress: completionRate,
-        icon: (
-          <svg viewBox="0 0 24 24" className="h-5 w-5 text-emerald-600">
-            <path
-              d="M20 6 9 17l-5-5"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-            />
-          </svg>
-        ),
-        accentClassName: 'bg-emerald-100 text-emerald-600',
-        progressClassName: 'bg-emerald-500',
-      },
-      {
-        title: 'Active Workstreams',
-        value: activeTasks.toString(),
-        subtext: `${activeRate}% of tasks need attention`,
-        progress: activeRate,
-        icon: (
-          <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-600">
-            <path
-              d="M4 4h16v5H4zM4 15h7v5H4zM13 11h7v9h-7z"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-            />
-          </svg>
-        ),
-        accentClassName: 'bg-sky-100 text-sky-600',
-        progressClassName: 'bg-sky-500',
-      },
-      {
-        title: 'High Priority',
-        value: highPriority.toString(),
-        subtext: `${highPriorityRate}% flagged as urgent`,
-        progress: highPriorityRate,
+        title: 'Open Tasks',
+        value: `${openCount} tasks`,
+        subtext: `${openRate}% of total work`,
+        progress: openRate,
         icon: (
           <svg viewBox="0 0 24 24" className="h-5 w-5 text-rose-600">
             <path
@@ -244,6 +244,46 @@ function DashboardInner() {
         accentClassName: 'bg-rose-100 text-rose-600',
         progressClassName: 'bg-rose-500',
       },
+      {
+        title: 'In Progress',
+        value: `${inProgressCount} tasks`,
+        subtext: `${inProgressRate}% of total work`,
+        progress: inProgressRate,
+        icon: (
+          <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-600">
+            <path
+              d="M4 4h16v5H4zM4 15h7v5H4zM13 11h7v9h-7z"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+            />
+          </svg>
+        ),
+        accentClassName: 'bg-sky-100 text-sky-600',
+        progressClassName: 'bg-sky-500',
+      },
+      {
+        title: 'Completed',
+        value: `${completedCount} tasks`,
+        subtext: `${completedRate}% of total work`,
+        progress: completedRate,
+        icon: (
+          <svg viewBox="0 0 24 24" className="h-5 w-5 text-emerald-600">
+            <path
+              d="M20 6 9 17l-5-5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+            />
+          </svg>
+        ),
+        accentClassName: 'bg-emerald-100 text-emerald-600',
+        progressClassName: 'bg-emerald-500',
+      },
     ];
   }, [allTasks, tasks]);
 
@@ -252,6 +292,33 @@ function DashboardInner() {
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 6);
   }, [allTasks]);
+
+  const objectiveSummaries = useMemo<ObjectiveSummary[]>(() => {
+    const activeObjectives = objectives.filter((objective) => objective.status !== 'DONE');
+    return activeObjectives.map((objective) => {
+      const linkedTasks = (objective.linkedTaskIds ?? [])
+        .map((taskId) => tasksById.get(taskId))
+        .filter((task): task is Task => Boolean(task));
+      const totalLinked = linkedTasks.length;
+      const completedCount = linkedTasks.filter((task) => task.status === 'DONE').length;
+      const progress = totalLinked
+        ? Math.round((completedCount / totalLinked) * 100)
+        : objective.status === 'DONE'
+          ? 100
+          : 0;
+      return {
+        objective,
+        progress,
+        completedCount,
+        totalLinked,
+      };
+    });
+  }, [objectives, tasksById]);
+
+  const firstName = useMemo(() => {
+    const name = user?.name ?? user?.email ?? 'there';
+    return name.split(' ')[0];
+  }, [user?.email, user?.name]);
 
   if (status === 'loading') {
     return <div className="p-4 md:p-6">Loading dashboard…</div>;
@@ -262,57 +329,96 @@ function DashboardInner() {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <motion.h1
+    <div className="space-y-8 bg-slate-50 p-4 md:p-8">
+      <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-xl font-semibold text-slate-800"
+        className="space-y-2"
       >
-        Hi, {user?.name || user?.email || 'there'}
-      </motion.h1>
-      <motion.div
+        <p className="text-sm font-medium text-slate-500">Good morning, {firstName}!</p>
+        <h1 className="text-2xl font-semibold text-slate-900">
+          Here&rsquo;s what&rsquo;s happening with your team today.
+        </h1>
+      </motion.header>
+      <motion.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3"
+        className="grid grid-cols-1 gap-4 md:grid-cols-3"
       >
         {metrics.map((metric) => (
           <MetricCard key={metric.title} {...metric} />
         ))}
-      </motion.div>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {statusTabs.map((s) => {
-          const columnTasks = tasks[s.value] ?? [];
-          const isInitialLoading = loading && columnTasks.length === 0;
+      </motion.section>
 
-          return (
-            <TaskKanbanColumn
-              key={s.value}
-              label={s.label}
-              tasks={columnTasks}
-              isLoading={isInitialLoading}
-              onTaskChange={loadTasks}
-            />
-          );
-        })}
-      </div>
-      <section className="mt-10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800">Recent activity</h2>
-          <p className="text-sm text-slate-500">
-            Latest updates across your open and completed work
-          </p>
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {recentActivity.length === 0 ? (
-            <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-              No task updates yet—once work starts moving, you&rsquo;ll see it here.
+      <div className="grid gap-6 lg:grid-cols-5">
+        <section className="lg:col-span-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
+              <p className="text-sm text-slate-500">
+                Latest updates across your open and completed work.
+              </p>
             </div>
-          ) : (
-            recentActivity.map((task) => <RecentActivityCard key={task._id} task={task} />)
-          )}
-        </div>
-      </section>
+          </div>
+          <div className="mt-4 space-y-4">
+            {recentActivity.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                No task updates yet—once work starts moving, you&rsquo;ll see it here.
+              </div>
+            ) : (
+              recentActivity.map((task) => <RecentActivityCard key={task._id} task={task} />)
+            )}
+          </div>
+        </section>
+
+        <section className="lg:col-span-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Objectives in Progress</h2>
+              <p className="text-sm text-slate-500">
+                Track how close your active objectives are to completion.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-4">
+            {objectivesLoading ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+                Loading objectives…
+              </div>
+            ) : objectiveSummaries.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+                No active objectives right now. When new objectives are started, they&rsquo;ll appear here.
+              </div>
+            ) : (
+              objectiveSummaries.map(({ objective, progress, completedCount, totalLinked }) => (
+                <div
+                  key={objective._id}
+                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900">{objective.title}</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {totalLinked > 0
+                          ? `${completedCount} of ${totalLinked} linked tasks complete`
+                          : 'No linked tasks yet'}
+                      </p>
+                    </div>
+                    <Badge tone="sky">{progress}%</Badge>
+                  </div>
+                  <div className="mt-4 h-2 rounded-full bg-slate-100">
+                    <div
+                      className="h-2 rounded-full bg-sky-500"
+                      style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
