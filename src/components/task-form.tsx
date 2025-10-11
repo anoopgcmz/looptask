@@ -59,6 +59,7 @@ export interface TaskFormProps {
   onCancel?: () => void;
   submitLabel?: string;
   submitPendingLabel?: string;
+  embedded?: boolean;
 }
 
 interface InternalStep {
@@ -144,6 +145,7 @@ export default function TaskForm({
   onCancel,
   submitLabel = 'Save Task',
   submitPendingLabel,
+  embedded = false,
 }: TaskFormProps) {
   const [users, setUsers] = useState<TaskFormUser[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -417,9 +419,14 @@ export default function TaskForm({
     }
   };
 
+  const containerClass = embedded
+    ? 'px-6 py-6'
+    : 'min-h-screen bg-[#F9FAFB] px-8 py-6';
+  const formClass = embedded ? 'space-y-6' : 'mx-auto max-w-3xl space-y-6';
+
   return (
-    <div className="min-h-screen bg-[#F9FAFB] px-8 py-6">
-      <form onSubmit={submitFlow} noValidate className="mx-auto max-w-3xl space-y-6">
+    <div className={containerClass}>
+      <form onSubmit={submitFlow} noValidate className={formClass}>
         <Card className="space-y-5">
           <div className="flex flex-col gap-1">
             <h2 className="text-lg font-semibold text-[#111827]">Project</h2>

@@ -36,6 +36,29 @@ You can override these values with the environment variables `MONGODB_MAX_POOL_S
 
 Set `DB_DEBUG` to any value to enable verbose logging of connection attempts and failures.
 
+## AI-assisted task intake
+
+LoopTask now includes an AI drafting flow that converts natural language prompts into reviewable task drafts.
+
+- Navigate to `/tasks/ai` to open the intake workspace. Provide a short description of the work and the assistant will create one or more editable drafts using the existing task form.
+- Drafts reuse your organization context (projects, members) and highlight low-confidence matches so you can correct them before approval.
+- Approved drafts are submitted through the standard `/api/tasks` endpoint. Failed submissions keep their form state so you can adjust and retry without another model call.
+
+### OpenAI configuration
+
+The intake flow uses the OpenAI SDK with JSON-mode completions. Configure the following environment variables before running the server:
+
+- `OPENAI_API_KEY` (required): API key for the organization-specific OpenAI project.
+- `OPENAI_BASE_URL` (optional): Override the base URL when routing through a proxy or Azure OpenAI deployment.
+- `OPENAI_MODEL` (optional): Defaults to `gpt-4o` and can be changed to any compatible JSON-mode model.
+
+Rotate the secret per environment (development, staging, production) and ensure the value is available during Next.js runtime.
+
+### Prompt tuning & observability
+
+- Prompt → draft analytics (latency, warning counts, manual edit rates) are emitted via structured logs with the `ai.task-intake.*` prefix. Forward these logs to your observability pipeline to monitor cost and model quality.
+- The system prompt is stored server-side and can be adjusted alongside the environment variables above to experiment with different draft behaviors.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
